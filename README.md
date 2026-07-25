@@ -4,10 +4,12 @@ A mobile-first family chore app. Parents manage a chore list; each chore gets a 
 
 Built as a **Python** app with **uv**, **FastAPI**, and **Docker**, meant to run on **Google Cloud Run**.
 
-See [AGENTS.md](./AGENTS.md) for product rules and architecture for contributors/agents.  
-See [docs/DEPLOY.md](./docs/DEPLOY.md) for Cloud Run + Cloud SQL + GCS deployment.
+| Docs | |
+|------|--|
+| Product & coding rules for agents | [AGENTS.md](./AGENTS.md) |
+| Cloud Run + Cloud SQL + GCS deploy | [docs/DEPLOY.md](./docs/DEPLOY.md) |
 
-**Status:** v1 complete through Phase 5 (polish + deploy docs).
+**Status:** v1 complete — features, polish, lint, coverage, and integration tests are on `main` with green CI.
 
 ---
 
@@ -45,7 +47,7 @@ See [docs/DEPLOY.md](./docs/DEPLOY.md) for Cloud Run + Cloud SQL + GCS deploymen
 ### Points & achievements
 
 - Base points per chore + parent-configured timing bonuses.
-- Achievements auto-unlock (streaks, on-time, photos, etc.).
+- Achievements auto-unlock (streaks, on-time, photos, totals, etc.).
 - Parents manage everything under **Rewards**.
 
 ---
@@ -56,10 +58,12 @@ See [docs/DEPLOY.md](./docs/DEPLOY.md) for Cloud Run + Cloud SQL + GCS deploymen
 |-------|--------|
 | Package manager | [uv](https://github.com/astral-sh/uv) |
 | Framework | FastAPI + Jinja2 (mobile-first) |
-| Database | **SQLite** via SQLAlchemy async (`aiosqlite`) locally; **Postgres** via `asyncpg` on Cloud Run |
-| Photos | **Local files** under `PHOTO_LOCAL_DIR` (dev) or **Google Cloud Storage** objects (prod) |
+| Database | **SQLite** (`aiosqlite`) locally · **Postgres** (`asyncpg`) on Cloud Run |
+| Photos | **Local files** (dev) or **GCS** objects (prod) — DB stores only a key |
+| Lint / format | [ruff](https://docs.astral.sh/ruff/) |
+| Tests | pytest + coverage (≥ 75%) |
 | Deploy | Docker → Google Cloud Run |
-| CI | GitHub Actions (pytest + Docker build) |
+| CI | GitHub Actions: ruff → pytest+cov → Docker build |
 
 ---
 
@@ -117,7 +121,7 @@ uv run pytest -q
 uv run pytest -q -m integration
 ```
 
-CI runs the same lint, format check, and coverage suite on every push/PR.
+CI runs the same gates on every push/PR to `main`.
 
 ### Migrations
 
@@ -163,16 +167,16 @@ Full production steps: **[docs/DEPLOY.md](./docs/DEPLOY.md)**.
   `DATABASE_URL=sqlite+aiosqlite:///./data/qr_chores.db` (or `:memory:` in CI).
 - **Production (Cloud Run):** Postgres on Cloud SQL  
   `DATABASE_URL=postgresql+asyncpg://USER:PASS@/DB?host=/cloudsql/INSTANCE`
-- Schema is created with `init_db()` on startup for convenience; prefer `alembic upgrade head` in prod (`RUN_MIGRATIONS=1` in the Docker entrypoint).
+- Prefer `alembic upgrade head` in prod (`RUN_MIGRATIONS=1` in the Docker entrypoint).
 
 ### Images (chore proof photos)
 
-- Completions store a **`photo_object_key`** string on `chore_completions` (not the image bytes in the DB).
+- Completions store a **`photo_object_key`** string (not image bytes in the DB).
 - **Dev:** `PHOTO_STORAGE=local` → files under `PHOTO_LOCAL_DIR`  
-  (e.g. `./data/uploads/completions/{chore_id}/{date}/{uuid}.png`).
-- **Prod:** `PHOTO_STORAGE=gcs` + `GCS_BUCKET` → object in that bucket with the same key shape.
-- Serving: authenticated `GET /photos/{completion_id}` streams bytes from local disk or GCS.
-- Accepted types: JPEG / PNG / WebP (magic-byte checked), max size `PHOTO_MAX_BYTES` (default 5 MB).
+  e.g. `./data/uploads/completions/{chore_id}/{date}/{uuid}.png`
+- **Prod:** `PHOTO_STORAGE=gcs` + `GCS_BUCKET` → same key in the bucket.
+- Serving: authenticated `GET /photos/{completion_id}`.
+- Types: JPEG / PNG / WebP (magic-byte checked), max `PHOTO_MAX_BYTES` (default 5 MB).
 
 ---
 
@@ -200,17 +204,18 @@ Full production steps: **[docs/DEPLOY.md](./docs/DEPLOY.md)**.
 
 ```text
 qr-chores/
-├── src/qr_chores/       # FastAPI application
+├── src/qr_chores/           # FastAPI application
 │   ├── auth/
 │   ├── models/
 │   ├── routers/
 │   ├── services/
 │   ├── templates/
 │   └── static/
-├── migrations/          # Alembic
+├── migrations/              # Alembic
 ├── scripts/entrypoint.sh
-├── docs/DEPLOY.md       # Cloud Run guide
+├── docs/DEPLOY.md
 ├── tests/
+│   └── integration/         # multi-step flows
 ├── .github/workflows/ci.yml
 ├── Dockerfile
 ├── pyproject.toml
@@ -227,7 +232,8 @@ qr-chores/
 2.5. **Chore delete** ✅ — hard delete with confirm; deactivate for soft stop  
 3. **Photos** ✅ — policy, local/GCS, history  
 4. **Points & achievements** ✅ — ledger, bonuses, unlocks, celebration  
-5. **Polish** ✅ — print stickers sheet, empty/error pages, deploy docs  
+5. **Polish** ✅ — print stickers, empty/error pages, deploy docs  
+6. **Quality** ✅ — ruff, coverage ≥ 75%, unit + integration tests  
 
 ---
 
