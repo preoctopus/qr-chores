@@ -5,7 +5,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from qr_chores.models.rewards import AppSetting, PointLedger
 
-
 DEFAULT_BONUSES = {
     "early_bonus_points": "5",
     "on_time_bonus_points": "2",
@@ -41,9 +40,7 @@ async def get_timing_bonuses(db: AsyncSession) -> dict[str, int]:
 
 async def points_balance(db: AsyncSession, user_id: int) -> int:
     total = await db.scalar(
-        select(func.coalesce(func.sum(PointLedger.delta), 0)).where(
-            PointLedger.user_id == user_id
-        )
+        select(func.coalesce(func.sum(PointLedger.delta), 0)).where(PointLedger.user_id == user_id)
     )
     return int(total or 0)
 

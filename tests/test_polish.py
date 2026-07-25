@@ -47,9 +47,7 @@ async def test_print_sheet_empty(client: AsyncClient, parent_user: User) -> None
 
 
 @pytest.mark.asyncio
-async def test_print_sheet_with_chores(
-    client: AsyncClient, parent_user: User, app
-) -> None:
+async def test_print_sheet_with_chores(client: AsyncClient, parent_user: User, app) -> None:
     await _login_parent(client, parent_user)
     chore = await _create_chore(app.state.session_factory, title="Kitchen wipe")
     response = await client.get("/print/qrs")

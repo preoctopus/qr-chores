@@ -44,11 +44,13 @@ async def test_seed_creates_three_users(test_settings: Settings, monkeypatch) ->
         count = await session.scalar(select(func.count()).select_from(User))
         assert count == 3
         parents = (
-            await session.execute(select(User).where(User.role == UserRole.parent))
-        ).scalars().all()
+            (await session.execute(select(User).where(User.role == UserRole.parent)))
+            .scalars()
+            .all()
+        )
         children = (
-            await session.execute(select(User).where(User.role == UserRole.child))
-        ).scalars().all()
+            (await session.execute(select(User).where(User.role == UserRole.child))).scalars().all()
+        )
         assert len(parents) == 2
         assert len(children) == 1
         assert len(DEFAULT_USERS) == 3

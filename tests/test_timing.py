@@ -30,9 +30,10 @@ def test_classify_on_time() -> None:
     day = date(2026, 7, 27)
     due = time(20, 0)
     completed = datetime(2026, 7, 27, 19, 50, tzinfo=tz)
-    assert classify_timing(
-        completed_at=completed, due_time=due, local_date=day, settings=settings
-    ) == TimingStatus.on_time
+    assert (
+        classify_timing(completed_at=completed, due_time=due, local_date=day, settings=settings)
+        == TimingStatus.on_time
+    )
 
 
 def test_classify_early() -> None:
@@ -41,9 +42,10 @@ def test_classify_early() -> None:
     day = date(2026, 7, 27)
     due = time(20, 0)
     completed = datetime(2026, 7, 27, 18, 0, tzinfo=tz)  # 2h before due
-    assert classify_timing(
-        completed_at=completed, due_time=due, local_date=day, settings=settings
-    ) == TimingStatus.early
+    assert (
+        classify_timing(completed_at=completed, due_time=due, local_date=day, settings=settings)
+        == TimingStatus.early
+    )
 
 
 def test_classify_late() -> None:
@@ -52,9 +54,10 @@ def test_classify_late() -> None:
     day = date(2026, 7, 27)
     due = time(20, 0)
     completed = datetime(2026, 7, 27, 20, 30, tzinfo=tz)  # past grace
-    assert classify_timing(
-        completed_at=completed, due_time=due, local_date=day, settings=settings
-    ) == TimingStatus.late
+    assert (
+        classify_timing(completed_at=completed, due_time=due, local_date=day, settings=settings)
+        == TimingStatus.late
+    )
 
 
 def test_classify_grace_still_on_time() -> None:
@@ -63,6 +66,7 @@ def test_classify_grace_still_on_time() -> None:
     day = date(2026, 7, 27)
     due = time(20, 0)
     completed = datetime(2026, 7, 27, 20, 10, tzinfo=tz)  # within 15m grace
-    assert classify_timing(
-        completed_at=completed, due_time=due, local_date=day, settings=settings
-    ) == TimingStatus.on_time
+    assert (
+        classify_timing(completed_at=completed, due_time=due, local_date=day, settings=settings)
+        == TimingStatus.on_time
+    )

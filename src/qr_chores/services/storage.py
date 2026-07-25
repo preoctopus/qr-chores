@@ -10,7 +10,6 @@ from typing import Protocol
 
 from qr_chores.config import Settings
 
-
 ALLOWED_CONTENT_TYPES = {
     "image/jpeg": ".jpg",
     "image/png": ".png",
@@ -135,11 +134,8 @@ def sniff_content_type(data: bytes, declared: str | None) -> str:
             "bad_type",
         )
 
-    if declared and declared.lower() not in ("", "application/octet-stream"):
-        # Allow minor mismatch if magic says image; reject clearly wrong declared types
-        if declared.lower() not in ALLOWED_CONTENT_TYPES and declared.lower() != detected:
-            # still accept if magic is good
-            pass
+    # Trust magic bytes; declared content-type is informational only.
+    _ = declared
     return detected
 
 

@@ -1,7 +1,7 @@
 """Chore listing helpers for today boards."""
 
 from dataclasses import dataclass
-from datetime import datetime, timedelta, time
+from datetime import datetime, time, timedelta
 
 from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -157,22 +157,20 @@ async def delete_chore(
     Returns the number of completion rows removed.
     Prefer deactivate when you only want to stop the QR without losing history.
     """
-    result = await db.execute(
-        select(ChoreCompletion).where(ChoreCompletion.chore_id == chore.id)
-    )
+    result = await db.execute(select(ChoreCompletion).where(ChoreCompletion.chore_id == chore.id))
     completions = list(result.scalars().all())
     removed = len(completions)
 
     if settings is not None:
+        from contextlib import suppress
+
         from qr_chores.services.storage import StorageError, get_photo_storage
 
         storage = get_photo_storage(settings)
         for row in completions:
             if row.photo_object_key:
-                try:
+                with suppress(StorageError):
                     storage.delete(row.photo_object_key)
-                except StorageError:
-                    pass
 
     await db.execute(delete(ChoreCompletion).where(ChoreCompletion.chore_id == chore.id))
     await db.delete(chore)

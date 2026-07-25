@@ -61,9 +61,7 @@ async def test_parent_cannot_complete(client: AsyncClient, parent_user: User, ap
 
 
 @pytest.mark.asyncio
-async def test_child_completes_chore_once(
-    client: AsyncClient, child_user: User, app
-) -> None:
+async def test_child_completes_chore_once(client: AsyncClient, child_user: User, app) -> None:
     chore = await _create_chore(app.state.session_factory, title="Vacuum room")
     await _login_child(client, child_user)
 
@@ -96,9 +94,7 @@ async def test_child_completes_chore_once(
 
 
 @pytest.mark.asyncio
-async def test_inactive_chore_not_completable(
-    client: AsyncClient, child_user: User, app
-) -> None:
+async def test_inactive_chore_not_completable(client: AsyncClient, child_user: User, app) -> None:
     chore = await _create_chore(app.state.session_factory, is_active=False)
     await _login_child(client, child_user)
     response = await client.get(f"/c/{chore.qr_token}")
@@ -106,9 +102,7 @@ async def test_inactive_chore_not_completable(
 
 
 @pytest.mark.asyncio
-async def test_child_home_shows_chore(
-    client: AsyncClient, child_user: User, app
-) -> None:
+async def test_child_home_shows_chore(client: AsyncClient, child_user: User, app) -> None:
     chore = await _create_chore(app.state.session_factory, title="Wipe counters")
     await _login_child(client, child_user)
     home = await client.get("/home")

@@ -1,7 +1,7 @@
 """Chore and completion models."""
 
-import enum
 from datetime import date, datetime, time
+from enum import StrEnum
 
 from sqlalchemy import (
     Boolean,
@@ -21,13 +21,13 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from qr_chores.db import Base
 
 
-class PhotoPolicy(str, enum.Enum):
+class PhotoPolicy(StrEnum):
     required = "required"
     optional = "optional"
     none = "none"
 
 
-class TimingStatus(str, enum.Enum):
+class TimingStatus(StrEnum):
     early = "early"
     on_time = "on_time"
     late = "late"
@@ -71,9 +71,7 @@ class Chore(Base):
 
 class ChoreCompletion(Base):
     __tablename__ = "chore_completions"
-    __table_args__ = (
-        UniqueConstraint("chore_id", "local_date", name="uq_chore_completion_day"),
-    )
+    __table_args__ = (UniqueConstraint("chore_id", "local_date", name="uq_chore_completion_day"),)
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     chore_id: Mapped[int] = mapped_column(ForeignKey("chores.id"), nullable=False, index=True)

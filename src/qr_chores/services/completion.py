@@ -190,10 +190,10 @@ async def complete_chore(
     except IntegrityError as exc:
         await db.rollback()
         if photo_key:
-            try:
+            from contextlib import suppress
+
+            with suppress(StorageError):
                 get_photo_storage(settings).delete(photo_key)
-            except StorageError:
-                pass
         existing = await get_completion_for_today(db, chore, settings)
         if existing is not None:
             return CompletionResult(completion=existing, chore=chore, already_done=True)

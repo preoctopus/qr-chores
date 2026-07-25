@@ -370,9 +370,7 @@ async def print_qrs(
     db: AsyncSession = Depends(get_db),
     settings: Settings = Depends(get_settings),
 ):
-    result = await db.execute(
-        select(Chore).where(Chore.is_active.is_(True)).order_by(Chore.title)
-    )
+    result = await db.execute(select(Chore).where(Chore.is_active.is_(True)).order_by(Chore.title))
     chores = list(result.scalars().all())
     items = [
         {

@@ -62,9 +62,7 @@ def create_app() -> FastAPI:
                 )
             return JSONResponse({"detail": exc.detail}, status_code=exc.status_code)
 
-        if not _wants_html(request) and "application/json" in request.headers.get(
-            "accept", ""
-        ):
+        if not _wants_html(request) and "application/json" in request.headers.get("accept", ""):
             return JSONResponse({"detail": exc.detail}, status_code=exc.status_code)
 
         if exc.status_code == status.HTTP_403_FORBIDDEN:

@@ -1,7 +1,7 @@
 """User account model."""
 
-import enum
 from datetime import datetime
+from enum import StrEnum
 
 from sqlalchemy import Boolean, DateTime, Enum, String, func
 from sqlalchemy.orm import Mapped, mapped_column
@@ -9,7 +9,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 from qr_chores.db import Base
 
 
-class UserRole(str, enum.Enum):
+class UserRole(StrEnum):
     parent = "parent"
     child = "child"
 

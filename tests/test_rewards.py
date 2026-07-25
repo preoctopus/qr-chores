@@ -1,20 +1,19 @@
 """Points ledger and achievements tests."""
 
-from datetime import date, datetime, time, timedelta, timezone
+from datetime import UTC, date, datetime, time, timedelta
 from io import BytesIO
 
 import pytest
 from httpx import AsyncClient
 from sqlalchemy import func, select
 
+from qr_chores.config import Settings
 from qr_chores.models.chore import Chore, ChoreCompletion, PhotoPolicy, TimingStatus
 from qr_chores.models.rewards import Achievement, CriteriaType, PointLedger, UserAchievement
 from qr_chores.models.user import User
 from qr_chores.services.achievements import ensure_default_achievements, evaluate_achievements
 from qr_chores.services.points import points_balance, set_setting
 from qr_chores.services.qr import new_qr_token
-from qr_chores.config import Settings
-
 
 TINY_PNG = (
     b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01"
@@ -69,17 +68,19 @@ async def test_complete_writes_ledger_and_first_step(
         ledger_count = await session.scalar(select(func.count()).select_from(PointLedger))
         assert ledger_count >= 2  # base + achievement (maybe timing too)
         unlocks = (
-            await session.execute(
-                select(UserAchievement).where(UserAchievement.user_id == child_user.id)
+            (
+                await session.execute(
+                    select(UserAchievement).where(UserAchievement.user_id == child_user.id)
+                )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
         assert len(unlocks) >= 1
 
 
 @pytest.mark.asyncio
-async def test_timing_bonus_from_settings(
-    client: AsyncClient, child_user: User, app
-) -> None:
+async def test_timing_bonus_from_settings(client: AsyncClient, child_user: User, app) -> None:
     async with app.state.session_factory() as session:
         # Same bonus for early and on-time so wall-clock doesn't flake the test
         await set_setting(session, "early_bonus_points", "7")
@@ -96,10 +97,14 @@ async def test_timing_bonus_from_settings(
         # 5 base + 7 timing (no achievements seeded)
         assert balance == 12
         reasons = (
-            await session.execute(
-                select(PointLedger.reason).where(PointLedger.user_id == child_user.id)
+            (
+                await session.execute(
+                    select(PointLedger.reason).where(PointLedger.user_id == child_user.id)
+                )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
         assert any("Timing" in r for r in reasons)
 
 
@@ -135,7 +140,7 @@ async def test_streak_achievement_unlock(app, child_user: User, test_settings: S
                     chore_id=chore.id,
                     user_id=child_user.id,
                     local_date=today - timedelta(days=2 - i),
-                    completed_at=datetime.now(tz=timezone.utc),
+                    completed_at=datetime.now(tz=UTC),
                     timing=TimingStatus.on_time,
                     points_awarded=1,
                 )
@@ -186,9 +191,7 @@ async def test_parent_rewards_pages(client: AsyncClient, parent_user: User) -> N
 
 
 @pytest.mark.asyncio
-async def test_child_achievements_page(
-    client: AsyncClient, child_user: User, app
-) -> None:
+async def test_child_achievements_page(client: AsyncClient, child_user: User, app) -> None:
     async with app.state.session_factory() as session:
         await ensure_default_achievements(session)
         await session.commit()

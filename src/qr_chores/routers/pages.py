@@ -1,5 +1,6 @@
 """Role home pages and JSON helpers."""
 
+import json
 from dataclasses import dataclass
 
 from fastapi import APIRouter, Depends, Request, status
@@ -19,7 +20,6 @@ from qr_chores.services.chores import today_board
 from qr_chores.services.points import points_balance
 from qr_chores.services.timeutil import format_due_time
 from qr_chores.templating import templates
-import json
 
 router = APIRouter(tags=["pages"])
 
@@ -63,9 +63,7 @@ async def child_home(
     settings: Settings = Depends(get_settings),
 ) -> HTMLResponse:
     board = await today_board(db, settings)
-    points_today = sum(
-        (row.completion.points_awarded if row.completion else 0) for row in board
-    )
+    points_today = sum((row.completion.points_awarded if row.completion else 0) for row in board)
     done_count = sum(1 for row in board if row.done)
     balance = await points_balance(db, user.id)
     result = await db.execute(

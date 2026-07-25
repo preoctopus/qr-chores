@@ -12,7 +12,6 @@ from qr_chores.models.user import User
 from qr_chores.services.qr import new_qr_token
 from qr_chores.services.storage import sniff_content_type
 
-
 # 1x1 PNG
 TINY_PNG = (
     b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01"
@@ -60,7 +59,9 @@ def test_sniff_png() -> None:
 
 
 def test_sniff_rejects_garbage() -> None:
-    with pytest.raises(Exception):
+    from qr_chores.services.storage import StorageError
+
+    with pytest.raises(StorageError):
         sniff_content_type(b"not-an-image", "image/png")
 
 
@@ -193,7 +194,8 @@ async def test_photo_requires_auth(client: AsyncClient, child_user: User, app) -
         cid = completion.id
 
     # New client without cookies
-    from httpx import ASGITransport, AsyncClient as AC
+    from httpx import ASGITransport
+    from httpx import AsyncClient as AC
 
     transport = ASGITransport(app=app)
     async with AC(transport=transport, base_url="http://testserver") as anon:
@@ -202,9 +204,7 @@ async def test_photo_requires_auth(client: AsyncClient, child_user: User, app) -
 
 
 @pytest.mark.asyncio
-async def test_reject_non_image_upload(
-    client: AsyncClient, child_user: User, app
-) -> None:
+async def test_reject_non_image_upload(client: AsyncClient, child_user: User, app) -> None:
     chore = await _create_chore(
         app.state.session_factory,
         photo_policy=PhotoPolicy.required,
@@ -215,4 +215,8 @@ async def test_reject_non_image_upload(
         files={"photo": ("evil.txt", BytesIO(b"not-image-data"), "text/plain")},
     )
     assert response.status_code == 400
-    assert "jpeg" in response.text.lower() or "png" in response.text.lower() or "webp" in response.text.lower()
+    assert (
+        "jpeg" in response.text.lower()
+        or "png" in response.text.lower()
+        or "webp" in response.text.lower()
+    )

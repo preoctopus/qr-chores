@@ -1,12 +1,10 @@
 """Parent chore CRUD and QR routes."""
 
-from datetime import time
+from datetime import UTC, date, datetime, time
 
 import pytest
 from httpx import AsyncClient
 from sqlalchemy import select
-
-from datetime import date, datetime, timezone
 
 from qr_chores.models.chore import Chore, ChoreCompletion, PhotoPolicy, TimingStatus
 from qr_chores.models.user import User
@@ -80,9 +78,7 @@ async def test_parent_creates_chore(client: AsyncClient, parent_user: User, app)
 
 
 @pytest.mark.asyncio
-async def test_parent_lists_and_views_qr(
-    client: AsyncClient, parent_user: User, app
-) -> None:
+async def test_parent_lists_and_views_qr(client: AsyncClient, parent_user: User, app) -> None:
     await _login_parent(client, parent_user)
     chore = await _create_chore(app.state.session_factory, title="Make bed")
 
@@ -102,9 +98,7 @@ async def test_parent_lists_and_views_qr(
 
 
 @pytest.mark.asyncio
-async def test_parent_edits_and_deactivates(
-    client: AsyncClient, parent_user: User, app
-) -> None:
+async def test_parent_edits_and_deactivates(client: AsyncClient, parent_user: User, app) -> None:
     await _login_parent(client, parent_user)
     chore = await _create_chore(app.state.session_factory, title="Old name")
 
@@ -176,7 +170,7 @@ async def test_parent_deletes_chore_with_completions(
                 chore_id=chore_id,
                 user_id=child_user.id,
                 local_date=date(2026, 7, 25),
-                completed_at=datetime(2026, 7, 25, 18, 0, tzinfo=timezone.utc),
+                completed_at=datetime(2026, 7, 25, 18, 0, tzinfo=UTC),
                 timing=TimingStatus.on_time,
                 points_awarded=10,
             )
@@ -194,17 +188,19 @@ async def test_parent_deletes_chore_with_completions(
     async with app.state.session_factory() as session:
         assert await session.get(Chore, chore_id) is None
         remaining = (
-            await session.execute(
-                select(ChoreCompletion).where(ChoreCompletion.chore_id == chore_id)
+            (
+                await session.execute(
+                    select(ChoreCompletion).where(ChoreCompletion.chore_id == chore_id)
+                )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
         assert remaining == []
 
 
 @pytest.mark.asyncio
-async def test_child_cannot_delete_chore(
-    client: AsyncClient, child_user: User, app
-) -> None:
+async def test_child_cannot_delete_chore(client: AsyncClient, child_user: User, app) -> None:
     chore = await _create_chore(app.state.session_factory)
     await client.post(
         "/login",
@@ -212,3 +208,33 @@ async def test_child_cannot_delete_chore(
     )
     assert (await client.get(f"/chores/{chore.id}/delete")).status_code == 403
     assert (await client.post(f"/chores/{chore.id}/delete")).status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_parent_activate_and_edit_form(client: AsyncClient, parent_user: User, app) -> None:
+    await _login_parent(client, parent_user)
+    chore = await _create_chore(app.state.session_factory, title="Inactive", is_active=False)
+
+    form = await client.get(f"/chores/{chore.id}/edit")
+    assert form.status_code == 200
+    assert "Inactive" in form.text
+
+    act = await client.post(f"/chores/{chore.id}/activate", follow_redirects=False)
+    assert act.status_code == 303
+    async with app.state.session_factory() as session:
+        row = await session.get(Chore, chore.id)
+        assert row is not None
+        assert row.is_active is True
+
+    bad = await client.post(
+        f"/chores/{chore.id}/edit",
+        data={
+            "title": "   ",
+            "description": "",
+            "due_time": "10:00",
+            "base_points": "1",
+            "photo_policy": "none",
+            "schedule_day": ["0"],
+        },
+    )
+    assert bad.status_code == 400

@@ -32,7 +32,9 @@ def test_settings(monkeypatch: pytest.MonkeyPatch, tmp_path) -> Settings:
 
 @pytest_asyncio.fixture
 async def db_session(test_settings: Settings) -> AsyncGenerator[AsyncSession, None]:
-    engine = create_async_engine("sqlite+aiosqlite:///:memory:", connect_args={"check_same_thread": False})
+    engine = create_async_engine(
+        "sqlite+aiosqlite:///:memory:", connect_args={"check_same_thread": False}
+    )
     session_factory = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
     async with engine.begin() as conn:
@@ -46,7 +48,9 @@ async def db_session(test_settings: Settings) -> AsyncGenerator[AsyncSession, No
 
 @pytest_asyncio.fixture
 async def app(test_settings: Settings):
-    engine = create_async_engine("sqlite+aiosqlite:///:memory:", connect_args={"check_same_thread": False})
+    engine = create_async_engine(
+        "sqlite+aiosqlite:///:memory:", connect_args={"check_same_thread": False}
+    )
     session_factory = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
     async with engine.begin() as conn:

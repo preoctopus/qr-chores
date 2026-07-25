@@ -56,8 +56,8 @@ See [docs/DEPLOY.md](./docs/DEPLOY.md) for Cloud Run + Cloud SQL + GCS deploymen
 |-------|--------|
 | Package manager | [uv](https://github.com/astral-sh/uv) |
 | Framework | FastAPI + Jinja2 (mobile-first) |
-| Database | SQLite (local) · Cloud SQL Postgres (Cloud Run) |
-| Photos | Local disk (dev) · GCS (prod) |
+| Database | **SQLite** via SQLAlchemy async (`aiosqlite`) locally; **Postgres** via `asyncpg` on Cloud Run |
+| Photos | **Local files** under `PHOTO_LOCAL_DIR` (dev) or **Google Cloud Storage** objects (prod) |
 | Deploy | Docker → Google Cloud Run |
 | CI | GitHub Actions (pytest + Docker build) |
 
@@ -103,11 +103,21 @@ Open http://127.0.0.1:8765
 
 > Prefer **8765** (or any free port). Port 8000 is often used by other local apps.
 
-### Tests
+### Tests, lint, and coverage
 
 ```bash
+# Lint + format check
+uv run ruff check src tests
+uv run ruff format --check src tests
+
+# Unit + integration tests with coverage (fails under 75%)
 uv run pytest -q
+
+# Integration tests only
+uv run pytest -q -m integration
 ```
+
+CI runs the same lint, format check, and coverage suite on every push/PR.
 
 ### Migrations
 
@@ -141,6 +151,28 @@ docker run --rm -p 8080:8080 \
 Health: `GET /healthz`
 
 Full production steps: **[docs/DEPLOY.md](./docs/DEPLOY.md)**.
+
+---
+
+## Database & image storage
+
+### Database
+
+- ORM: **SQLAlchemy 2.x async** + **Alembic** migrations.
+- **Local / tests:** SQLite  
+  `DATABASE_URL=sqlite+aiosqlite:///./data/qr_chores.db` (or `:memory:` in CI).
+- **Production (Cloud Run):** Postgres on Cloud SQL  
+  `DATABASE_URL=postgresql+asyncpg://USER:PASS@/DB?host=/cloudsql/INSTANCE`
+- Schema is created with `init_db()` on startup for convenience; prefer `alembic upgrade head` in prod (`RUN_MIGRATIONS=1` in the Docker entrypoint).
+
+### Images (chore proof photos)
+
+- Completions store a **`photo_object_key`** string on `chore_completions` (not the image bytes in the DB).
+- **Dev:** `PHOTO_STORAGE=local` → files under `PHOTO_LOCAL_DIR`  
+  (e.g. `./data/uploads/completions/{chore_id}/{date}/{uuid}.png`).
+- **Prod:** `PHOTO_STORAGE=gcs` + `GCS_BUCKET` → object in that bucket with the same key shape.
+- Serving: authenticated `GET /photos/{completion_id}` streams bytes from local disk or GCS.
+- Accepted types: JPEG / PNG / WebP (magic-byte checked), max size `PHOTO_MAX_BYTES` (default 5 MB).
 
 ---
 

@@ -4,16 +4,16 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
-from datetime import date, timedelta
+from datetime import timedelta
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from qr_chores.config import Settings
 from qr_chores.models.chore import ChoreCompletion, TimingStatus
 from qr_chores.models.rewards import Achievement, CriteriaType, UserAchievement
 from qr_chores.services.points import add_ledger_entry
 from qr_chores.services.timeutil import local_today
-from qr_chores.config import Settings
 
 
 @dataclass
@@ -39,9 +39,7 @@ async def _count_completions(
     timing: TimingStatus | None = None,
     with_photo: bool = False,
 ) -> int:
-    q = select(func.count()).select_from(ChoreCompletion).where(
-        ChoreCompletion.user_id == user_id
-    )
+    q = select(func.count()).select_from(ChoreCompletion).where(ChoreCompletion.user_id == user_id)
     if timing is not None:
         q = q.where(ChoreCompletion.timing == timing)
     if with_photo:
@@ -52,9 +50,7 @@ async def _count_completions(
 async def _streak_days(db: AsyncSession, user_id: int, settings: Settings) -> int:
     """Consecutive local dates (ending today) with at least one completion."""
     result = await db.execute(
-        select(ChoreCompletion.local_date)
-        .where(ChoreCompletion.user_id == user_id)
-        .distinct()
+        select(ChoreCompletion.local_date).where(ChoreCompletion.user_id == user_id).distinct()
     )
     days = {row[0] for row in result.all()}
     if not days:
@@ -95,9 +91,7 @@ async def evaluate_achievements(
     settings: Settings,
 ) -> list[UnlockedAchievement]:
     """Unlock any newly earned achievements; award points to ledger."""
-    result = await db.execute(
-        select(Achievement).where(Achievement.is_active.is_(True))
-    )
+    result = await db.execute(select(Achievement).where(Achievement.is_active.is_(True)))
     achievements = list(result.scalars().all())
     if not achievements:
         return []

@@ -23,9 +23,7 @@ async def get_completion_photo(
     settings: Settings = Depends(get_settings),
 ) -> Response:
     """Serve a completion photo to any logged-in family member."""
-    result = await db.execute(
-        select(ChoreCompletion).where(ChoreCompletion.id == completion_id)
-    )
+    result = await db.execute(select(ChoreCompletion).where(ChoreCompletion.id == completion_id))
     completion = result.scalar_one_or_none()
     if completion is None or not completion.photo_object_key:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Photo not found")

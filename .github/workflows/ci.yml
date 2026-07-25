@@ -24,13 +24,28 @@ jobs:
       - name: Install dependencies
         run: uv sync --extra dev
 
-      - name: Run tests
+      - name: Lint (ruff)
+        run: uv run ruff check src tests
+
+      - name: Format check (ruff)
+        run: uv run ruff format --check src tests
+
+      - name: Tests with coverage
         env:
           SECRET_KEY: "ci-test-secret-key"
           DATABASE_URL: "sqlite+aiosqlite:///:memory:"
           APP_TIMEZONE: "America/Chicago"
           BASE_URL: "http://testserver"
+          PHOTO_STORAGE: "local"
         run: uv run pytest -q
+
+      - name: Upload coverage XML
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-xml
+          path: coverage.xml
+          if-no-files-found: ignore
 
   docker:
     runs-on: ubuntu-latest

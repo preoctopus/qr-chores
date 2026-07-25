@@ -1,7 +1,7 @@
 """Points ledger and achievements."""
 
-import enum
 from datetime import datetime
+from enum import StrEnum
 
 from sqlalchemy import (
     Boolean,
@@ -19,7 +19,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from qr_chores.db import Base
 
 
-class CriteriaType(str, enum.Enum):
+class CriteriaType(StrEnum):
     total_completions = "total_completions"
     complete_on_time_count = "complete_on_time_count"
     complete_early_count = "complete_early_count"
@@ -69,9 +69,7 @@ class Achievement(Base):
 
 class UserAchievement(Base):
     __tablename__ = "user_achievements"
-    __table_args__ = (
-        UniqueConstraint("user_id", "achievement_id", name="uq_user_achievement"),
-    )
+    __table_args__ = (UniqueConstraint("user_id", "achievement_id", name="uq_user_achievement"),)
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)

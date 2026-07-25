@@ -158,3 +158,28 @@ async def test_login_next_allows_relative(client: AsyncClient, parent_user: User
     )
     assert response.status_code == 303
     assert response.headers["location"] == "/me"
+
+
+@pytest.mark.asyncio
+async def test_login_page_redirects_when_already_authed(
+    client: AsyncClient, parent_user: User
+) -> None:
+    await client.post(
+        "/login",
+        data={"email": parent_user.email, "password": "parent-pass", "next": ""},
+    )
+    response = await client.get("/login", follow_redirects=False)
+    assert response.status_code == 303
+    assert response.headers["location"] == "/today"
+
+
+@pytest.mark.asyncio
+async def test_post_logout(client: AsyncClient, parent_user: User) -> None:
+    await client.post(
+        "/login",
+        data={"email": parent_user.email, "password": "parent-pass", "next": ""},
+    )
+    response = await client.post("/logout", follow_redirects=False)
+    assert response.status_code == 303
+    assert response.headers["location"] == "/login"
+    assert (await client.get("/me")).status_code == 401
