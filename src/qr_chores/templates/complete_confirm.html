@@ -23,15 +23,43 @@
       Completed {{ completion.timing.value.replace('_', ' ') }} ·
       +{{ completion.points_awarded }} pts
     </p>
+    {% if completion.photo_object_key %}
+    <a href="/photos/{{ completion.id }}" class="photo-thumb-link">
+      <img class="photo-thumb" src="/photos/{{ completion.id }}" alt="Proof photo">
+    </a>
+    {% endif %}
     <a class="btn btn-primary btn-block" href="/home">Back home</a>
   </div>
   {% else %}
   <div class="card">
+    {% if error %}
+    <div class="alert alert-error" role="alert">{{ error }}</div>
+    {% endif %}
     {% if due_passed %}
     <div class="alert alert-warn">Past due — you can still complete it (will count as late).</div>
     {% endif %}
     <p>Ready to mark this done?</p>
-    <form method="post" action="/c/{{ token }}" class="stack">
+    <form method="post" action="/c/{{ token }}" class="stack" enctype="multipart/form-data">
+      {% if photo_policy.value != "none" %}
+      <label class="field">
+        <span>
+          Photo
+          {% if photo_policy.value == "required" %}
+          <em class="req">required</em>
+          {% else %}
+          <em class="opt">optional</em>
+          {% endif %}
+        </span>
+        <input
+          type="file"
+          name="photo"
+          accept="image/jpeg,image/png,image/webp,image/*"
+          capture="environment"
+          {% if photo_policy.value == "required" %}required{% endif %}
+        >
+        <span class="muted small">JPEG, PNG, or WebP · max 5&nbsp;MB</span>
+      </label>
+      {% endif %}
       <button type="submit" class="btn btn-primary btn-block btn-lg">I did it</button>
     </form>
     <a class="btn btn-ghost btn-block" href="/home">Not yet</a>

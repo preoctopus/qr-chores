@@ -309,10 +309,11 @@ async def chores_delete(
     chore_id: int,
     user: User = Depends(require_role(UserRole.parent)),
     db: AsyncSession = Depends(get_db),
+    settings: Settings = Depends(get_settings),
 ):
     chore = await db.get(Chore, chore_id)
     if chore is not None:
-        await delete_chore(db, chore)
+        await delete_chore(db, chore, settings=settings)
     return RedirectResponse("/chores", status_code=status.HTTP_303_SEE_OTHER)
 
 

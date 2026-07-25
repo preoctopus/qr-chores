@@ -139,7 +139,7 @@ qr-chores/
 1. **Skeleton & deploy path** ✅ — uv, FastAPI, Docker, healthz, config, DB, Alembic, users + login, seed.
 2. **Chores + QR** ✅ — parent CRUD, stable token, QR PNG/print, child home, complete without photo, timing labels.
 2.5. **Chore delete** ✅ — parent hard-delete with confirm page; cascades completion history. Prefer **deactivate** to stop a QR without losing history.
-3. **Photos** — enforce photo policy, local/GCS upload, completion photos.
+3. **Photos** ✅ — `required` / `optional` / `none` policy; magic-byte validated JPEG/PNG/WebP; local or GCS storage; authenticated `/photos/{completion_id}`; parent History.
 4. **Points & achievements** — ledger, bonuses, auto-eval, celebration UI.
 5. **Polish** — richer print sheet, empty/error states, Cloud Run deploy docs.
 

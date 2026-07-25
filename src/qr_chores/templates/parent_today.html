@@ -20,9 +20,17 @@
         <div>
           <p class="chore-title">{{ row.chore.title }}</p>
           <p class="muted small">Due {{ format_due_time(row.chore.due_time) }} · {{ row.chore.base_points }} pts</p>
+          {% if row.completion and row.completion.photo_object_key %}
+          <a class="photo-link" href="/photos/{{ row.completion.id }}">View photo</a>
+          {% endif %}
         </div>
         <span class="chip chip-{{ row.status_kind }}">{{ row.status_label }}</span>
       </div>
+      {% if row.completion and row.completion.photo_object_key %}
+      <a href="/photos/{{ row.completion.id }}" class="photo-thumb-link">
+        <img class="photo-thumb sm" src="/photos/{{ row.completion.id }}" alt="Proof for {{ row.chore.title }}">
+      </a>
+      {% endif %}
     </li>
     {% endfor %}
   </ul>

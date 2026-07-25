@@ -2,11 +2,14 @@
 
 from fastapi import APIRouter, Depends, Request, status
 from fastapi.responses import HTMLResponse, RedirectResponse
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from qr_chores.auth.deps import get_current_user, get_current_user_optional, require_role
 from qr_chores.config import Settings, get_settings
 from qr_chores.db import get_db
+from qr_chores.models.chore import ChoreCompletion
 from qr_chores.models.user import User, UserRole
 from qr_chores.services.chores import today_board
 from qr_chores.services.timeutil import format_due_time
@@ -66,6 +69,31 @@ async def child_home(
             "points_today": points_today,
             "done_count": done_count,
             "total_count": len(board),
+            "format_due_time": format_due_time,
+        },
+    )
+
+
+@router.get("/history", response_class=HTMLResponse)
+async def parent_history(
+    request: Request,
+    user: User = Depends(require_role(UserRole.parent)),
+    db: AsyncSession = Depends(get_db),
+) -> HTMLResponse:
+    result = await db.execute(
+        select(ChoreCompletion)
+        .options(selectinload(ChoreCompletion.chore))
+        .order_by(ChoreCompletion.completed_at.desc())
+        .limit(50)
+    )
+    completions = list(result.scalars().all())
+    return templates.TemplateResponse(
+        request,
+        "parent_history.html",
+        {
+            "user": user,
+            "title": "History",
+            "completions": completions,
             "format_due_time": format_due_time,
         },
     )

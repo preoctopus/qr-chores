@@ -6,7 +6,7 @@ Built as a **Python** app with **uv**, **FastAPI**, and **Docker**, meant to run
 
 See [AGENTS.md](./AGENTS.md) for product rules and architecture for contributors/agents.
 
-**Current status:** Phase 2 complete — chores CRUD, stable QR codes, child complete flow, parent today board.
+**Current status:** Phase 3 complete — photo proof (required/optional/none), local/GCS storage, history.
 
 ---
 
@@ -137,6 +137,10 @@ Health: `GET /healthz`
 | `PORT` | Listen port (Cloud Run) | `8080` in image |
 | `SEED_PARENT_PASSWORD` | Seed script | `parent-pass` |
 | `SEED_CHILD_PASSWORD` | Seed script | `child-pass` |
+| `PHOTO_STORAGE` | `local` or `gcs` | `local` |
+| `PHOTO_LOCAL_DIR` | Local upload directory | `./data/uploads` |
+| `GCS_BUCKET` | Bucket when `PHOTO_STORAGE=gcs` | _(empty)_ |
+| `PHOTO_MAX_BYTES` | Max upload size | `5242880` (5 MB) |
 
 **Keep `BASE_URL` stable** before printing QR stickers (Phase 2+).
 
@@ -172,7 +176,7 @@ qr-chores/
 1. **Skeleton** ✅ — uv, FastAPI, Docker, auth, health, seed, CI  
 2. **Chores + QR** ✅ — parent CRUD, stable tokens, QR/print, child complete, timing labels  
 2.5. **Chore delete** ✅ — hard delete with confirm (history cascade); deactivate remains for soft stop  
-3. **Photos** — photo rules enforced, local/GCS upload  
+3. **Photos** ✅ — per-chore policy, local/GCS storage, parent history + thumbnails  
 4. **Points & achievements** — ledger, auto-awards, celebration UI  
 5. **Polish** — richer print sheet, Cloud Run deploy docs  
 

@@ -16,6 +16,11 @@
       points added for today
     </p>
     {% endif %}
+    {% if completion.photo_object_key %}
+    <a href="/photos/{{ completion.id }}" class="photo-thumb-link">
+      <img class="photo-thumb" src="/photos/{{ completion.id }}" alt="Your proof photo">
+    </a>
+    {% endif %}
   </div>
   <a class="btn btn-primary btn-block" href="/home">Back home</a>
 </section>

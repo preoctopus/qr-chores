@@ -22,6 +22,11 @@ class Settings(BaseSettings):
     # Timing windows (minutes)
     on_time_grace_minutes: int = 15
     early_window_minutes: int = 60
+    # Photo storage: "local" (dev) or "gcs" (Cloud Run)
+    photo_storage: str = "local"
+    photo_local_dir: str = "./data/uploads"
+    gcs_bucket: str = ""
+    photo_max_bytes: int = 5 * 1024 * 1024  # 5 MB
     # Seed script defaults (override in env for real use)
     seed_parent_password: str = "parent-pass"
     seed_child_password: str = "child-pass"

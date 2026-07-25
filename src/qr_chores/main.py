@@ -9,7 +9,7 @@ from fastapi.staticfiles import StaticFiles
 from qr_chores import __version__
 from qr_chores.config import get_settings
 from qr_chores.db import init_db
-from qr_chores.routers import auth, chores, complete, health, pages
+from qr_chores.routers import auth, chores, complete, health, pages, photos
 
 
 @asynccontextmanager
@@ -35,6 +35,7 @@ def create_app() -> FastAPI:
     app.include_router(pages.router)
     app.include_router(chores.router)
     app.include_router(complete.router)
+    app.include_router(photos.router)
 
     return app
 

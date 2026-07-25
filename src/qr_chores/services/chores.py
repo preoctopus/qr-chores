@@ -146,13 +146,34 @@ async def count_completions(db: AsyncSession, chore_id: int) -> int:
     return int(result or 0)
 
 
-async def delete_chore(db: AsyncSession, chore: Chore) -> int:
+async def delete_chore(
+    db: AsyncSession,
+    chore: Chore,
+    *,
+    settings: Settings | None = None,
+) -> int:
     """Hard-delete a chore and all of its completion history.
 
     Returns the number of completion rows removed.
     Prefer deactivate when you only want to stop the QR without losing history.
     """
-    removed = await count_completions(db, chore.id)
+    result = await db.execute(
+        select(ChoreCompletion).where(ChoreCompletion.chore_id == chore.id)
+    )
+    completions = list(result.scalars().all())
+    removed = len(completions)
+
+    if settings is not None:
+        from qr_chores.services.storage import StorageError, get_photo_storage
+
+        storage = get_photo_storage(settings)
+        for row in completions:
+            if row.photo_object_key:
+                try:
+                    storage.delete(row.photo_object_key)
+                except StorageError:
+                    pass
+
     await db.execute(delete(ChoreCompletion).where(ChoreCompletion.chore_id == chore.id))
     await db.delete(chore)
     await db.commit()

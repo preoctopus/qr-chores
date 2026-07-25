@@ -22,6 +22,8 @@ def test_settings(monkeypatch: pytest.MonkeyPatch, tmp_path) -> Settings:
     monkeypatch.setenv("BASE_URL", "http://testserver")
     monkeypatch.setenv("SEED_PARENT_PASSWORD", "parent-pass")
     monkeypatch.setenv("SEED_CHILD_PASSWORD", "child-pass")
+    monkeypatch.setenv("PHOTO_STORAGE", "local")
+    monkeypatch.setenv("PHOTO_LOCAL_DIR", str(tmp_path / "uploads"))
     get_settings.cache_clear()
     settings = get_settings()
     yield settings
