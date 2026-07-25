@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Home{% endblock %}
+{% block content %}
+<section class="stack">
+  <div class="page-header">
+    <h1>Hey {{ user.display_name }}</h1>
+    <p class="muted">Your chores and points will show up here.</p>
+  </div>
+  <div class="card highlight">
+    <p class="stat-label">Points</p>
+    <p class="stat-value">0</p>
+    <p class="muted">Complete chores by scanning QR codes once they’re set up.</p>
+  </div>
+</section>
+{% endblock %}

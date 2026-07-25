@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>{% block title %}{{ title or "QR Chores" }}{% endblock %} · QR Chores</title>
+  <link rel="stylesheet" href="/static/css/app.css">
+  {% block head %}{% endblock %}
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="/">QR Chores</a>
+      {% if user is defined and user %}
+      <div class="topbar-meta">
+        <span class="user-chip">{{ user.display_name }}</span>
+        <a class="btn btn-ghost btn-sm" href="/logout">Log out</a>
+      </div>
+      {% endif %}
+    </header>
+    <main class="content">
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+  {% block scripts %}{% endblock %}
+</body>
+</html>
