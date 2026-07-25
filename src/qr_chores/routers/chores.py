@@ -12,6 +12,8 @@ from qr_chores.models.chore import Chore, PhotoPolicy
 from qr_chores.models.user import User, UserRole
 from qr_chores.services.chores import (
     DAY_LABELS,
+    count_completions,
+    delete_chore,
     list_all_chores,
     parse_due_time,
     parse_schedule_days,
@@ -275,6 +277,42 @@ async def chores_activate(
     if chore is not None:
         chore.is_active = True
         await db.commit()
+    return RedirectResponse("/chores", status_code=status.HTTP_303_SEE_OTHER)
+
+
+@router.get("/chores/{chore_id}/delete", response_class=HTMLResponse)
+async def chores_delete_confirm(
+    request: Request,
+    chore_id: int,
+    user: User = Depends(require_role(UserRole.parent)),
+    db: AsyncSession = Depends(get_db),
+):
+    chore = await db.get(Chore, chore_id)
+    if chore is None:
+        return RedirectResponse("/chores", status_code=status.HTTP_303_SEE_OTHER)
+    completion_count = await count_completions(db, chore.id)
+    return templates.TemplateResponse(
+        request,
+        "chore_delete.html",
+        {
+            "user": user,
+            "title": f"Delete {chore.title}",
+            "chore": chore,
+            "completion_count": completion_count,
+            "format_due_time": format_due_time,
+        },
+    )
+
+
+@router.post("/chores/{chore_id}/delete", response_model=None)
+async def chores_delete(
+    chore_id: int,
+    user: User = Depends(require_role(UserRole.parent)),
+    db: AsyncSession = Depends(get_db),
+):
+    chore = await db.get(Chore, chore_id)
+    if chore is not None:
+        await delete_chore(db, chore)
     return RedirectResponse("/chores", status_code=status.HTTP_303_SEE_OTHER)
 
 

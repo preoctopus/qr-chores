@@ -44,6 +44,7 @@
           <button type="submit" class="btn btn-ghost btn-sm">Activate</button>
         </form>
         {% endif %}
+        <a class="btn btn-danger-ghost btn-sm" href="/chores/{{ chore.id }}/delete">Delete</a>
       </div>
     </li>
     {% endfor %}

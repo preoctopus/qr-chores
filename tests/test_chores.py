@@ -6,7 +6,9 @@ import pytest
 from httpx import AsyncClient
 from sqlalchemy import select
 
-from qr_chores.models.chore import Chore, PhotoPolicy
+from datetime import date, datetime, timezone
+
+from qr_chores.models.chore import Chore, ChoreCompletion, PhotoPolicy, TimingStatus
 from qr_chores.models.user import User
 from qr_chores.services.qr import new_qr_token
 
@@ -133,3 +135,80 @@ async def test_parent_edits_and_deactivates(
         updated = await session.get(Chore, chore.id)
         assert updated is not None
         assert updated.is_active is False
+
+
+@pytest.mark.asyncio
+async def test_parent_deletes_chore_without_history(
+    client: AsyncClient, parent_user: User, app
+) -> None:
+    await _login_parent(client, parent_user)
+    chore = await _create_chore(app.state.session_factory, title="Temp chore")
+    chore_id = chore.id
+
+    confirm = await client.get(f"/chores/{chore_id}/delete")
+    assert confirm.status_code == 200
+    assert "Delete chore" in confirm.text
+    assert "Temp chore" in confirm.text
+    assert "No completion history" in confirm.text
+
+    deleted = await client.post(f"/chores/{chore_id}/delete", follow_redirects=False)
+    assert deleted.status_code == 303
+    assert deleted.headers["location"] == "/chores"
+
+    async with app.state.session_factory() as session:
+        assert await session.get(Chore, chore_id) is None
+
+    listing = await client.get("/chores")
+    assert "Temp chore" not in listing.text
+
+
+@pytest.mark.asyncio
+async def test_parent_deletes_chore_with_completions(
+    client: AsyncClient, parent_user: User, child_user: User, app
+) -> None:
+    await _login_parent(client, parent_user)
+    chore = await _create_chore(app.state.session_factory, title="Done once")
+    chore_id = chore.id
+
+    async with app.state.session_factory() as session:
+        session.add(
+            ChoreCompletion(
+                chore_id=chore_id,
+                user_id=child_user.id,
+                local_date=date(2026, 7, 25),
+                completed_at=datetime(2026, 7, 25, 18, 0, tzinfo=timezone.utc),
+                timing=TimingStatus.on_time,
+                points_awarded=10,
+            )
+        )
+        await session.commit()
+
+    confirm = await client.get(f"/chores/{chore_id}/delete")
+    assert confirm.status_code == 200
+    assert "1" in confirm.text
+    assert "completion" in confirm.text.lower()
+
+    deleted = await client.post(f"/chores/{chore_id}/delete", follow_redirects=False)
+    assert deleted.status_code == 303
+
+    async with app.state.session_factory() as session:
+        assert await session.get(Chore, chore_id) is None
+        remaining = (
+            await session.execute(
+                select(ChoreCompletion).where(ChoreCompletion.chore_id == chore_id)
+            )
+        ).scalars().all()
+        assert remaining == []
+
+
+@pytest.mark.asyncio
+async def test_child_cannot_delete_chore(
+    client: AsyncClient, child_user: User, app
+) -> None:
+    chore = await _create_chore(app.state.session_factory)
+    await client.post(
+        "/login",
+        data={"email": child_user.email, "password": "child-pass", "next": ""},
+    )
+    assert (await client.get(f"/chores/{chore.id}/delete")).status_code == 403
+    assert (await client.post(f"/chores/{chore.id}/delete")).status_code == 403

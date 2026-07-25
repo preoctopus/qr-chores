@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Delete {{ chore.title }}{% endblock %}
+{% block content %}
+<section class="stack">
+  <div class="page-header">
+    <h1>Delete chore?</h1>
+    <p class="muted">This cannot be undone.</p>
+  </div>
+
+  <div class="card">
+    <p class="chore-title">{{ chore.title }}</p>
+    <p class="muted small">Due {{ format_due_time(chore.due_time) }} · {{ chore.base_points }} pts</p>
+
+    {% if completion_count > 0 %}
+    <div class="alert alert-warn" style="margin-top: 0.75rem;">
+      This will permanently remove <strong>{{ completion_count }}</strong>
+      completion record{{ 's' if completion_count != 1 else '' }}
+      (history and any future photo proof for this chore).
+    </div>
+    {% else %}
+    <p class="muted" style="margin-top: 0.75rem;">No completion history yet.</p>
+    {% endif %}
+
+    <p class="muted small" style="margin-top: 0.75rem;">
+      Prefer to keep history? Use <strong>Deactivate</strong> instead — the QR stops working but records stay.
+    </p>
+  </div>
+
+  <form method="post" action="/chores/{{ chore.id }}/delete" class="stack">
+    <button type="submit" class="btn btn-danger btn-block">Delete permanently</button>
+  </form>
+  <a class="btn btn-ghost btn-block" href="/chores">Cancel</a>
+</section>
+{% endblock %}

@@ -188,6 +188,23 @@ input:focus {
   color: var(--text);
 }
 
+.btn-danger {
+  background: #dc2626;
+  color: #fff;
+}
+
+.btn-danger-ghost {
+  background: transparent;
+  border-color: color-mix(in srgb, #dc2626 45%, var(--border));
+  color: #fca5a5;
+}
+
+@media (prefers-color-scheme: light) {
+  .btn-danger-ghost {
+    color: #b91c1c;
+  }
+}
+
 .btn-block {
   width: 100%;
 }

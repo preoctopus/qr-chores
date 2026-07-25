@@ -171,6 +171,7 @@ qr-chores/
 
 1. **Skeleton** ✅ — uv, FastAPI, Docker, auth, health, seed, CI  
 2. **Chores + QR** ✅ — parent CRUD, stable tokens, QR/print, child complete, timing labels  
+2.5. **Chore delete** ✅ — hard delete with confirm (history cascade); deactivate remains for soft stop  
 3. **Photos** — photo rules enforced, local/GCS upload  
 4. **Points & achievements** — ledger, auto-awards, celebration UI  
 5. **Polish** — richer print sheet, Cloud Run deploy docs  

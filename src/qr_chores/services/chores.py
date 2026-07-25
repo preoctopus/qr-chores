@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 from datetime import datetime, timedelta, time
 
-from sqlalchemy import select
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from qr_chores.config import Settings
@@ -135,3 +135,25 @@ def schedule_labels(schedule_days: str) -> str:
         return "Weekends"
     labels = [label for digit, label in DAY_LABELS if digit in schedule_days]
     return ", ".join(labels) if labels else "—"
+
+
+async def count_completions(db: AsyncSession, chore_id: int) -> int:
+    result = await db.scalar(
+        select(func.count())
+        .select_from(ChoreCompletion)
+        .where(ChoreCompletion.chore_id == chore_id)
+    )
+    return int(result or 0)
+
+
+async def delete_chore(db: AsyncSession, chore: Chore) -> int:
+    """Hard-delete a chore and all of its completion history.
+
+    Returns the number of completion rows removed.
+    Prefer deactivate when you only want to stop the QR without losing history.
+    """
+    removed = await count_completions(db, chore.id)
+    await db.execute(delete(ChoreCompletion).where(ChoreCompletion.chore_id == chore.id))
+    await db.delete(chore)
+    await db.commit()
+    return removed
