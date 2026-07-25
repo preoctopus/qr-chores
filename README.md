@@ -6,7 +6,7 @@ Built as a **Python** app with **uv**, **FastAPI**, and **Docker**, meant to run
 
 See [AGENTS.md](./AGENTS.md) for product rules and architecture for contributors/agents.
 
-**Current status:** Phase 1 complete — app skeleton, auth (parent/child), health check, seed users, Docker, CI.
+**Current status:** Phase 2 complete — chores CRUD, stable QR codes, child complete flow, parent today board.
 
 ---
 
@@ -88,10 +88,12 @@ Override with `SEED_PARENT_PASSWORD` / `SEED_CHILD_PASSWORD`.
 ### Run the app
 
 ```bash
-uv run uvicorn qr_chores.main:app --reload --port 8000
+uv run uvicorn qr_chores.main:app --reload --port 8765
 ```
 
-Open http://127.0.0.1:8000 — log in as a parent or the child.
+Open http://127.0.0.1:8765 — log in as a parent or the child.
+
+> Prefer **8765** (or any free port). Port 8000 is often used by other local apps.
 
 ### Tests
 
@@ -131,7 +133,7 @@ Health: `GET /healthz`
 | `SECRET_KEY` | Session signing | `dev-only-change-me` |
 | `DATABASE_URL` | SQLAlchemy async URL | `sqlite+aiosqlite:///./data/qr_chores.db` |
 | `APP_TIMEZONE` | Day boundary / due times | `America/Chicago` |
-| `BASE_URL` | Canonical URL for QR links | `http://127.0.0.1:8000` |
+| `BASE_URL` | Canonical URL for QR links | `http://127.0.0.1:8765` |
 | `PORT` | Listen port (Cloud Run) | `8080` in image |
 | `SEED_PARENT_PASSWORD` | Seed script | `parent-pass` |
 | `SEED_CHILD_PASSWORD` | Seed script | `child-pass` |
@@ -168,10 +170,10 @@ qr-chores/
 ## Implementation roadmap
 
 1. **Skeleton** ✅ — uv, FastAPI, Docker, auth, health, seed, CI  
-2. **Chores + QR** — parent CRUD, stable tokens, QR/print, child complete  
-3. **Photos + timing** — photo rules, early/on-time/late  
+2. **Chores + QR** ✅ — parent CRUD, stable tokens, QR/print, child complete, timing labels  
+3. **Photos** — photo rules enforced, local/GCS upload  
 4. **Points & achievements** — ledger, auto-awards, celebration UI  
-5. **Polish** — print sheet, Cloud Run deploy docs  
+5. **Polish** — richer print sheet, Cloud Run deploy docs  
 
 ---
 

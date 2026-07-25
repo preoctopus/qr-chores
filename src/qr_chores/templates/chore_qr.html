@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}QR · {{ chore.title }}{% endblock %}
+{% block content %}
+<section class="stack">
+  <div class="page-header">
+    <h1>{{ chore.title }}</h1>
+    <p class="muted">Due {{ format_due_time(chore.due_time) }} · stable QR (reuse every day)</p>
+  </div>
+
+  <div class="card qr-card">
+    <img class="qr-img" src="/chores/{{ chore.id }}/qr.png" alt="QR code for {{ chore.title }}">
+    <p class="muted small mono break">{{ qr_url }}</p>
+    <div class="btn-row">
+      <a class="btn btn-primary" href="/chores/{{ chore.id }}/qr.png" download="chore-{{ chore.id }}-qr.png">Download PNG</a>
+      <a class="btn btn-ghost" href="/print/qrs">Print sheet</a>
+    </div>
+  </div>
+
+  <a class="btn btn-ghost btn-block" href="/chores">Back to chores</a>
+</section>
+{% endblock %}

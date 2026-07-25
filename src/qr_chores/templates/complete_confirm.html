@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}{{ chore.title }}{% endblock %}
+{% block content %}
+<section class="stack">
+  <div class="page-header">
+    <h1>{{ chore.title }}</h1>
+    {% if chore.description %}
+    <p class="muted">{{ chore.description }}</p>
+    {% endif %}
+    <p class="muted">Due {{ format_due_time(chore.due_time) }} · {{ chore.base_points }} pts</p>
+  </div>
+
+  {% if not scheduled %}
+  <div class="card">
+    <p>This chore isn’t scheduled for today.</p>
+    <a class="btn btn-ghost btn-block" href="/home">Back home</a>
+  </div>
+  {% elif completion %}
+  <div class="card highlight">
+    <p class="stat-label">Already done</p>
+    <p class="stat-value">✓</p>
+    <p class="muted">
+      Completed {{ completion.timing.value.replace('_', ' ') }} ·
+      +{{ completion.points_awarded }} pts
+    </p>
+    <a class="btn btn-primary btn-block" href="/home">Back home</a>
+  </div>
+  {% else %}
+  <div class="card">
+    {% if due_passed %}
+    <div class="alert alert-warn">Past due — you can still complete it (will count as late).</div>
+    {% endif %}
+    <p>Ready to mark this done?</p>
+    <form method="post" action="/c/{{ token }}" class="stack">
+      <button type="submit" class="btn btn-primary btn-block btn-lg">I did it</button>
+    </form>
+    <a class="btn btn-ghost btn-block" href="/home">Not yet</a>
+  </div>
+  {% endif %}
+</section>
+{% endblock %}

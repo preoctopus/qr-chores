@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Nice!{% endblock %}
+{% block content %}
+<section class="stack">
+  <div class="card highlight celebration">
+    {% if already_done %}
+    <p class="stat-label">Already counted</p>
+    <p class="stat-value">✓</p>
+    <p class="muted">{{ chore.title }} was already done today.</p>
+    {% else %}
+    <p class="stat-label">You did it</p>
+    <p class="stat-value">+{{ completion.points_awarded }}</p>
+    <p class="celebration-title">{{ chore.title }}</p>
+    <p class="muted">
+      {{ completion.timing.value.replace('_', ' ')|capitalize }} ·
+      points added for today
+    </p>
+    {% endif %}
+  </div>
+  <a class="btn btn-primary btn-block" href="/home">Back home</a>
+</section>
+{% endblock %}

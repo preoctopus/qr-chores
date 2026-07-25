@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Print QR codes · QR Chores</title>
+  <link rel="stylesheet" href="/static/css/app.css">
+  <style>
+    @media print {
+      .no-print { display: none !important; }
+      body { background: #fff; color: #000; }
+      .print-grid { gap: 0.5rem; }
+      .print-tile { break-inside: avoid; box-shadow: none; border: 1px solid #ccc; }
+    }
+    .print-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 1rem;
+      padding: 1rem;
+    }
+    .print-tile {
+      text-align: center;
+      padding: 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: #fff;
+      color: #111;
+    }
+    .print-tile img { width: 140px; height: 140px; }
+    .print-tile h2 { font-size: 0.95rem; margin: 0.4rem 0 0.15rem; }
+    .print-tile p { margin: 0; font-size: 0.75rem; color: #444; }
+  </style>
+</head>
+<body>
+  <div class="no-print app-shell">
+    <header class="topbar">
+      <a class="brand" href="/chores">← Chores</a>
+      <button class="btn btn-primary btn-sm" type="button" onclick="window.print()">Print</button>
+    </header>
+    <p class="muted" style="padding: 0 0 1rem;">Printable sheet — one stable QR per active chore.</p>
+  </div>
+  {% if not items %}
+  <p class="muted" style="padding: 1rem;">No active chores to print.</p>
+  {% else %}
+  <div class="print-grid">
+    {% for item in items %}
+    <div class="print-tile">
+      <img src="{{ item.png_path }}" alt="QR for {{ item.chore.title }}">
+      <h2>{{ item.chore.title }}</h2>
+      <p>Due {{ format_due_time(item.chore.due_time) }}</p>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+</body>
+</html>

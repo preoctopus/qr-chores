@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Chores{% endblock %}
+{% block content %}
+<section class="stack">
+  <div class="page-header row-between">
+    <div>
+      <h1>Chores</h1>
+      <p class="muted">Each chore gets a stable QR code.</p>
+    </div>
+  </div>
+
+  <div class="btn-row">
+    <a class="btn btn-primary" href="/chores/new">New chore</a>
+    <a class="btn btn-ghost" href="/print/qrs">Print QRs</a>
+  </div>
+
+  {% if not chores %}
+  <div class="card">
+    <p class="muted">No chores yet. Create one to get a QR code.</p>
+  </div>
+  {% else %}
+  <ul class="chore-list">
+    {% for chore in chores %}
+    <li class="chore-card {% if not chore.is_active %}is-inactive{% endif %}">
+      <div class="chore-card-main">
+        <div>
+          <p class="chore-title">{{ chore.title }}</p>
+          <p class="muted small">
+            Due {{ format_due_time(chore.due_time) }} · {{ schedule_labels(chore.schedule_days) }}
+            · {{ chore.base_points }} pts
+            {% if not chore.is_active %} · inactive{% endif %}
+          </p>
+        </div>
+      </div>
+      <div class="btn-row compact">
+        <a class="btn btn-ghost btn-sm" href="/chores/{{ chore.id }}/qr">QR</a>
+        <a class="btn btn-ghost btn-sm" href="/chores/{{ chore.id }}/edit">Edit</a>
+        {% if chore.is_active %}
+        <form method="post" action="/chores/{{ chore.id }}/deactivate">
+          <button type="submit" class="btn btn-ghost btn-sm">Deactivate</button>
+        </form>
+        {% else %}
+        <form method="post" action="/chores/{{ chore.id }}/activate">
+          <button type="submit" class="btn btn-ghost btn-sm">Activate</button>
+        </form>
+        {% endif %}
+      </div>
+    </li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+</section>
+{% endblock %}

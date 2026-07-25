@@ -136,13 +136,13 @@ qr-chores/
 
 ## Implementation phases
 
-1. **Skeleton & deploy path** — uv, FastAPI, Docker, healthz, config, DB, Alembic, users + login, seed parents + child.
-2. **Chores + QR** — parent CRUD, stable token, QR PNG/print, child home, complete without photo.
-3. **Photos + timing** — photo policy, local/GCS upload, early/on_time/late, parent board + history.
+1. **Skeleton & deploy path** ✅ — uv, FastAPI, Docker, healthz, config, DB, Alembic, users + login, seed.
+2. **Chores + QR** ✅ — parent CRUD, stable token, QR PNG/print, child home, complete without photo, timing labels.
+3. **Photos** — enforce photo policy, local/GCS upload, completion photos.
 4. **Points & achievements** — ledger, bonuses, auto-eval, celebration UI.
-5. **Polish** — print sheet, empty/error states, tests, deploy docs.
+5. **Polish** — richer print sheet, empty/error states, Cloud Run deploy docs.
 
-Prefer shipping Phase 1–2 before rewards so the happy path works early.
+Local default port is **8765** (8000 is often taken by other apps).
 
 ## Coding conventions
 

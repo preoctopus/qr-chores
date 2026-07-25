@@ -4,16 +4,28 @@
 <section class="stack">
   <div class="page-header">
     <h1>Today’s board</h1>
-    <p class="muted">Hi {{ user.display_name }} — chore tracking lands in the next phase.</p>
+    <p class="muted">Hi {{ user.display_name }} — live status for scheduled chores.</p>
   </div>
+
+  {% if not board %}
   <div class="card">
-    <h2>Phase 1 ready</h2>
-    <p>Auth, roles, and deploy path are in place. Next up: create chores and QR codes.</p>
-    <ul class="checklist">
-      <li>Parent login works</li>
-      <li>Child login works</li>
-      <li>Health check for Cloud Run</li>
-    </ul>
+    <p>No chores scheduled for today.</p>
+    <a class="btn btn-primary" href="/chores/new">Add a chore</a>
   </div>
+  {% else %}
+  <ul class="chore-list">
+    {% for row in board %}
+    <li class="chore-card">
+      <div class="chore-card-main">
+        <div>
+          <p class="chore-title">{{ row.chore.title }}</p>
+          <p class="muted small">Due {{ format_due_time(row.chore.due_time) }} · {{ row.chore.base_points }} pts</p>
+        </div>
+        <span class="chip chip-{{ row.status_kind }}">{{ row.status_label }}</span>
+      </div>
+    </li>
+    {% endfor %}
+  </ul>
+  {% endif %}
 </section>
 {% endblock %}

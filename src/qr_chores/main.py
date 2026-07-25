@@ -9,7 +9,7 @@ from fastapi.staticfiles import StaticFiles
 from qr_chores import __version__
 from qr_chores.config import get_settings
 from qr_chores.db import init_db
-from qr_chores.routers import auth, health, pages
+from qr_chores.routers import auth, chores, complete, health, pages
 
 
 @asynccontextmanager
@@ -33,6 +33,8 @@ def create_app() -> FastAPI:
     app.include_router(health.router)
     app.include_router(auth.router)
     app.include_router(pages.router)
+    app.include_router(chores.router)
+    app.include_router(complete.router)
 
     return app
 
@@ -44,10 +46,10 @@ def run() -> None:
     import uvicorn
 
     settings = get_settings()
-    # Cloud Run sets PORT; local default 8000
+    # Cloud Run sets PORT; local default 8765 (8000 often taken)
     import os
 
-    port = int(os.environ.get("PORT", "8000"))
+    port = int(os.environ.get("PORT", "8765"))
     uvicorn.run(
         "qr_chores.main:app",
         host="0.0.0.0",

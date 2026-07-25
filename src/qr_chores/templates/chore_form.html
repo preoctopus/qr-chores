@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<section class="stack">
+  <div class="page-header">
+    <h1>{% if chore %}Edit chore{% else %}New chore{% endif %}</h1>
+  </div>
+
+  {% if error %}
+  <div class="alert alert-error" role="alert">{{ error }}</div>
+  {% endif %}
+
+  <form method="post" action="{% if chore %}/chores/{{ chore.id }}/edit{% else %}/chores{% endif %}" class="stack card">
+    <label class="field">
+      <span>Title</span>
+      <input type="text" name="title" required value="{{ form.title or '' }}" placeholder="Unload dishwasher">
+    </label>
+
+    <label class="field">
+      <span>Description (optional)</span>
+      <textarea name="description" rows="2" placeholder="Any notes…">{{ form.description or '' }}</textarea>
+    </label>
+
+    <label class="field">
+      <span>Due time</span>
+      <input type="time" name="due_time" required value="{{ form.due_time or '20:00' }}">
+    </label>
+
+    <label class="field">
+      <span>Base points</span>
+      <input type="number" name="base_points" min="0" step="1" value="{{ form.base_points or '10' }}">
+    </label>
+
+    <label class="field">
+      <span>Photo when completing</span>
+      <select name="photo_policy">
+        {% for p in photo_policies %}
+        <option value="{{ p.value }}" {% if form.photo_policy == p.value %}selected{% endif %}>
+          {{ p.value|capitalize }}
+        </option>
+        {% endfor %}
+      </select>
+    </label>
+
+    <fieldset class="field">
+      <legend>Schedule</legend>
+      <div class="day-grid">
+        {% for digit, label in day_labels %}
+        <label class="day-check">
+          <input type="checkbox" name="schedule_day" value="{{ digit }}"
+            {% if digit in form.schedule_days %}checked{% endif %}>
+          <span>{{ label }}</span>
+        </label>
+        {% endfor %}
+      </div>
+      <p class="muted small">Leave all checked for every day.</p>
+    </fieldset>
+
+    <button type="submit" class="btn btn-primary btn-block">
+      {% if chore %}Save changes{% else %}Create chore{% endif %}
+    </button>
+    <a class="btn btn-ghost btn-block" href="/chores">Cancel</a>
+  </form>
+</section>
+{% endblock %}

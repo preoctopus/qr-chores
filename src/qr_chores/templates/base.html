@@ -18,6 +18,12 @@
       </div>
       {% endif %}
     </header>
+    {% if user is defined and user and user.role.value == "parent" %}
+    <nav class="nav-tabs" aria-label="Parent">
+      <a href="/today" class="nav-tab{% if request.url.path == '/today' %} is-active{% endif %}">Today</a>
+      <a href="/chores" class="nav-tab{% if request.url.path.startswith('/chores') or request.url.path.startswith('/print') %} is-active{% endif %}">Chores</a>
+    </nav>
+    {% endif %}
     <main class="content">
       {% block content %}{% endblock %}
     </main>
