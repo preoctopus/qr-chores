@@ -2,23 +2,16 @@ name: CI
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   pull_request:
-    branches:
-      - main
+    branches: [main]
   workflow_dispatch:
-
-permissions:
-  contents: read
 
 jobs:
   test:
-    name: Test
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Install uv
         uses: astral-sh/setup-uv@v5
@@ -33,19 +26,17 @@ jobs:
 
       - name: Run tests
         env:
-          SECRET_KEY: ci-test-secret-key
-          DATABASE_URL: sqlite+aiosqlite:///:memory:
-          APP_TIMEZONE: America/Chicago
-          BASE_URL: http://testserver
+          SECRET_KEY: "ci-test-secret-key"
+          DATABASE_URL: "sqlite+aiosqlite:///:memory:"
+          APP_TIMEZONE: "America/Chicago"
+          BASE_URL: "http://testserver"
         run: uv run pytest -q
 
   docker:
-    name: Docker build
     runs-on: ubuntu-latest
     needs: test
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
