@@ -1,5 +1,7 @@
 """Role home pages and JSON helpers."""
 
+from dataclasses import dataclass
+
 from fastapi import APIRouter, Depends, Request, status
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy import select
@@ -10,12 +12,18 @@ from qr_chores.auth.deps import get_current_user, get_current_user_optional, req
 from qr_chores.config import Settings, get_settings
 from qr_chores.db import get_db
 from qr_chores.models.chore import ChoreCompletion
+from qr_chores.models.rewards import Achievement, UserAchievement
 from qr_chores.models.user import User, UserRole
+from qr_chores.services.achievements import ICON_CHOICES, progress_for
 from qr_chores.services.chores import today_board
+from qr_chores.services.points import points_balance
 from qr_chores.services.timeutil import format_due_time
 from qr_chores.templating import templates
+import json
 
 router = APIRouter(tags=["pages"])
+
+ICON_EMOJI = {k: v.split(" ", 1)[0] for k, v in ICON_CHOICES}
 
 
 @router.get("/")
@@ -59,6 +67,15 @@ async def child_home(
         (row.completion.points_awarded if row.completion else 0) for row in board
     )
     done_count = sum(1 for row in board if row.done)
+    balance = await points_balance(db, user.id)
+    result = await db.execute(
+        select(UserAchievement)
+        .options(selectinload(UserAchievement.achievement))
+        .where(UserAchievement.user_id == user.id)
+        .order_by(UserAchievement.unlocked_at.desc())
+        .limit(3)
+    )
+    recent_unlocks = list(result.scalars().all())
     return templates.TemplateResponse(
         request,
         "child_home.html",
@@ -67,8 +84,11 @@ async def child_home(
             "title": "Home",
             "board": board,
             "points_today": points_today,
+            "balance": balance,
             "done_count": done_count,
             "total_count": len(board),
+            "recent_unlocks": recent_unlocks,
+            "icon_emoji": ICON_EMOJI,
             "format_due_time": format_due_time,
         },
     )
@@ -95,6 +115,67 @@ async def parent_history(
             "title": "History",
             "completions": completions,
             "format_due_time": format_due_time,
+        },
+    )
+
+
+@dataclass
+class AchievementRow:
+    achievement: Achievement
+    unlocked: bool
+    progress: int
+    threshold: int
+
+    @property
+    def percent(self) -> int:
+        if self.threshold <= 0:
+            return 100
+        return min(100, int(100 * self.progress / self.threshold))
+
+
+@router.get("/me/achievements", response_class=HTMLResponse)
+async def child_achievements(
+    request: Request,
+    user: User = Depends(require_role(UserRole.child)),
+    db: AsyncSession = Depends(get_db),
+    settings: Settings = Depends(get_settings),
+) -> HTMLResponse:
+    result = await db.execute(
+        select(Achievement).where(Achievement.is_active.is_(True)).order_by(Achievement.title)
+    )
+    achievements = list(result.scalars().all())
+    owned = await db.execute(
+        select(UserAchievement.achievement_id).where(UserAchievement.user_id == user.id)
+    )
+    owned_ids = set(owned.scalars().all())
+    rows: list[AchievementRow] = []
+    for ach in achievements:
+        try:
+            data = json.loads(ach.criteria_json or "{}")
+        except json.JSONDecodeError:
+            data = {}
+        threshold = int(data.get("count", data.get("days", 1)))
+        progress = await progress_for(db, user.id, ach, settings)
+        rows.append(
+            AchievementRow(
+                achievement=ach,
+                unlocked=ach.id in owned_ids,
+                progress=min(progress, threshold) if ach.id not in owned_ids else threshold,
+                threshold=threshold,
+            )
+        )
+    rows.sort(key=lambda r: (not r.unlocked, r.achievement.title))
+    balance = await points_balance(db, user.id)
+    return templates.TemplateResponse(
+        request,
+        "child_achievements.html",
+        {
+            "user": user,
+            "title": "Achievements",
+            "rows": rows,
+            "unlocked_count": sum(1 for r in rows if r.unlocked),
+            "balance": balance,
+            "icon_emoji": ICON_EMOJI,
         },
     )
 

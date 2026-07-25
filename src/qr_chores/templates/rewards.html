@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Rewards{% endblock %}
+{% block content %}
+<section class="stack">
+  <div class="page-header">
+    <h1>Rewards</h1>
+    <p class="muted">Timing bonuses and achievements — awarded automatically.</p>
+  </div>
+
+  <div class="card">
+    <h2 class="section-title">Timing bonuses</h2>
+    <p class="muted small">Added on top of each chore’s base points.</p>
+    <form method="post" action="/rewards/bonuses" class="stack" style="margin-top: 0.75rem;">
+      <label class="field">
+        <span>Early bonus</span>
+        <input type="number" name="early_bonus_points" min="0" value="{{ bonuses.early_bonus_points }}">
+      </label>
+      <label class="field">
+        <span>On-time bonus</span>
+        <input type="number" name="on_time_bonus_points" min="0" value="{{ bonuses.on_time_bonus_points }}">
+      </label>
+      <label class="field">
+        <span>Late bonus</span>
+        <input type="number" name="late_bonus_points" min="0" value="{{ bonuses.late_bonus_points }}">
+      </label>
+      <button type="submit" class="btn btn-primary btn-block">Save bonuses</button>
+    </form>
+  </div>
+
+  <div class="row-between" style="align-items: center;">
+    <h2 class="section-title" style="margin: 0;">Achievements</h2>
+    <a class="btn btn-primary btn-sm" href="/rewards/achievements/new">Add</a>
+  </div>
+
+  {% if not achievements %}
+  <div class="card"><p class="muted">No achievements yet.</p></div>
+  {% else %}
+  <ul class="chore-list">
+    {% for a in achievements %}
+    <li class="chore-card {% if not a.is_active %}is-inactive{% endif %}">
+      <div class="chore-card-main">
+        <div>
+          <p class="chore-title">{{ icon_choices.get(a.icon_key, '⭐') }} {{ a.title }}</p>
+          <p class="muted small">
+            {{ criteria_labels.get(a.criteria_type, a.criteria_type.value) }} ·
+            +{{ a.points_reward }} pts
+            {% if not a.is_active %} · off{% endif %}
+          </p>
+          {% if a.description %}<p class="muted small">{{ a.description }}</p>{% endif %}
+        </div>
+      </div>
+      <div class="btn-row compact">
+        <a class="btn btn-ghost btn-sm" href="/rewards/achievements/{{ a.id }}/edit">Edit</a>
+        <form method="post" action="/rewards/achievements/{{ a.id }}/toggle">
+          <button type="submit" class="btn btn-ghost btn-sm">
+            {% if a.is_active %}Disable{% else %}Enable{% endif %}
+          </button>
+        </form>
+      </div>
+    </li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+</section>
+{% endblock %}

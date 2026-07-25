@@ -9,6 +9,8 @@ from qr_chores.auth.passwords import hash_password
 from qr_chores.config import get_settings
 from qr_chores.db import SessionLocal, init_db
 from qr_chores.models.user import User, UserRole
+from qr_chores.services.achievements import ensure_default_achievements
+from qr_chores.services.points import DEFAULT_BONUSES, set_setting
 
 DEFAULT_USERS = (
     {
@@ -69,8 +71,18 @@ async def seed() -> None:
             db.add(user)
             created += 1
             print(f"create {email} ({spec['role'].value})")
+
+        ach_created = await ensure_default_achievements(db)
+        for key, value in DEFAULT_BONUSES.items():
+            # only set defaults if missing
+            from qr_chores.models.rewards import AppSetting
+
+            existing_setting = await db.get(AppSetting, key)
+            if existing_setting is None:
+                await set_setting(db, key, value)
+
         await db.commit()
-        print(f"done — {created} user(s) created")
+        print(f"done — {created} user(s) created, {ach_created} achievement(s) seeded")
 
 
 def main() -> None:

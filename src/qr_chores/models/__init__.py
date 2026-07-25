@@ -7,14 +7,26 @@ from qr_chores.models.chore import (
     PhotoPolicy,
     TimingStatus,
 )
+from qr_chores.models.rewards import (
+    Achievement,
+    AppSetting,
+    CriteriaType,
+    PointLedger,
+    UserAchievement,
+)
 from qr_chores.models.user import User, UserRole
 
 __all__ = [
     "ALL_DAYS",
+    "Achievement",
+    "AppSetting",
     "Chore",
     "ChoreCompletion",
+    "CriteriaType",
     "PhotoPolicy",
+    "PointLedger",
     "TimingStatus",
     "User",
+    "UserAchievement",
     "UserRole",
 ]

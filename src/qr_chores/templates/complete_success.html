@@ -1,20 +1,28 @@
 {% extends "base.html" %}
 {% block title %}Nice!{% endblock %}
 {% block content %}
-<section class="stack">
-  <div class="card highlight celebration">
+<section class="stack celebration-wrap">
+  <div class="card highlight celebration" id="celebration-card">
     {% if already_done %}
     <p class="stat-label">Already counted</p>
     <p class="stat-value">✓</p>
     <p class="muted">{{ chore.title }} was already done today.</p>
     {% else %}
     <p class="stat-label">You did it</p>
-    <p class="stat-value">+{{ completion.points_awarded }}</p>
+    <p class="stat-value" id="points-pop">+{{ points.total }}</p>
     <p class="celebration-title">{{ chore.title }}</p>
     <p class="muted">
-      {{ completion.timing.value.replace('_', ' ')|capitalize }} ·
-      points added for today
+      {{ completion.timing.value.replace('_', ' ')|capitalize }}
     </p>
+    <ul class="points-breakdown">
+      <li>Base <strong>+{{ points.base }}</strong></li>
+      {% if points.timing_bonus %}
+      <li>Timing <strong>+{{ points.timing_bonus }}</strong></li>
+      {% endif %}
+      {% if points.achievement_points %}
+      <li>Achievements <strong>+{{ points.achievement_points }}</strong></li>
+      {% endif %}
+    </ul>
     {% endif %}
     {% if completion.photo_object_key %}
     <a href="/photos/{{ completion.id }}" class="photo-thumb-link">
@@ -22,6 +30,32 @@
     </a>
     {% endif %}
   </div>
+
+  {% if unlocks %}
+  <div class="stack">
+    {% for u in unlocks %}
+    <div class="card unlock-card">
+      <p class="stat-label">Achievement unlocked</p>
+      <p class="unlock-icon">{{ icon_emoji.get(u.achievement.icon_key, '⭐') }}</p>
+      <p class="celebration-title">{{ u.achievement.title }}</p>
+      {% if u.achievement.description %}
+      <p class="muted">{{ u.achievement.description }}</p>
+      {% endif %}
+      {% if u.points %}
+      <p class="unlock-pts">+{{ u.points }} pts</p>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
   <a class="btn btn-primary btn-block" href="/home">Back home</a>
+  <a class="btn btn-ghost btn-block" href="/me/achievements">See all achievements</a>
 </section>
+<canvas id="confetti" class="confetti-canvas" aria-hidden="true"></canvas>
+{% endblock %}
+{% block scripts %}
+{% if not already_done %}
+<script src="/static/js/celebration.js"></script>
+{% endif %}
 {% endblock %}

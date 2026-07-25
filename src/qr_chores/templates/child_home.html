@@ -8,10 +8,23 @@
   </div>
 
   <div class="card highlight">
-    <p class="stat-label">Points today</p>
-    <p class="stat-value">{{ points_today }}</p>
-    <p class="muted">Scan a QR or tap a chore below.</p>
+    <p class="stat-label">Total points</p>
+    <p class="stat-value">{{ balance }}</p>
+    <p class="muted">+{{ points_today }} today ·
+      <a href="/me/achievements" class="photo-link">Achievements</a>
+    </p>
   </div>
+
+  {% if recent_unlocks %}
+  <div class="card">
+    <p class="stat-label">Recent unlocks</p>
+    <ul class="unlock-strip">
+      {% for ua in recent_unlocks %}
+      <li>{{ icon_emoji.get(ua.achievement.icon_key, '⭐') }} {{ ua.achievement.title }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
 
   {% if not board %}
   <div class="card">

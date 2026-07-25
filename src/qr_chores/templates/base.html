@@ -23,6 +23,7 @@
       <a href="/today" class="nav-tab{% if request.url.path == '/today' %} is-active{% endif %}">Today</a>
       <a href="/history" class="nav-tab{% if request.url.path == '/history' %} is-active{% endif %}">History</a>
       <a href="/chores" class="nav-tab{% if request.url.path.startswith('/chores') or request.url.path.startswith('/print') %} is-active{% endif %}">Chores</a>
+      <a href="/rewards" class="nav-tab{% if request.url.path.startswith('/rewards') %} is-active{% endif %}">Rewards</a>
     </nav>
     {% endif %}
     <main class="content">

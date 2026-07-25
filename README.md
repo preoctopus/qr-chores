@@ -6,7 +6,7 @@ Built as a **Python** app with **uv**, **FastAPI**, and **Docker**, meant to run
 
 See [AGENTS.md](./AGENTS.md) for product rules and architecture for contributors/agents.
 
-**Current status:** Phase 3 complete — photo proof (required/optional/none), local/GCS storage, history.
+**Current status:** Phase 4 complete — points ledger, timing bonuses, achievements, celebration UI.
 
 ---
 
@@ -177,7 +177,7 @@ qr-chores/
 2. **Chores + QR** ✅ — parent CRUD, stable tokens, QR/print, child complete, timing labels  
 2.5. **Chore delete** ✅ — hard delete with confirm (history cascade); deactivate remains for soft stop  
 3. **Photos** ✅ — per-chore policy, local/GCS storage, parent history + thumbnails  
-4. **Points & achievements** — ledger, auto-awards, celebration UI  
+4. **Points & achievements** ✅ — ledger, timing bonuses, auto-unlocks, celebration UI  
 5. **Polish** — richer print sheet, Cloud Run deploy docs  
 
 ---

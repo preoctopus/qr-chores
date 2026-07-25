@@ -12,6 +12,7 @@ from qr_chores.config import Settings, get_settings
 from qr_chores.db import get_db
 from qr_chores.models.chore import Chore, PhotoPolicy
 from qr_chores.models.user import User, UserRole
+from qr_chores.services.achievements import ICON_CHOICES
 from qr_chores.services.completion import (
     CompletionError,
     PhotoUpload,
@@ -22,6 +23,8 @@ from qr_chores.services.timeutil import format_due_time, is_scheduled_on, local_
 from qr_chores.templating import templates
 
 router = APIRouter(tags=["complete"])
+
+ICON_EMOJI = {k: v.split(" ", 1)[0] for k, v in ICON_CHOICES}
 
 
 async def _load_chore(db: AsyncSession, token: str) -> Chore | None:
@@ -181,6 +184,9 @@ async def complete_submit(
             "chore": result.chore,
             "completion": result.completion,
             "already_done": result.already_done,
+            "points": result.points,
+            "unlocks": result.unlocks,
+            "icon_emoji": ICON_EMOJI,
             "format_due_time": format_due_time,
         },
     )

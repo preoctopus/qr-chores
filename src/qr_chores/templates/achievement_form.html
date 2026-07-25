@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<section class="stack">
+  <div class="page-header">
+    <h1>{% if achievement %}Edit achievement{% else %}New achievement{% endif %}</h1>
+  </div>
+
+  {% if error %}
+  <div class="alert alert-error" role="alert">{{ error }}</div>
+  {% endif %}
+
+  <form method="post"
+        action="{% if achievement %}/rewards/achievements/{{ achievement.id }}/edit{% else %}/rewards/achievements{% endif %}"
+        class="stack card">
+    <label class="field">
+      <span>Title</span>
+      <input type="text" name="title" required value="{{ form.title or '' }}" placeholder="On a Roll">
+    </label>
+    <label class="field">
+      <span>Description</span>
+      <textarea name="description" rows="2" placeholder="Flavor text she’ll see on unlock">{{ form.description or '' }}</textarea>
+    </label>
+    <label class="field">
+      <span>Icon</span>
+      <select name="icon_key">
+        {% for key, label in icon_choices %}
+        <option value="{{ key }}" {% if form.icon_key == key %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label class="field">
+      <span>Criteria</span>
+      <select name="criteria_type">
+        {% for ct in criteria_types %}
+        <option value="{{ ct.value }}" {% if form.criteria_type == ct.value %}selected{% endif %}>
+          {{ criteria_labels.get(ct, ct.value) }}
+        </option>
+        {% endfor %}
+      </select>
+    </label>
+    <label class="field">
+      <span>Threshold (count or streak days)</span>
+      <input type="number" name="threshold" min="1" value="{{ form.threshold or '1' }}">
+    </label>
+    <label class="field">
+      <span>Bonus points on unlock</span>
+      <input type="number" name="points_reward" min="0" value="{{ form.points_reward or '0' }}">
+    </label>
+    <button type="submit" class="btn btn-primary btn-block">Save</button>
+    <a class="btn btn-ghost btn-block" href="/rewards">Cancel</a>
+  </form>
+</section>
+{% endblock %}

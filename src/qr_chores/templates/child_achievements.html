@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Achievements{% endblock %}
+{% block content %}
+<section class="stack">
+  <div class="page-header">
+    <h1>Achievements</h1>
+    <p class="muted">{{ unlocked_count }} unlocked · {{ balance }} total points</p>
+  </div>
+
+  <ul class="chore-list">
+    {% for row in rows %}
+    <li class="chore-card {% if not row.unlocked %}is-locked{% endif %}">
+      <div class="chore-card-main">
+        <div>
+          <p class="chore-title">
+            {{ icon_emoji.get(row.achievement.icon_key, '⭐') }}
+            {{ row.achievement.title }}
+          </p>
+          <p class="muted small">{{ row.achievement.description }}</p>
+          <p class="muted small">
+            {% if row.unlocked %}
+            Unlocked · +{{ row.achievement.points_reward }} pts
+            {% else %}
+            {{ row.progress }} / {{ row.threshold }} · +{{ row.achievement.points_reward }} pts
+            {% endif %}
+          </p>
+        </div>
+        <span class="chip {% if row.unlocked %}chip-done{% else %}chip-pending{% endif %}">
+          {% if row.unlocked %}Done{% else %}Locked{% endif %}
+        </span>
+      </div>
+      {% if not row.unlocked %}
+      <div class="progress-bar" aria-hidden="true">
+        <div class="progress-fill" style="width: {{ row.percent }}%"></div>
+      </div>
+      {% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+
+  <a class="btn btn-ghost btn-block" href="/home">Back home</a>
+</section>
+{% endblock %}

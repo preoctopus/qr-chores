@@ -74,7 +74,7 @@ async def test_child_completes_chore_once(
 
     done = await client.post(f"/c/{chore.qr_token}")
     assert done.status_code == 200
-    assert "+12" in done.text or "12" in done.text
+    assert "12" in done.text  # base points shown in breakdown
 
     async with app.state.session_factory() as session:
         count = await session.scalar(select(func.count()).select_from(ChoreCompletion))
@@ -82,7 +82,8 @@ async def test_child_completes_chore_once(
         completion = (await session.execute(select(ChoreCompletion))).scalar_one()
         assert completion.chore_id == chore.id
         assert completion.user_id == child_user.id
-        assert completion.points_awarded == 12
+        # base 12 + optional timing bonus (defaults apply)
+        assert completion.points_awarded >= 12
 
     # Second complete same day — no double award
     again = await client.post(f"/c/{chore.qr_token}")

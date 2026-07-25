@@ -1,14 +1,16 @@
 """Mark chores complete for a local day."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from qr_chores.config import Settings
-from qr_chores.models.chore import Chore, ChoreCompletion, PhotoPolicy
+from qr_chores.models.chore import Chore, ChoreCompletion, PhotoPolicy, TimingStatus
 from qr_chores.models.user import User
+from qr_chores.services.achievements import UnlockedAchievement, evaluate_achievements
+from qr_chores.services.points import add_ledger_entry, get_timing_bonuses
 from qr_chores.services.storage import (
     StorageError,
     get_photo_storage,
@@ -25,10 +27,23 @@ class CompletionError(Exception):
 
 
 @dataclass
+class PointsBreakdown:
+    base: int = 0
+    timing_bonus: int = 0
+    achievement_points: int = 0
+
+    @property
+    def total(self) -> int:
+        return self.base + self.timing_bonus + self.achievement_points
+
+
+@dataclass
 class CompletionResult:
     completion: ChoreCompletion
     chore: Chore
     already_done: bool = False
+    points: PointsBreakdown = field(default_factory=PointsBreakdown)
+    unlocks: list[UnlockedAchievement] = field(default_factory=list)
 
 
 @dataclass
@@ -87,6 +102,14 @@ def _resolve_photo_key(
         raise CompletionError(exc.message, exc.code) from exc
 
 
+def _timing_bonus_amount(timing: TimingStatus, bonuses: dict[str, int]) -> int:
+    if timing == TimingStatus.early:
+        return max(0, bonuses.get("early_bonus_points", 0))
+    if timing == TimingStatus.on_time:
+        return max(0, bonuses.get("on_time_bonus_points", 0))
+    return max(0, bonuses.get("late_bonus_points", 0))
+
+
 async def complete_chore(
     db: AsyncSession,
     *,
@@ -120,6 +143,11 @@ async def complete_chore(
         local_date=today,
         settings=settings,
     )
+    bonuses = await get_timing_bonuses(db)
+    base = max(0, chore.base_points)
+    timing_bonus = _timing_bonus_amount(timing, bonuses)
+    points_awarded = base + timing_bonus
+
     completion = ChoreCompletion(
         chore_id=chore.id,
         user_id=user.id,
@@ -127,14 +155,40 @@ async def complete_chore(
         completed_at=now,
         timing=timing,
         photo_object_key=photo_key,
-        points_awarded=chore.base_points,
+        points_awarded=points_awarded,
     )
     db.add(completion)
+
     try:
+        await db.flush()  # get completion.id for ledger refs
+        add_ledger_entry(
+            db,
+            user_id=user.id,
+            delta=base,
+            reason=f"Completed: {chore.title}",
+            ref_type="completion",
+            ref_id=completion.id,
+        )
+        if timing_bonus:
+            label = timing.value.replace("_", " ")
+            add_ledger_entry(
+                db,
+                user_id=user.id,
+                delta=timing_bonus,
+                reason=f"Timing bonus ({label})",
+                ref_type="completion_bonus",
+                ref_id=completion.id,
+            )
+
+        unlocks = await evaluate_achievements(db, user_id=user.id, settings=settings)
+        achievement_points = sum(u.points for u in unlocks)
+
+        # Reflect achievement points on this completion display total
+        completion.points_awarded = points_awarded + achievement_points
+
         await db.commit()
     except IntegrityError as exc:
         await db.rollback()
-        # Best-effort cleanup of orphaned upload
         if photo_key:
             try:
                 get_photo_storage(settings).delete(photo_key)
@@ -146,4 +200,14 @@ async def complete_chore(
         raise CompletionError("Could not save completion.", "db") from exc
 
     await db.refresh(completion)
-    return CompletionResult(completion=completion, chore=chore, already_done=False)
+    return CompletionResult(
+        completion=completion,
+        chore=chore,
+        already_done=False,
+        points=PointsBreakdown(
+            base=base,
+            timing_bonus=timing_bonus,
+            achievement_points=achievement_points,
+        ),
+        unlocks=unlocks,
+    )

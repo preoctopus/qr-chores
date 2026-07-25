@@ -534,3 +534,95 @@ input[type="file"] {
   color: var(--primary);
   text-decoration: none;
 }
+
+.section-title {
+  font-size: 1.1rem;
+  letter-spacing: -0.02em;
+  margin: 0 0 0.25rem;
+}
+
+.points-breakdown {
+  list-style: none;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.unlock-card {
+  text-align: center;
+  border-color: color-mix(in srgb, var(--primary) 45%, var(--border));
+  background:
+    radial-gradient(100% 120% at 50% 0%, color-mix(in srgb, var(--primary) 30%, transparent), transparent 60%),
+    var(--bg-elevated);
+}
+
+.unlock-icon {
+  font-size: 2.4rem;
+  margin: 0.25rem 0;
+}
+
+.unlock-pts {
+  margin: 0.35rem 0 0;
+  font-weight: 800;
+  color: var(--primary);
+}
+
+.unlock-strip {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.chore-card.is-locked {
+  opacity: 0.72;
+}
+
+.progress-bar {
+  margin-top: 0.65rem;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--border);
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary), #f472b6);
+  border-radius: 999px;
+}
+
+.confetti-canvas {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 50;
+}
+
+.points-pop-anim {
+  animation: points-pop 0.55s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+}
+
+@keyframes points-pop {
+  0% { transform: scale(0.6); opacity: 0; }
+  60% { transform: scale(1.12); opacity: 1; }
+  100% { transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .points-pop-anim {
+    animation: none;
+  }
+}
+
+.celebration-wrap {
+  position: relative;
+}
