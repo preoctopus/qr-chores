@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<section class="stack">
+  <div class="card empty-state">
+    <p class="empty-code">{{ status_code }}</p>
+    <h1>{{ title }}</h1>
+    <p class="muted">{{ message }}</p>
+    <div class="btn-row" style="justify-content: center; margin-top: 1rem;">
+      <a class="btn btn-primary" href="{{ primary_href or '/' }}">{{ primary_label or "Go home" }}</a>
+      {% if secondary_href %}
+      <a class="btn btn-ghost" href="{{ secondary_href }}">{{ secondary_label }}</a>
+      {% endif %}
+    </div>
+  </div>
+</section>
+{% endblock %}

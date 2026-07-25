@@ -24,15 +24,21 @@ COPY --from=builder /app/pyproject.toml /app/pyproject.toml
 COPY --from=builder /app/README.md /app/README.md
 COPY migrations ./migrations
 COPY alembic.ini ./
+COPY scripts/entrypoint.sh ./scripts/entrypoint.sh
+
+RUN chmod +x /app/scripts/entrypoint.sh \
+    && chown -R appuser:appuser /app
 
 ENV PATH="/app/.venv/bin:$PATH" \
     PYTHONUNBUFFERED=1 \
-    PORT=8080
+    PORT=8080 \
+    RUN_MIGRATIONS=0 \
+    RUN_SEED=0
 
 USER appuser
 EXPOSE 8080
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/healthz')" || exit 1
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+  CMD python -c "import os,urllib.request; urllib.request.urlopen('http://127.0.0.1:%s/healthz' % os.environ.get('PORT','8080'))" || exit 1
 
-CMD ["sh", "-c", "uvicorn qr_chores.main:app --host 0.0.0.0 --port ${PORT:-8080}"]
+CMD ["/app/scripts/entrypoint.sh"]

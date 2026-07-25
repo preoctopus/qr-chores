@@ -8,10 +8,13 @@
   </div>
 
   {% if not board %}
-  <div class="card">
-    <p>No chores scheduled for today.</p>
-    <a class="btn btn-primary" href="/chores/new">Add a chore</a>
-  </div>
+  {% set empty_title = "Quiet day" %}
+  {% set empty_message = "No chores are scheduled for today. Add one or check that existing chores include today’s weekday." %}
+  {% set empty_primary_href = "/chores/new" %}
+  {% set empty_primary_label = "Add a chore" %}
+  {% set empty_secondary_href = "/chores" %}
+  {% set empty_secondary_label = "Manage chores" %}
+  {% include "empty_state.html" %}
   {% else %}
   <ul class="chore-list">
     {% for row in board %}

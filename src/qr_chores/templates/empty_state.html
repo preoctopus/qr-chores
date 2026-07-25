@@ -1,0 +1,13 @@
+{# Optional include: set empty_title, empty_message, empty_primary_href, empty_primary_label #}
+<div class="card empty-state">
+  <h2>{{ empty_title }}</h2>
+  <p class="muted">{{ empty_message }}</p>
+  {% if empty_primary_href %}
+  <div class="btn-row" style="justify-content: center; margin-top: 0.85rem;">
+    <a class="btn btn-primary" href="{{ empty_primary_href }}">{{ empty_primary_label or "Continue" }}</a>
+    {% if empty_secondary_href %}
+    <a class="btn btn-ghost" href="{{ empty_secondary_href }}">{{ empty_secondary_label }}</a>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>

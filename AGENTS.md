@@ -141,9 +141,10 @@ qr-chores/
 2.5. **Chore delete** ✅ — parent hard-delete with confirm page; cascades completion history. Prefer **deactivate** to stop a QR without losing history.
 3. **Photos** ✅ — `required` / `optional` / `none` policy; magic-byte validated JPEG/PNG/WebP; local or GCS storage; authenticated `/photos/{completion_id}`; parent History.
 4. **Points & achievements** ✅ — `PointLedger`, timing bonuses (`AppSetting`), achievement criteria auto-eval on complete, parent `/rewards`, child `/me/achievements`, celebration confetti.
-5. **Polish** — richer print sheet, empty/error states, Cloud Run deploy docs.
+5. **Polish** ✅ — sticker print sheet, shared empty states, HTML 403/404 pages, `scripts/entrypoint.sh` (`RUN_MIGRATIONS` / `RUN_SEED`), `docs/DEPLOY.md`.
 
-Local default port is **8765** (8000 is often taken by other apps).
+Local default port is **8765** (8000 is often taken by other apps).  
+Production deploy steps live in `docs/DEPLOY.md`.
 
 ## Coding conventions
 

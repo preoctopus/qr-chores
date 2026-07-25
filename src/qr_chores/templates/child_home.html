@@ -27,9 +27,9 @@
   {% endif %}
 
   {% if not board %}
-  <div class="card">
-    <p class="muted">Nothing scheduled for today. Check back later.</p>
-  </div>
+  {% set empty_title = "Nothing on the list" %}
+  {% set empty_message = "No chores scheduled for today. Enjoy the break — or check with a parent if something’s missing." %}
+  {% include "empty_state.html" %}
   {% else %}
   <ul class="chore-list">
     {% for row in board %}

@@ -6,50 +6,236 @@
   <title>Print QR codes · QR Chores</title>
   <link rel="stylesheet" href="/static/css/app.css">
   <style>
-    @media print {
-      .no-print { display: none !important; }
-      body { background: #fff; color: #000; }
-      .print-grid { gap: 0.5rem; }
-      .print-tile { break-inside: avoid; box-shadow: none; border: 1px solid #ccc; }
+    :root {
+      --print-ink: #111;
+      --print-muted: #444;
+      --print-line: #bbb;
     }
-    .print-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-      gap: 1rem;
+
+    body.print-body {
+      background: #f0f1f4;
+      color: var(--print-ink);
+      margin: 0;
+    }
+
+    .print-toolbar {
+      max-width: 720px;
+      margin: 0 auto;
       padding: 1rem;
     }
+
+    .print-toolbar .topbar {
+      position: static;
+      background: transparent;
+    }
+
+    .print-hint {
+      margin: 0 0 1rem;
+      color: #5c667a;
+      font-size: 0.95rem;
+    }
+
+    .print-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .print-sheet {
+      max-width: 8.5in;
+      margin: 0 auto 2rem;
+      padding: 0.5in;
+      background: #fff;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+    }
+
+    .print-sheet-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      border-bottom: 2px solid #111;
+      padding-bottom: 0.4rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .print-sheet-header h1 {
+      margin: 0;
+      font-size: 1.1rem;
+      letter-spacing: -0.02em;
+    }
+
+    .print-sheet-header p {
+      margin: 0;
+      font-size: 0.8rem;
+      color: var(--print-muted);
+    }
+
+    .print-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.6rem;
+    }
+
+    @media (min-width: 700px) {
+      .print-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+
     .print-tile {
       text-align: center;
-      padding: 0.75rem;
-      border: 1px solid var(--border);
-      border-radius: 12px;
+      padding: 0.65rem 0.5rem 0.75rem;
+      border: 1.5px dashed var(--print-line);
+      border-radius: 10px;
       background: #fff;
       color: #111;
+      break-inside: avoid;
+      page-break-inside: avoid;
     }
-    .print-tile img { width: 140px; height: 140px; }
-    .print-tile h2 { font-size: 0.95rem; margin: 0.4rem 0 0.15rem; }
-    .print-tile p { margin: 0; font-size: 0.75rem; color: #444; }
+
+    .print-tile img {
+      width: 150px;
+      height: 150px;
+      image-rendering: pixelated;
+      background: #fff;
+    }
+
+    .print-tile h2 {
+      font-size: 0.95rem;
+      margin: 0.45rem 0 0.15rem;
+      line-height: 1.2;
+      letter-spacing: -0.02em;
+    }
+
+    .print-tile .sub {
+      margin: 0;
+      font-size: 0.72rem;
+      color: var(--print-muted);
+      line-height: 1.35;
+    }
+
+    .print-tile .badge {
+      display: inline-block;
+      margin-top: 0.3rem;
+      font-size: 0.65rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      padding: 0.15rem 0.4rem;
+      border: 1px solid #ccc;
+      border-radius: 999px;
+      color: #333;
+    }
+
+    .print-footer {
+      margin-top: 0.85rem;
+      padding-top: 0.5rem;
+      border-top: 1px solid #ddd;
+      font-size: 0.72rem;
+      color: var(--print-muted);
+      text-align: center;
+    }
+
+    .print-empty {
+      max-width: 480px;
+      margin: 2rem auto;
+      padding: 1.5rem;
+      text-align: center;
+      background: #fff;
+      border-radius: 14px;
+    }
+
+    @media print {
+      @page {
+        size: letter;
+        margin: 0.45in;
+      }
+
+      body.print-body {
+        background: #fff;
+      }
+
+      .no-print {
+        display: none !important;
+      }
+
+      .print-sheet {
+        max-width: none;
+        margin: 0;
+        padding: 0;
+        box-shadow: none;
+      }
+
+      .print-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.45rem;
+      }
+
+      .print-tile {
+        border-style: dashed;
+        border-color: #999;
+      }
+
+      .print-tile img {
+        width: 1.55in;
+        height: 1.55in;
+      }
+    }
   </style>
 </head>
-<body>
-  <div class="no-print app-shell">
+<body class="print-body">
+  <div class="no-print print-toolbar">
     <header class="topbar">
       <a class="brand" href="/chores">← Chores</a>
-      <button class="btn btn-primary btn-sm" type="button" onclick="window.print()">Print</button>
+      {% if items %}
+      <button class="btn btn-primary btn-sm" type="button" onclick="window.print()">Print sheet</button>
+      {% endif %}
     </header>
-    <p class="muted" style="padding: 0 0 1rem;">Printable sheet — one stable QR per active chore.</p>
-  </div>
-  {% if not items %}
-  <p class="muted" style="padding: 1rem;">No active chores to print.</p>
-  {% else %}
-  <div class="print-grid">
-    {% for item in items %}
-    <div class="print-tile">
-      <img src="{{ item.png_path }}" alt="QR for {{ item.chore.title }}">
-      <h2>{{ item.chore.title }}</h2>
-      <p>Due {{ format_due_time(item.chore.due_time) }}</p>
+    <p class="print-hint">
+      Sticker-ready layout (letter, 3 across). Dashed borders are cut guides.
+      Codes stay valid as long as <code>BASE_URL</code> does not change.
+    </p>
+    {% if items %}
+    <div class="print-meta">
+      <span class="chip chip-pending">{{ items|length }} active chore{{ 's' if items|length != 1 else '' }}</span>
     </div>
-    {% endfor %}
+    {% endif %}
+  </div>
+
+  {% if not items %}
+  <div class="print-empty no-print">
+    <h1>Nothing to print</h1>
+    <p class="muted">Create or activate a chore first, then come back for QR stickers.</p>
+    <div class="btn-row" style="justify-content: center; margin-top: 1rem;">
+      <a class="btn btn-primary" href="/chores/new">New chore</a>
+      <a class="btn btn-ghost" href="/chores">Chore list</a>
+    </div>
+  </div>
+  {% else %}
+  <div class="print-sheet">
+    <div class="print-sheet-header">
+      <h1>QR Chores</h1>
+      <p>Scan → log in → mark done</p>
+    </div>
+    <div class="print-grid">
+      {% for item in items %}
+      <div class="print-tile">
+        <img src="{{ item.png_path }}" alt="QR for {{ item.chore.title }}" width="150" height="150">
+        <h2>{{ item.chore.title }}</h2>
+        <p class="sub">
+          Due {{ format_due_time(item.chore.due_time) }}
+          · {{ item.chore.base_points }} pts
+        </p>
+        {% if item.chore.photo_policy.value == "required" %}
+        <span class="badge">Photo required</span>
+        {% elif item.chore.photo_policy.value == "optional" %}
+        <span class="badge">Photo optional</span>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    <p class="print-footer">Cut on dashed lines · Reuse every day · {{ base_url }}</p>
   </div>
   {% endif %}
 </body>

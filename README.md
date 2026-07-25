@@ -4,9 +4,10 @@ A mobile-first family chore app. Parents manage a chore list; each chore gets a 
 
 Built as a **Python** app with **uv**, **FastAPI**, and **Docker**, meant to run on **Google Cloud Run**.
 
-See [AGENTS.md](./AGENTS.md) for product rules and architecture for contributors/agents.
+See [AGENTS.md](./AGENTS.md) for product rules and architecture for contributors/agents.  
+See [docs/DEPLOY.md](./docs/DEPLOY.md) for Cloud Run + Cloud SQL + GCS deployment.
 
-**Current status:** Phase 4 complete — points ledger, timing bonuses, achievements, celebration UI.
+**Status:** v1 complete through Phase 5 (polish + deploy docs).
 
 ---
 
@@ -14,24 +15,25 @@ See [AGENTS.md](./AGENTS.md) for product rules and architecture for contributors
 
 | Role | People | What they do |
 |------|--------|----------------|
-| **Parent** | Mom and Dad (separate logins) | Add/edit chores, set due times and photo rules, print QR codes, configure points & achievements, track today’s status |
-| **Child** | Daughter | Log in, scan QR codes (or open today’s list), confirm chores, attach photos when needed, collect points and achievements |
+| **Parent** | Mom and Dad (separate logins) | Add/edit/delete chores, print QR stickers, configure points & achievements, track today + history |
+| **Child** | Daughter | Log in, scan QR / open list, confirm + photo, earn points and unlock achievements |
 
 ---
 
-## How it works (product)
+## How it works
 
 ### Stable QR codes
 
 - Each chore has **one QR code** reused every day (print stickers once).
-- URL shape: `https://your-app/c/{token}` (Phase 2+).
+- URL shape: `{BASE_URL}/c/{token}`.
 - Completing still requires the child to be **logged in**.
+- **Keep `BASE_URL` stable** before printing stickers.
 
-### Completing a chore (Phase 2+)
+### Completing a chore
 
 1. Scan the QR (or tap the chore on home).
 2. Confirm page: name, due time, late indicator.
-3. Photo when the chore requires/allows it.
+3. Photo when the chore requires/allows it (JPEG / PNG / WebP).
 4. Tap **I did it** → early / on time / late, points, achievements, celebration.
 
 ### Due times
@@ -39,6 +41,12 @@ See [AGENTS.md](./AGENTS.md) for product rules and architecture for contributors
 - Chores have due times; the list is not wiped at midnight.
 - Late completions are allowed and labeled.
 - Timezone via `APP_TIMEZONE` (default `America/Chicago`).
+
+### Points & achievements
+
+- Base points per chore + parent-configured timing bonuses.
+- Achievements auto-unlock (streaks, on-time, photos, etc.).
+- Parents manage everything under **Rewards**.
 
 ---
 
@@ -49,7 +57,7 @@ See [AGENTS.md](./AGENTS.md) for product rules and architecture for contributors
 | Package manager | [uv](https://github.com/astral-sh/uv) |
 | Framework | FastAPI + Jinja2 (mobile-first) |
 | Database | SQLite (local) · Cloud SQL Postgres (Cloud Run) |
-| Photos | Local disk (dev) · GCS (prod) — later phases |
+| Photos | Local disk (dev) · GCS (prod) |
 | Deploy | Docker → Google Cloud Run |
 | CI | GitHub Actions (pytest + Docker build) |
 
@@ -83,7 +91,7 @@ Creates (idempotent):
 | `mom@example.com` | parent | `parent-pass` |
 | `daughter@example.com` | child | `child-pass` |
 
-Override with `SEED_PARENT_PASSWORD` / `SEED_CHILD_PASSWORD`.
+Also seeds default achievements and timing bonus settings.
 
 ### Run the app
 
@@ -91,7 +99,7 @@ Override with `SEED_PARENT_PASSWORD` / `SEED_CHILD_PASSWORD`.
 uv run uvicorn qr_chores.main:app --reload --port 8765
 ```
 
-Open http://127.0.0.1:8765 — log in as a parent or the child.
+Open http://127.0.0.1:8765
 
 > Prefer **8765** (or any free port). Port 8000 is often used by other local apps.
 
@@ -101,9 +109,9 @@ Open http://127.0.0.1:8765 — log in as a parent or the child.
 uv run pytest -q
 ```
 
-### Migrations (optional locally)
+### Migrations
 
-Tables are auto-created on startup for convenience. For production-style migrations:
+Tables auto-create on startup for local convenience. Production-style:
 
 ```bash
 uv run alembic upgrade head
@@ -119,10 +127,20 @@ docker run --rm -p 8080:8080 \
   -e SECRET_KEY=dev-secret \
   -e DATABASE_URL=sqlite+aiosqlite:////tmp/qr_chores.db \
   -e BASE_URL=http://127.0.0.1:8080 \
+  -e PHOTO_STORAGE=local \
+  -e PHOTO_LOCAL_DIR=/tmp/uploads \
+  -e RUN_SEED=1 \
   qr-chores
 ```
 
+| Env | Effect |
+|-----|--------|
+| `RUN_MIGRATIONS=1` | Entrypoint runs `alembic upgrade head` |
+| `RUN_SEED=1` | Seeds users + default achievements |
+
 Health: `GET /healthz`
+
+Full production steps: **[docs/DEPLOY.md](./docs/DEPLOY.md)**.
 
 ---
 
@@ -141,8 +159,8 @@ Health: `GET /healthz`
 | `PHOTO_LOCAL_DIR` | Local upload directory | `./data/uploads` |
 | `GCS_BUCKET` | Bucket when `PHOTO_STORAGE=gcs` | _(empty)_ |
 | `PHOTO_MAX_BYTES` | Max upload size | `5242880` (5 MB) |
-
-**Keep `BASE_URL` stable** before printing QR stickers (Phase 2+).
+| `RUN_MIGRATIONS` | Docker entrypoint migrates | `0` |
+| `RUN_SEED` | Docker entrypoint seeds | `0` |
 
 ---
 
@@ -151,16 +169,15 @@ Health: `GET /healthz`
 ```text
 qr-chores/
 ├── src/qr_chores/       # FastAPI application
-│   ├── auth/            # passwords, sessions, deps
-│   ├── models/          # SQLAlchemy models
-│   ├── routers/         # HTTP routes
-│   ├── templates/       # Mobile-first HTML
-│   ├── static/          # CSS / JS
-│   ├── main.py
-│   ├── config.py
-│   ├── db.py
-│   └── seed.py
+│   ├── auth/
+│   ├── models/
+│   ├── routers/
+│   ├── services/
+│   ├── templates/
+│   └── static/
 ├── migrations/          # Alembic
+├── scripts/entrypoint.sh
+├── docs/DEPLOY.md       # Cloud Run guide
 ├── tests/
 ├── .github/workflows/ci.yml
 ├── Dockerfile
@@ -174,11 +191,11 @@ qr-chores/
 ## Implementation roadmap
 
 1. **Skeleton** ✅ — uv, FastAPI, Docker, auth, health, seed, CI  
-2. **Chores + QR** ✅ — parent CRUD, stable tokens, QR/print, child complete, timing labels  
-2.5. **Chore delete** ✅ — hard delete with confirm (history cascade); deactivate remains for soft stop  
-3. **Photos** ✅ — per-chore policy, local/GCS storage, parent history + thumbnails  
-4. **Points & achievements** ✅ — ledger, timing bonuses, auto-unlocks, celebration UI  
-5. **Polish** — richer print sheet, Cloud Run deploy docs  
+2. **Chores + QR** ✅ — parent CRUD, stable tokens, QR/print, child complete  
+2.5. **Chore delete** ✅ — hard delete with confirm; deactivate for soft stop  
+3. **Photos** ✅ — policy, local/GCS, history  
+4. **Points & achievements** ✅ — ledger, bonuses, unlocks, celebration  
+5. **Polish** ✅ — print stickers sheet, empty/error pages, deploy docs  
 
 ---
 

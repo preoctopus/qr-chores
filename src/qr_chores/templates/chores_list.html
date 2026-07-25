@@ -15,9 +15,11 @@
   </div>
 
   {% if not chores %}
-  <div class="card">
-    <p class="muted">No chores yet. Create one to get a QR code.</p>
-  </div>
+  {% set empty_title = "No chores yet" %}
+  {% set empty_message = "Create a chore to get a stable QR code you can print and reuse every day." %}
+  {% set empty_primary_href = "/chores/new" %}
+  {% set empty_primary_label = "New chore" %}
+  {% include "empty_state.html" %}
   {% else %}
   <ul class="chore-list">
     {% for chore in chores %}

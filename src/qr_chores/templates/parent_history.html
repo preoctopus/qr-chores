@@ -8,9 +8,11 @@
   </div>
 
   {% if not completions %}
-  <div class="card">
-    <p class="muted">No completions yet.</p>
-  </div>
+  {% set empty_title = "No completions yet" %}
+  {% set empty_message = "When chores get marked done, they’ll show up here with photos and timing." %}
+  {% set empty_primary_href = "/today" %}
+  {% set empty_primary_label = "Today’s board" %}
+  {% include "empty_state.html" %}
   {% else %}
   <ul class="chore-list">
     {% for c in completions %}

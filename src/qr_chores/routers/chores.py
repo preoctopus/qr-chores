@@ -390,5 +390,6 @@ async def print_qrs(
             "title": "Print QR codes",
             "items": items,
             "format_due_time": format_due_time,
+            "base_url": settings.base_url.rstrip("/"),
         },
     )
