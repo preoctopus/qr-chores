@@ -15,9 +15,22 @@ def test_safe_next_url_blocks_absolute() -> None:
     assert _safe_next_url("http://localhost/x") == "/"
 
 
+def test_safe_next_url_blocks_multi_slash_hosts() -> None:
+    """Browsers may treat ///evil.com as a protocol-relative host."""
+    assert _safe_next_url("///evil.com") == "/"
+    assert _safe_next_url("////evil.com/x") == "/"
+    assert _safe_next_url("///evil.com/phish") == "/"
+
+
+def test_safe_next_url_blocks_backslashes_and_controls() -> None:
+    assert _safe_next_url("/\\evil.com") == "/"
+    assert _safe_next_url("/c/\ntoken") == "/"
+
+
 def test_safe_next_url_allows_relative() -> None:
     assert _safe_next_url("/c/token") == "/c/token"
     assert _safe_next_url("/me/achievements") == "/me/achievements"
+    assert _safe_next_url("/c/tok?x=1") == "/c/tok?x=1"
 
 
 def test_safe_next_url_blocks_relative_without_slash() -> None:

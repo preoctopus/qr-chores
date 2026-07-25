@@ -126,7 +126,7 @@ gcloud run deploy ${SERVICE} \
   --platform=managed \
   --allow-unauthenticated \
   --add-cloudsql-instances="${INSTANCE_CONNECTION}" \
-  --set-env-vars="APP_TIMEZONE=America/Chicago,BASE_URL=${BASE_URL},PHOTO_STORAGE=gcs,GCS_BUCKET=${BUCKET},RUN_MIGRATIONS=1,RUN_SEED=1" \
+  --set-env-vars="ENVIRONMENT=production,APP_TIMEZONE=America/Chicago,BASE_URL=${BASE_URL},PHOTO_STORAGE=gcs,GCS_BUCKET=${BUCKET},RUN_MIGRATIONS=1,RUN_SEED=1" \
   --set-secrets="SECRET_KEY=qr-chores-secret-key:latest" \
   --set-env-vars="DATABASE_URL=${DATABASE_URL}" \
   --min-instances=0 \
@@ -140,10 +140,11 @@ Notes:
 
 | Env | Purpose |
 |-----|---------|
+| `ENVIRONMENT=production` | Disables OpenAPI docs; requires non-default `SECRET_KEY` |
 | `RUN_MIGRATIONS=1` | Entrypoint runs `alembic upgrade head` on start |
 | `RUN_SEED=1` | Creates dad/mom/daughter + default achievements (idempotent) |
 | `PHOTO_STORAGE=gcs` | Store proof photos in GCS |
-| `BASE_URL` | Must match the URL users (and QR codes) use |
+| `BASE_URL` | Must match the URL users (and QR codes) use (HTTPS) |
 
 After first successful deploy, set `RUN_SEED=0` (and optionally run migrations as a one-off job instead of every instance start) to avoid multi-instance race noise:
 
@@ -225,13 +226,15 @@ docker run --rm -p 8080:8080 \
 
 ## Operational checklist
 
-- [ ] Strong `SECRET_KEY` in Secret Manager  
+- [ ] Strong `SECRET_KEY` in Secret Manager (not the dev default)  
+- [ ] `ENVIRONMENT=production`  
 - [ ] Postgres not SQLite on Cloud Run  
 - [ ] `BASE_URL` matches public HTTPS URL  
 - [ ] `PHOTO_STORAGE=gcs` + bucket permissions  
 - [ ] Migrations applied  
 - [ ] Seed run once; default seed passwords rotated or users recreated  
 - [ ] Print QRs only after URL is final  
+- [ ] `/docs` returns 404 in production  
 
 ## Troubleshooting
 

@@ -139,6 +139,7 @@ uv run alembic upgrade head
 docker build -t qr-chores .
 docker run --rm -p 8080:8080 \
   -e SECRET_KEY=dev-secret \
+  -e ENVIRONMENT=development \
   -e DATABASE_URL=sqlite+aiosqlite:////tmp/qr_chores.db \
   -e BASE_URL=http://127.0.0.1:8080 \
   -e PHOTO_STORAGE=local \
@@ -184,7 +185,8 @@ Full production steps: **[docs/DEPLOY.md](./docs/DEPLOY.md)**.
 
 | Variable | Purpose | Default |
 |----------|---------|---------|
-| `SECRET_KEY` | Session signing | `dev-only-change-me` |
+| `SECRET_KEY` | Session signing | `dev-only-change-me` (local SQLite only) |
+| `ENVIRONMENT` | `development` or `production` | `development` |
 | `DATABASE_URL` | SQLAlchemy async URL | `sqlite+aiosqlite:///./data/qr_chores.db` |
 | `APP_TIMEZONE` | Day boundary / due times | `America/Chicago` |
 | `BASE_URL` | Canonical URL for QR links | `http://127.0.0.1:8765` |
@@ -194,9 +196,16 @@ Full production steps: **[docs/DEPLOY.md](./docs/DEPLOY.md)**.
 | `PHOTO_STORAGE` | `local` or `gcs` | `local` |
 | `PHOTO_LOCAL_DIR` | Local upload directory | `./data/uploads` |
 | `GCS_BUCKET` | Bucket when `PHOTO_STORAGE=gcs` | _(empty)_ |
-| `PHOTO_MAX_BYTES` | Max upload size | `5242880` (5 MB) |
+| `PHOTO_MAX_BYTES` | Max upload size (enforced while reading) | `5242880` (5 MB) |
 | `RUN_MIGRATIONS` | Docker entrypoint migrates | `0` |
 | `RUN_SEED` | Docker entrypoint seeds | `0` |
+
+### Security notes
+
+- **`SECRET_KEY`:** The default `dev-only-change-me` is rejected when `BASE_URL` is HTTPS, `DATABASE_URL` is Postgres, or `ENVIRONMENT=production`. Always set a strong random secret in Secret Manager for Cloud Run.
+- **`ENVIRONMENT=production`:** Disables FastAPI `/docs`, `/redoc`, and `/openapi.json`.
+- **Login `next`:** Only same-origin relative paths are allowed (blocks `//` / `///` open redirects).
+- **Photos:** Magic-byte type check; size capped while streaming the upload; local keys reject path traversal (including prefix-sibling escapes).
 
 ---
 
@@ -234,6 +243,7 @@ qr-chores/
 4. **Points & achievements** ✅ — ledger, bonuses, unlocks, celebration  
 5. **Polish** ✅ — print stickers, empty/error pages, deploy docs  
 6. **Quality** ✅ — ruff, coverage ≥ 75%, unit + integration tests  
+7. **Hardening** ✅ — open-redirect fixes, photo path safety, upload size cap, prod secret/docs guards  
 
 ---
 

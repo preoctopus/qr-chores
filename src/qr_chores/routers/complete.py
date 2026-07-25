@@ -32,16 +32,38 @@ async def _load_chore(db: AsyncSession, token: str) -> Chore | None:
     return result.scalar_one_or_none()
 
 
-async def _read_photo(upload: UploadFile | None) -> PhotoUpload | None:
+async def _read_photo(
+    upload: UploadFile | None,
+    *,
+    max_bytes: int,
+) -> PhotoUpload | None:
+    """Read upload in chunks; refuse bodies larger than max_bytes."""
     if upload is None:
         return None
     # Empty file input still sends a part with empty filename
     if not upload.filename:
         return None
-    data = await upload.read()
-    if not data:
+
+    chunks: list[bytes] = []
+    total = 0
+    # Read one extra byte past the limit so we can reject without loading huge files
+    chunk_size = 64 * 1024
+    while True:
+        chunk = await upload.read(chunk_size)
+        if not chunk:
+            break
+        total += len(chunk)
+        if total > max_bytes:
+            max_mb = max(1, max_bytes // (1024 * 1024))
+            raise CompletionError(
+                f"Photo is too large (max {max_mb} MB).",
+                "too_large",
+            )
+        chunks.append(chunk)
+
+    if not chunks:
         return None
-    return PhotoUpload(data=data, content_type=upload.content_type)
+    return PhotoUpload(data=b"".join(chunks), content_type=upload.content_type)
 
 
 @router.get("/c/{token}", response_model=None)
@@ -132,9 +154,8 @@ async def complete_submit(
             status_code=status.HTTP_404_NOT_FOUND,
         )
 
-    photo_upload = await _read_photo(photo)
-
     try:
+        photo_upload = await _read_photo(photo, max_bytes=settings.photo_max_bytes)
         result = await complete_chore(
             db,
             chore=chore,

@@ -12,7 +12,10 @@ def test_new_qr_token_unique() -> None:
 
 
 def test_chore_url() -> None:
-    settings = Settings(base_url="https://chores.example")
+    settings = Settings(
+        secret_key="test-secret-key",
+        base_url="https://chores.example",
+    )
     assert chore_url(settings, "abc123") == "https://chores.example/c/abc123"
 
 

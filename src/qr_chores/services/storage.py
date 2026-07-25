@@ -5,6 +5,7 @@ from __future__ import annotations
 import mimetypes
 import uuid
 from dataclasses import dataclass
+from functools import lru_cache
 from pathlib import Path
 from typing import Protocol
 
@@ -48,13 +49,17 @@ class PhotoStorage(Protocol):
 
 class LocalPhotoStorage:
     def __init__(self, root: Path) -> None:
-        self.root = root
+        self.root = root.resolve()
         self.root.mkdir(parents=True, exist_ok=True)
 
     def _path(self, key: str) -> Path:
-        # Prevent path traversal
+        # Reject empty / absolute / traversal keys before resolve
+        if not key or key.startswith(("/", "\\")) or ".." in Path(key).parts:
+            raise StorageError("Invalid photo key.", "bad_key")
         path = (self.root / key).resolve()
-        if not str(path).startswith(str(self.root.resolve())):
+        # is_relative_to avoids the classic startswith prefix bug
+        # (e.g. root /uploads vs sibling /uploads_evil)
+        if path != self.root and not path.is_relative_to(self.root):
             raise StorageError("Invalid photo key.", "bad_key")
         return path
 
@@ -109,13 +114,24 @@ class GcsPhotoStorage:
             blob.delete()
 
 
-def get_photo_storage(settings: Settings) -> PhotoStorage:
-    backend = (settings.photo_storage or "local").lower()
+@lru_cache(maxsize=8)
+def _storage_for(backend: str, local_dir: str, gcs_bucket: str) -> PhotoStorage:
     if backend == "gcs":
-        if not settings.gcs_bucket:
+        if not gcs_bucket:
             raise StorageError("GCS_BUCKET is required when PHOTO_STORAGE=gcs.", "config")
-        return GcsPhotoStorage(settings.gcs_bucket)
-    return LocalPhotoStorage(Path(settings.photo_local_dir))
+        return GcsPhotoStorage(gcs_bucket)
+    return LocalPhotoStorage(Path(local_dir))
+
+
+def get_photo_storage(settings: Settings) -> PhotoStorage:
+    """Return a cached storage backend for the given settings."""
+    backend = (settings.photo_storage or "local").lower()
+    return _storage_for(backend, settings.photo_local_dir, settings.gcs_bucket or "")
+
+
+def clear_photo_storage_cache() -> None:
+    """Drop cached backends (tests that change PHOTO_* settings)."""
+    _storage_for.cache_clear()
 
 
 def sniff_content_type(data: bytes, declared: str | None) -> str:

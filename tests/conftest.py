@@ -17,6 +17,7 @@ from qr_chores.models.user import User, UserRole
 @pytest.fixture
 def test_settings(monkeypatch: pytest.MonkeyPatch, tmp_path) -> Settings:
     monkeypatch.setenv("SECRET_KEY", "test-secret-key")
+    monkeypatch.setenv("ENVIRONMENT", "development")
     monkeypatch.setenv("DATABASE_URL", "sqlite+aiosqlite:///:memory:")
     monkeypatch.setenv("APP_TIMEZONE", "America/Chicago")
     monkeypatch.setenv("BASE_URL", "http://testserver")
@@ -25,9 +26,13 @@ def test_settings(monkeypatch: pytest.MonkeyPatch, tmp_path) -> Settings:
     monkeypatch.setenv("PHOTO_STORAGE", "local")
     monkeypatch.setenv("PHOTO_LOCAL_DIR", str(tmp_path / "uploads"))
     get_settings.cache_clear()
+    from qr_chores.services.storage import clear_photo_storage_cache
+
+    clear_photo_storage_cache()
     settings = get_settings()
     yield settings
     get_settings.cache_clear()
+    clear_photo_storage_cache()
 
 
 @pytest_asyncio.fixture

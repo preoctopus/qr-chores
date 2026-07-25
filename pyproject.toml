@@ -59,6 +59,8 @@ addopts = [
 [tool.coverage.run]
 branch = true
 source = ["qr_chores"]
+# SQLAlchemy async uses greenlet; without this, async route bodies look uncovered.
+concurrency = ["greenlet", "thread"]
 omit = [
     "*/qr_chores/__init__.py",
 ]

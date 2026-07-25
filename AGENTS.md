@@ -145,17 +145,27 @@ qr-chores/
 | Variable | Purpose |
 |----------|---------|
 | `DATABASE_URL` | SQLite (dev) / Postgres (prod) |
-| `SECRET_KEY` | Sessions / signing |
+| `SECRET_KEY` | Sessions / signing — **never ship the default** with HTTPS, Postgres, or `ENVIRONMENT=production` |
+| `ENVIRONMENT` | `development` (default) or `production` (disables OpenAPI `/docs`) |
 | `APP_TIMEZONE` | Local day boundary + due times |
 | `BASE_URL` | Canonical URL in QR codes — **must stay stable** after printing stickers |
 | `PHOTO_STORAGE` | `local` or `gcs` |
 | `PHOTO_LOCAL_DIR` | Local upload root (dev) |
 | `GCS_BUCKET` | Bucket when `PHOTO_STORAGE=gcs` |
-| `PHOTO_MAX_BYTES` | Max upload size (default 5 MB) |
+| `PHOTO_MAX_BYTES` | Max upload size (default 5 MB); enforced while reading the upload stream |
 | `PORT` | Cloud Run listens on `8080` |
 | `RUN_MIGRATIONS` / `RUN_SEED` | Docker entrypoint flags |
 
 Local default port: **8765** (8000 is often taken).
+
+### Security invariants (keep these)
+
+- Login `next` must be a **single-slash relative path** only (`_safe_next_url`). Block `//`, `///`, schemes, netloc, backslashes, and control characters.
+- Local photo keys: resolve under the upload root with `Path.is_relative_to`; reject `..` path segments (do not use `str.startswith` for containment).
+- Photo uploads: stream with a running byte count; never `read()` unbounded into memory before the size check.
+- Default `SECRET_KEY` (`dev-only-change-me`) is allowed only for local SQLite + non-HTTPS `BASE_URL` + non-production `ENVIRONMENT`.
+- Production (`ENVIRONMENT=production`): OpenAPI docs disabled.
+- Photo storage backends are cached (`get_photo_storage`); tests that change `PHOTO_*` should call `clear_photo_storage_cache()`.
 
 ## Implementation status
 
@@ -166,6 +176,7 @@ Local default port: **8765** (8000 is often taken).
 4. Points & achievements ✅  
 5. Polish + deploy docs ✅  
 6. Lint, coverage (≥ 75%), unit + integration tests ✅  
+7. Security hardening (redirects, photo paths, upload caps, prod guards) ✅  
 
 ## Quality gates (required)
 
@@ -199,8 +210,10 @@ When adding features:
 
 - QR tokens: `secrets.token_urlsafe(16+)`, not sequential IDs.
 - Parent vs child authorization on every mutating route.
-- Photos: authenticated access only.
-- Path traversal protection in local photo storage keys.
+- Photos: authenticated access only; magic-byte type sniff; size cap on read.
+- Path traversal protection in local photo storage keys (`is_relative_to`, no `..` segments).
+- Open-redirect hardening on login `next` (relative paths only).
+- Strong `SECRET_KEY` required for HTTPS / Postgres / production.
 
 ## Out of scope (v1)
 

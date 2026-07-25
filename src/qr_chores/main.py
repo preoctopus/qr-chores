@@ -29,10 +29,18 @@ def _wants_html(request: Request) -> bool:
 
 def create_app() -> FastAPI:
     settings = get_settings()
+    # Hide interactive API docs outside local development.
+    docs_url = None if settings.is_production else "/docs"
+    redoc_url = None if settings.is_production else "/redoc"
+    openapi_url = None if settings.is_production else "/openapi.json"
+
     app = FastAPI(
         title=settings.app_name,
         version=__version__,
         lifespan=lifespan,
+        docs_url=docs_url,
+        redoc_url=redoc_url,
+        openapi_url=openapi_url,
     )
 
     static_dir = Path(__file__).resolve().parent / "static"

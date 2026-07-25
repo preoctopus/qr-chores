@@ -146,6 +146,23 @@ async def test_login_next_blocks_open_redirect(client: AsyncClient, parent_user:
 
 
 @pytest.mark.asyncio
+async def test_login_next_blocks_triple_slash_redirect(
+    client: AsyncClient, parent_user: User
+) -> None:
+    response = await client.post(
+        "/login",
+        data={
+            "email": parent_user.email,
+            "password": "parent-pass",
+            "next": "///evil.example/phish",
+        },
+        follow_redirects=False,
+    )
+    assert response.status_code == 303
+    assert response.headers["location"] == "/today"
+
+
+@pytest.mark.asyncio
 async def test_login_next_allows_relative(client: AsyncClient, parent_user: User) -> None:
     response = await client.post(
         "/login",

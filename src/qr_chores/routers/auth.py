@@ -19,15 +19,30 @@ router = APIRouter(tags=["auth"])
 
 
 def _safe_next_url(next_url: str | None) -> str:
-    """Only allow relative same-origin redirects."""
+    """Only allow relative same-origin path redirects.
+
+    Rejects absolute URLs, protocol-relative hosts (//evil), and multi-slash
+    forms browsers may treat as hosts (///evil.com).
+    """
     if not next_url:
+        return "/"
+    # No backslashes or control characters (open-redirect / header tricks)
+    if any(ch in next_url for ch in ("\\", "\n", "\r", "\t", "\0")):
+        return "/"
+    if not next_url.startswith("/") or next_url.startswith("//"):
         return "/"
     parsed = urlparse(next_url)
     if parsed.scheme or parsed.netloc:
         return "/"
-    if not next_url.startswith("/"):
+    path = parsed.path or ""
+    if not path.startswith("/") or path.startswith("//"):
         return "/"
-    return next_url
+    # urlparse("///evil.com") → path="/evil.com"; original still dangerous
+    path_and_query = next_url.split("#", 1)[0]
+    expected = path if not parsed.query else f"{path}?{parsed.query}"
+    if path_and_query != expected:
+        return "/"
+    return expected
 
 
 def _home_for_role(role: UserRole) -> str:

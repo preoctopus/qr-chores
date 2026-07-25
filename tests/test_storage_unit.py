@@ -41,17 +41,47 @@ def test_local_storage_rejects_path_traversal(tmp_path: Path) -> None:
     assert exc.value.code == "bad_key"
 
 
+def test_local_storage_rejects_prefix_sibling(tmp_path: Path) -> None:
+    """Classic startswith bug: root /uploads vs sibling /uploads_evil."""
+    root = tmp_path / "uploads"
+    root.mkdir()
+    evil = tmp_path / "uploads_evil"
+    evil.mkdir()
+    store = LocalPhotoStorage(root)
+    with pytest.raises(StorageError) as exc:
+        store.save("../uploads_evil/pwned.png", b"owned", "image/png")
+    assert exc.value.code == "bad_key"
+    assert not (evil / "pwned.png").exists()
+
+
+def test_local_storage_rejects_dotdot_in_nested_key(tmp_path: Path) -> None:
+    store = LocalPhotoStorage(tmp_path)
+    with pytest.raises(StorageError) as exc:
+        store.open("completions/1/../../../etc/passwd")
+    assert exc.value.code == "bad_key"
+
+
 def test_get_photo_storage_local(tmp_path: Path) -> None:
+    from qr_chores.services.storage import clear_photo_storage_cache
+
+    clear_photo_storage_cache()
     settings = Settings(photo_storage="local", photo_local_dir=str(tmp_path / "up"))
     storage = get_photo_storage(settings)
     assert isinstance(storage, LocalPhotoStorage)
+    # Cached for same settings
+    assert get_photo_storage(settings) is storage
+    clear_photo_storage_cache()
 
 
 def test_get_photo_storage_gcs_requires_bucket() -> None:
+    from qr_chores.services.storage import clear_photo_storage_cache
+
+    clear_photo_storage_cache()
     settings = Settings(photo_storage="gcs", gcs_bucket="")
     with pytest.raises(StorageError) as exc:
         get_photo_storage(settings)
     assert exc.value.code == "config"
+    clear_photo_storage_cache()
 
 
 def test_validate_and_build_key_ok() -> None:
