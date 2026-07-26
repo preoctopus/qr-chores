@@ -160,6 +160,11 @@ async def test_help_page_mobile_html(client: AsyncClient, parent_user: User) -> 
     assert "Using QR Chores" in help_page.text
     assert "Parent guide" in help_page.text
     assert "Child guide" in help_page.text
+    assert "Install as an app" in help_page.text
+    assert "Add to Home screen" in help_page.text
+    assert "Add to Home Screen" in help_page.text
+    assert "Chrome" in help_page.text
+    assert "Safari" in help_page.text
     assert "Early" in help_page.text
     assert "On time" in help_page.text
     assert "Late" in help_page.text
