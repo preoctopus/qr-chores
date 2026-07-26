@@ -119,6 +119,40 @@ def test_user_documentation_exists_and_is_linked() -> None:
 
 
 @pytest.mark.asyncio
+async def test_favicon_and_web_manifest(client: AsyncClient) -> None:
+    """Favicon + web app manifest for browser tab and Add to Home Screen."""
+    favicon = await client.get("/static/favicon.ico")
+    assert favicon.status_code == 200
+    assert favicon.content[:4] == b"\x00\x00\x01\x00"  # ICO magic
+
+    logo_192 = await client.get("/static/icons/app-logo-192.png")
+    assert logo_192.status_code == 200
+    assert logo_192.headers["content-type"].startswith("image/png")
+    assert logo_192.content[:8] == b"\x89PNG\r\n\x1a\n"
+
+    logo_512 = await client.get("/static/icons/app-logo-512.png")
+    assert logo_512.status_code == 200
+    assert logo_512.headers["content-type"].startswith("image/png")
+
+    manifest = await client.get("/static/manifest.json")
+    assert manifest.status_code == 200
+    data = manifest.json()
+    assert data["name"] == "ChoreQuest"
+    assert data["short_name"] == "Chores"
+    assert data["display"] == "standalone"
+    icon_srcs = {icon["src"] for icon in data["icons"]}
+    assert "/static/icons/app-logo-192.png" in icon_srcs
+    assert "/static/icons/app-logo-512.png" in icon_srcs
+
+    # Shell pages should wire favicon + manifest in <head>
+    login = await client.get("/login")
+    assert login.status_code == 200
+    assert 'rel="icon" href="/static/favicon.ico"' in login.text
+    assert 'rel="manifest" href="/static/manifest.json"' in login.text
+    assert 'rel="apple-touch-icon" href="/static/icons/app-logo-192.png"' in login.text
+
+
+@pytest.mark.asyncio
 async def test_help_page_mobile_html(client: AsyncClient, parent_user: User) -> None:
     """In-app HTML guide is public and linked from login / shell."""
     help_page = await client.get("/help")
