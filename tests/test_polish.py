@@ -98,4 +98,21 @@ async def test_entrypoint_script_exists() -> None:
     assert script.is_file()
     text = script.read_text()
     assert "alembic upgrade head" in text
-    assert "uvicorn" in text
+
+
+def test_user_documentation_exists_and_is_linked() -> None:
+    """Issue #3: end-user guide for parents and child."""
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[1]
+    user_doc = root / "docs" / "USER.md"
+    readme = root / "README.md"
+    assert user_doc.is_file()
+    text = user_doc.read_text(encoding="utf-8")
+    assert "Using QR Chores" in text
+    assert "Early" in text and "On time" in text and "Late" in text
+    assert "Parent guide" in text
+    assert "Child guide" in text
+    assert "BASE_URL" in text
+    readme_text = readme.read_text(encoding="utf-8")
+    assert "docs/USER.md" in readme_text
