@@ -14,7 +14,12 @@
       {% if user is defined and user %}
       <div class="topbar-meta">
         <span class="user-chip">{{ user.display_name }}</span>
+        <a class="btn btn-ghost btn-sm" href="/help"{% if request.url.path == '/help' %} aria-current="page"{% endif %}>Help</a>
         <a class="btn btn-ghost btn-sm" href="/logout">Log out</a>
+      </div>
+      {% else %}
+      <div class="topbar-meta">
+        <a class="btn btn-ghost btn-sm" href="/help"{% if request.url.path == '/help' %} aria-current="page"{% endif %}>Help</a>
       </div>
       {% endif %}
     </header>

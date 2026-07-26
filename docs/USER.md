@@ -2,6 +2,8 @@
 
 Family guide for parents and kids. For developers and deploy, see [AGENTS.md](../AGENTS.md) and [DEPLOY.md](./DEPLOY.md).
 
+**In the running app:** open **Help** (top bar, login page, or `/help`) for a mobile-friendly version of this guide.
+
 ---
 
 ## Getting started

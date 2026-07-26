@@ -646,3 +646,58 @@ input[type="file"] {
   color: color-mix(in srgb, var(--primary) 70%, var(--muted));
   line-height: 1;
 }
+
+/* In-app help (/help) — mobile-first prose */
+.help-doc h1 {
+  margin: 0 0 0.25rem;
+  font-size: 1.55rem;
+  letter-spacing: -0.02em;
+}
+
+.help-section h2.section-title {
+  margin-top: 0;
+}
+
+.help-subhead {
+  margin: 1rem 0 0.35rem;
+  font-size: 1rem;
+  font-weight: 650;
+}
+
+.help-list {
+  margin: 0.35rem 0 0.75rem;
+  padding-left: 1.2rem;
+}
+
+.help-list li {
+  margin: 0.35rem 0;
+}
+
+.help-toc-list {
+  margin: 0.35rem 0 0;
+  padding-left: 1.15rem;
+}
+
+.help-toc-list a {
+  color: var(--primary);
+  text-decoration: none;
+  font-weight: 560;
+  min-height: 44px;
+  line-height: 1.4;
+  display: flex;
+  align-items: center;
+}
+
+.help-toc-list a:hover,
+.help-toc-list a:focus-visible {
+  text-decoration: underline;
+}
+
+.help-section {
+  scroll-margin-top: 4.5rem;
+}
+
+.help-doc .alert-warn {
+  margin-top: 0.75rem;
+  margin-bottom: 0.5rem;
+}

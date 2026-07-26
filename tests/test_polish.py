@@ -116,3 +116,29 @@ def test_user_documentation_exists_and_is_linked() -> None:
     assert "BASE_URL" in text
     readme_text = readme.read_text(encoding="utf-8")
     assert "docs/USER.md" in readme_text
+
+
+@pytest.mark.asyncio
+async def test_help_page_mobile_html(client: AsyncClient, parent_user: User) -> None:
+    """In-app HTML guide is public and linked from login / shell."""
+    help_page = await client.get("/help")
+    assert help_page.status_code == 200
+    assert "Using QR Chores" in help_page.text
+    assert "Parent guide" in help_page.text
+    assert "Child guide" in help_page.text
+    assert "Early" in help_page.text
+    assert "On time" in help_page.text
+    assert "Late" in help_page.text
+    assert 'name="viewport"' in help_page.text
+
+    login = await client.get("/login")
+    assert login.status_code == 200
+    assert 'href="/help"' in login.text
+
+    await client.post(
+        "/login",
+        data={"email": parent_user.email, "password": "parent-pass", "next": ""},
+    )
+    today = await client.get("/today")
+    assert today.status_code == 200
+    assert 'href="/help"' in today.text
