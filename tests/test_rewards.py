@@ -1,6 +1,6 @@
 """Points ledger and achievements tests."""
 
-from datetime import UTC, date, datetime, time, timedelta
+from datetime import UTC, datetime, time, timedelta
 from io import BytesIO
 
 import pytest
@@ -133,7 +133,11 @@ async def test_streak_achievement_unlock(app, child_user: User, test_settings: S
         session.add(chore)
         await session.flush()
 
-        today = date.today()
+        # Use app-local "today" (not system date.today()) so streak matches
+        # evaluate_achievements / local_today(settings) under any CI timezone.
+        from qr_chores.services.timeutil import local_today
+
+        today = local_today(test_settings)
         for i in range(3):
             session.add(
                 ChoreCompletion(

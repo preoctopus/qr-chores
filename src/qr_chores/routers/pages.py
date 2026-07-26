@@ -35,6 +35,22 @@ async def root(user: User | None = Depends(get_current_user_optional)) -> Redire
     return RedirectResponse("/home", status_code=status.HTTP_303_SEE_OTHER)
 
 
+@router.get("/help", response_class=HTMLResponse)
+async def help_page(
+    request: Request,
+    user: User | None = Depends(get_current_user_optional),
+) -> HTMLResponse:
+    """Mobile-friendly in-app user guide (parent + child)."""
+    return templates.TemplateResponse(
+        request,
+        "help.html",
+        {
+            "user": user,
+            "title": "Help",
+        },
+    )
+
+
 @router.get("/today", response_class=HTMLResponse)
 async def parent_today(
     request: Request,

@@ -6,6 +6,7 @@ Built as a **Python** app with **uv**, **FastAPI**, and **Docker**, meant to run
 
 | Docs | |
 |------|--|
+| **Using QR Chores** (parents & child) | [docs/USER.md](./docs/USER.md) · in-app at `/help` |
 | Product & coding rules for agents | [AGENTS.md](./AGENTS.md) |
 | Cloud Run + Cloud SQL + GCS deploy | [docs/DEPLOY.md](./docs/DEPLOY.md) |
 

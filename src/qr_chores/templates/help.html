@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+{% block title %}Help{% endblock %}
+{% block content %}
+<article class="help-doc stack">
+  <div class="page-header">
+    <h1>Using QR Chores</h1>
+    <p class="muted">Quick guide for parents and kids. Scroll or jump to a section.</p>
+  </div>
+
+  <nav class="help-toc card" aria-label="Help sections">
+    <p class="stat-label">On this page</p>
+    <ul class="help-toc-list">
+      <li><a href="#getting-started">Getting started</a></li>
+      <li><a href="#parent-guide">Parent guide</a></li>
+      <li><a href="#child-guide">Child guide</a></li>
+      <li><a href="#timing">Timing (Early / On time / Late)</a></li>
+      <li><a href="#photos">Photos &amp; privacy</a></li>
+      <li><a href="#points">Points</a></li>
+      <li><a href="#troubleshooting">Troubleshooting</a></li>
+    </ul>
+  </nav>
+
+  <section class="card help-section" id="getting-started">
+    <h2 class="section-title">Getting started</h2>
+    <h3 class="help-subhead">Accounts</h3>
+    <p>QR Chores uses <strong>email + password</strong> logins.</p>
+    <ul class="help-list">
+      <li><strong>Parent</strong> — manage chores, QR codes, rewards, today board, history</li>
+      <li><strong>Child</strong> — see today’s chores, complete them, earn points and achievements</li>
+    </ul>
+    <p class="muted small">There is no public sign-up page. Accounts come from setup (seed) or an admin.</p>
+    <h3 class="help-subhead">Log in</h3>
+    <ol class="help-list">
+      <li>Open the app URL</li>
+      <li>Enter email and password</li>
+      <li>Parents land on <strong>Today</strong>; the child lands on <strong>Home</strong></li>
+    </ol>
+    <p>Use <strong>Log out</strong> in the top bar when switching people on a shared phone.</p>
+  </section>
+
+  <section class="card help-section" id="parent-guide">
+    <h2 class="section-title">Parent guide</h2>
+    <h3 class="help-subhead">Today</h3>
+    <p>The <strong>Today</strong> board shows chores for this calendar day:</p>
+    <ul class="help-list">
+      <li><strong>Pending</strong> — not done yet</li>
+      <li><strong>Done</strong> — completed (may also say early / late)</li>
+      <li><strong>Late</strong> — still open past due + grace, or completed late</li>
+    </ul>
+    <p class="muted small">Nav: Today · History · Chores · Rewards</p>
+
+    <h3 class="help-subhead">Creating and editing chores</h3>
+    <ul class="help-list">
+      <li><strong>Title / description</strong> — what needs doing</li>
+      <li><strong>Due time</strong> — local wall clock (app timezone, usually America/Chicago)</li>
+      <li><strong>Schedule days</strong> — which weekdays it appears</li>
+      <li><strong>Base points</strong> — once per day when completed</li>
+      <li><strong>Photo policy</strong> — required, optional, or none</li>
+    </ul>
+    <ul class="help-list">
+      <li>One chore = one stable QR while it’s active</li>
+      <li><strong>Deactivate</strong> stops the QR without wiping history</li>
+      <li><strong>Delete</strong> permanently removes chore, completions, and photos</li>
+    </ul>
+
+    <h3 class="help-subhead">QR codes</h3>
+    <ul class="help-list">
+      <li>Each chore has <strong>one QR forever</strong> while active (not rotated daily)</li>
+      <li>Open <strong>QR</strong> on a chore to view or download the PNG</li>
+      <li>Use <strong>Print</strong> for a sticker sheet of all active chores</li>
+      <li>Completing still requires the <strong>child</strong> to be logged in after scanning</li>
+    </ul>
+    <p class="alert alert-warn" role="note">
+      Stickers encode the public site URL. Don’t change that URL after you print, or stickers break.
+    </p>
+
+    <h3 class="help-subhead">Rewards</h3>
+    <ol class="help-list">
+      <li><strong>Timing bonuses</strong> — extra points for Early / On time / Late (see Timing below)</li>
+      <li><strong>Achievements</strong> — badges for streaks, on-time counts, photos, totals, etc.</li>
+    </ol>
+    <p>Awards are calculated on the server when she completes a chore — the phone never invents points.</p>
+
+    <h3 class="help-subhead">History</h3>
+    <p>Recent completions with timing, points, and proof photos (when provided).</p>
+  </section>
+
+  <section class="card help-section" id="child-guide">
+    <h2 class="section-title">Child guide</h2>
+    <h3 class="help-subhead">Home</h3>
+    <p>After login you see today’s chores, total points, and recent unlocks. Tap a chore (or scan its QR) to confirm.</p>
+
+    <h3 class="help-subhead">Completing a chore</h3>
+    <ol class="help-list">
+      <li>Scan the QR on the sticker, or tap the chore on Home</li>
+      <li>Confirm the name and due time</li>
+      <li>If a photo is required or optional, take or choose one (JPEG, PNG, or WebP)</li>
+      <li>Tap <strong>I did it</strong></li>
+    </ol>
+    <p>You’ll see points, a breakdown, and any new achievements.</p>
+
+    <h3 class="help-subhead">Rules that matter</h3>
+    <ul class="help-list">
+      <li><strong>Once per chore per day</strong> — “already done” if you finished earlier</li>
+      <li><strong>Late is OK the same day</strong> — after due + grace it still counts (as late)</li>
+      <li><strong>Photos</strong> — required chores need a valid image</li>
+      <li><strong>Achievements</strong> — open Achievements for progress and unlocks</li>
+    </ul>
+  </section>
+
+  <section class="card help-section" id="timing">
+    <h2 class="section-title">Timing: Early, On time, Late</h2>
+    <p>Based on the chore’s <strong>due time</strong> on the local calendar day (app timezone). Defaults:</p>
+    <ul class="help-list">
+      <li><strong>Early</strong> — more than <strong>60 minutes</strong> before due</li>
+      <li><strong>On time</strong> — from 60 minutes before due through due + <strong>15 minutes</strong> grace</li>
+      <li><strong>Late</strong> — after due + 15 minutes grace</li>
+    </ul>
+    <h3 class="help-subhead">Example — due 6:00&nbsp;PM</h3>
+    <ul class="help-list">
+      <li><strong>Early</strong> — before 5:00&nbsp;PM</li>
+      <li><strong>On time</strong> — 5:00&nbsp;PM through 6:15&nbsp;PM</li>
+      <li><strong>Late</strong> — after 6:15&nbsp;PM</li>
+    </ul>
+    <p>Parents set bonus <em>points</em> for each status under Rewards. Completing late the same day is still allowed; base points still apply.</p>
+  </section>
+
+  <section class="card help-section" id="photos">
+    <h2 class="section-title">Photos &amp; privacy</h2>
+    <ul class="help-list">
+      <li>Proof photos are stored securely (local disk in dev; cloud storage in production)</li>
+      <li>The database only keeps a reference, not the image bytes</li>
+      <li>Photos are only available to <strong>logged-in</strong> users through the app — not public links</li>
+      <li>Deleting a chore also removes its proof photos</li>
+    </ul>
+  </section>
+
+  <section class="card help-section" id="points">
+    <h2 class="section-title">Points (quick reference)</h2>
+    <ul class="help-list">
+      <li><strong>Base points</strong> — once per day when the chore is completed</li>
+      <li><strong>Timing bonus</strong> — Early / on-time / late amount from Rewards</li>
+      <li><strong>Achievement points</strong> — when a new achievement unlocks on complete</li>
+    </ul>
+    <p class="muted small">Your balance is the sum of the points ledger on the server.</p>
+  </section>
+
+  <section class="card help-section" id="troubleshooting">
+    <h2 class="section-title">Troubleshooting</h2>
+    <ul class="help-list">
+      <li><strong>QR opens wrong site</strong> — stickers may use an old public URL; re-print after the URL is final</li>
+      <li><strong>“Wrong account”</strong> — log out and log in as the <strong>child</strong> to complete</li>
+      <li><strong>Can’t complete without photo</strong> — photo policy is required; attach JPEG/PNG/WebP</li>
+      <li><strong>Already done</strong> — same chore only once per local day</li>
+      <li><strong>Keeps logging out</strong> — sessions are cookies; after a server secret change, log in again</li>
+    </ul>
+  </section>
+
+  <section class="card help-section">
+    <h2 class="section-title">Not in the app yet</h2>
+    <ul class="help-list">
+      <li>Push or SMS reminders</li>
+      <li>Points shop / redemption</li>
+      <li>Self-serve signup and parent-created child accounts (planned)</li>
+      <li>Multi-child first-class household UI</li>
+      <li>Native mobile apps</li>
+      <li>Parent “mark done for her” override</li>
+    </ul>
+  </section>
+
+  {% if user is defined and user %}
+  <a class="btn btn-primary btn-block" href="{% if user.role.value == 'parent' %}/today{% else %}/home{% endif %}">Back</a>
+  {% else %}
+  <a class="btn btn-primary btn-block" href="/login">Log in</a>
+  {% endif %}
+</article>
+{% endblock %}

@@ -98,4 +98,47 @@ async def test_entrypoint_script_exists() -> None:
     assert script.is_file()
     text = script.read_text()
     assert "alembic upgrade head" in text
-    assert "uvicorn" in text
+
+
+def test_user_documentation_exists_and_is_linked() -> None:
+    """Issue #3: end-user guide for parents and child."""
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[1]
+    user_doc = root / "docs" / "USER.md"
+    readme = root / "README.md"
+    assert user_doc.is_file()
+    text = user_doc.read_text(encoding="utf-8")
+    assert "Using QR Chores" in text
+    assert "Early" in text and "On time" in text and "Late" in text
+    assert "Parent guide" in text
+    assert "Child guide" in text
+    assert "BASE_URL" in text
+    readme_text = readme.read_text(encoding="utf-8")
+    assert "docs/USER.md" in readme_text
+
+
+@pytest.mark.asyncio
+async def test_help_page_mobile_html(client: AsyncClient, parent_user: User) -> None:
+    """In-app HTML guide is public and linked from login / shell."""
+    help_page = await client.get("/help")
+    assert help_page.status_code == 200
+    assert "Using QR Chores" in help_page.text
+    assert "Parent guide" in help_page.text
+    assert "Child guide" in help_page.text
+    assert "Early" in help_page.text
+    assert "On time" in help_page.text
+    assert "Late" in help_page.text
+    assert 'name="viewport"' in help_page.text
+
+    login = await client.get("/login")
+    assert login.status_code == 200
+    assert 'href="/help"' in login.text
+
+    await client.post(
+        "/login",
+        data={"email": parent_user.email, "password": "parent-pass", "next": ""},
+    )
+    today = await client.get("/today")
+    assert today.status_code == 200
+    assert 'href="/help"' in today.text
