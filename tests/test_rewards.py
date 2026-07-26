@@ -163,6 +163,11 @@ async def test_parent_rewards_pages(client: AsyncClient, parent_user: User) -> N
     assert page.status_code == 200
     assert "Timing bonuses" in page.text
     assert "First Step" in page.text or "Achievements" in page.text
+    # Issue #5: plain-language Early / On time / Late rules on Rewards
+    assert "How timing works" in page.text
+    assert "Early" in page.text
+    assert "On time" in page.text or "On-time" in page.text
+    assert "grace" in page.text.lower()
 
     create = await client.post(
         "/rewards/achievements",

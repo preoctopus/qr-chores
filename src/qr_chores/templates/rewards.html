@@ -9,19 +9,37 @@
 
   <div class="card">
     <h2 class="section-title">Timing bonuses</h2>
-    <p class="muted small">Added on top of each chore’s base points.</p>
+    <p class="muted small">
+      Added on top of each chore’s base points when she marks it done.
+      Timing uses the app timezone and each chore’s due time.
+    </p>
+    <div class="timing-help" role="note">
+      <p class="timing-help-intro">{{ timing_rules_intro }}</p>
+      <ul class="timing-help-list">
+        {% for line in timing_rules %}
+        <li>{{ line }}</li>
+        {% endfor %}
+      </ul>
+      <p class="muted small" style="margin-bottom: 0;">
+        Windows: early starts {{ early_window_minutes }} min before due;
+        on-time grace is {{ on_time_grace_minutes }} min after due.
+      </p>
+    </div>
     <form method="post" action="/rewards/bonuses" class="stack" style="margin-top: 0.75rem;">
       <label class="field">
         <span>Early bonus</span>
         <input type="number" name="early_bonus_points" min="0" value="{{ bonuses.early_bonus_points }}">
+        <span class="muted small">Extra points when finished more than {{ early_window_minutes }} min early.</span>
       </label>
       <label class="field">
         <span>On-time bonus</span>
         <input type="number" name="on_time_bonus_points" min="0" value="{{ bonuses.on_time_bonus_points }}">
+        <span class="muted small">Extra points when finished in the on-time window (through due + {{ on_time_grace_minutes }} min).</span>
       </label>
       <label class="field">
         <span>Late bonus</span>
         <input type="number" name="late_bonus_points" min="0" value="{{ bonuses.late_bonus_points }}">
+        <span class="muted small">Extra points after the grace window (often 0).</span>
       </label>
       <button type="submit" class="btn btn-primary btn-block">Save bonuses</button>
     </form>
