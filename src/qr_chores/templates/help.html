@@ -24,17 +24,20 @@
   <section class="card help-section" id="getting-started">
     <h2 class="section-title">Getting started</h2>
     <h3 class="help-subhead">Accounts</h3>
-    <p>QR Chores uses <strong>email + password</strong> logins.</p>
+    <p>QR Chores uses <strong>username + password</strong> logins.</p>
     <ul class="help-list">
-      <li><strong>Parent</strong> — manage chores, QR codes, rewards, today board, history</li>
-      <li><strong>Child</strong> — see today’s chores, complete them, earn points and achievements</li>
+      <li><strong>Parent</strong> — manage children, chores, QR codes, rewards, today board, history</li>
+      <li><strong>Child</strong> — complete their chores via QR, earn points and achievements</li>
     </ul>
-    <p class="muted small">There is no public sign-up page. Accounts come from setup (seed) or an admin.</p>
+    <p class="muted small">
+      There is no public sign-up page. Parent logins are provided for your household.
+      Parents create and manage <strong>child</strong> accounts under <strong>Children</strong>.
+    </p>
     <h3 class="help-subhead">Log in</h3>
     <ol class="help-list">
       <li>Open the app URL</li>
-      <li>Enter email and password</li>
-      <li>Parents land on <strong>Today</strong>; the child lands on <strong>Home</strong></li>
+      <li>Enter username and password</li>
+      <li>Parents land on <strong>Today</strong>; each child lands on <strong>Home</strong></li>
     </ol>
     <p>Use <strong>Log out</strong> in the top bar when switching people on a shared phone.</p>
   </section>
@@ -70,17 +73,31 @@
   <section class="card help-section" id="parent-guide">
     <h2 class="section-title">Parent guide</h2>
     <h3 class="help-subhead">Today</h3>
-    <p>The <strong>Today</strong> board shows chores for this calendar day:</p>
+    <p>The <strong>Today</strong> board shows chores for this calendar day (for your children):</p>
     <ul class="help-list">
       <li><strong>Pending</strong> — not done yet</li>
       <li><strong>Done</strong> — completed (may also say early / late)</li>
       <li><strong>Late</strong> — still open past due + grace, or completed late</li>
     </ul>
-    <p class="muted small">Nav: Today · History · Chores · Rewards</p>
+    <p class="muted small">Nav: Today · History · Children · Chores · Rewards</p>
+
+    <h3 class="help-subhead">Children</h3>
+    <p>Use <strong>Children</strong> to add and manage kids who complete chores.</p>
+    <ul class="help-list">
+      <li><strong>First name / last name</strong> — shown in lists and the assignee picker</li>
+      <li><strong>Username</strong> — login name (not verified as a real email)</li>
+      <li><strong>Password</strong> — required when creating; optional when editing</li>
+      <li><strong>Deactivate / Activate</strong> — stop or restore that child’s login</li>
+    </ul>
+    <p class="muted small">
+      Add at least one child before creating chores. Every chore must be assigned to someone.
+      Siblings cannot complete each other’s chores.
+    </p>
 
     <h3 class="help-subhead">Creating and editing chores</h3>
     <ul class="help-list">
       <li><strong>Title / description</strong> — what needs doing</li>
+      <li><strong>Assigned to</strong> — required; which child owns this chore and its QR</li>
       <li><strong>Due time</strong> — local wall clock (app timezone, usually America/Chicago)</li>
       <li><strong>Schedule days</strong> — which weekdays it appears</li>
       <li><strong>Base points</strong> — once per day when completed</li>
@@ -88,6 +105,7 @@
     </ul>
     <ul class="help-list">
       <li>One chore = one stable QR while it’s active</li>
+      <li>Only the <strong>assigned</strong> child can complete that QR</li>
       <li><strong>Deactivate</strong> stops the QR without wiping history</li>
       <li><strong>Delete</strong> permanently removes chore, completions, and photos</li>
     </ul>
@@ -97,7 +115,7 @@
       <li>Each chore has <strong>one QR forever</strong> while active (not rotated daily)</li>
       <li>Open <strong>QR</strong> on a chore to view or download the PNG</li>
       <li>Use <strong>Print</strong> for a sticker sheet of all active chores</li>
-      <li>Completing still requires the <strong>child</strong> to be logged in after scanning</li>
+      <li>Completing still requires the <strong>assigned child</strong> to be logged in after scanning</li>
     </ul>
     <p class="alert alert-warn" role="note">
       Stickers encode the public site URL. Don’t change that URL after you print, or stickers break.
@@ -108,7 +126,7 @@
       <li><strong>Timing bonuses</strong> — extra points for Early / On time / Late (see Timing below)</li>
       <li><strong>Achievements</strong> — badges for streaks, on-time counts, photos, totals, etc.</li>
     </ol>
-    <p>Awards are calculated on the server when she completes a chore — the phone never invents points.</p>
+    <p>Awards are calculated on the server when a child completes a chore — the phone never invents points. Points and achievements are per child.</p>
 
     <h3 class="help-subhead">History</h3>
     <p>Recent completions with timing, points, and proof photos (when provided).</p>
@@ -117,7 +135,11 @@
   <section class="card help-section" id="child-guide">
     <h2 class="section-title">Child guide</h2>
     <h3 class="help-subhead">Home</h3>
-    <p>After login you see total points, points change today, and your achievements (Awarded and Not yet awarded). Scan a chore’s QR sticker to confirm and complete it.</p>
+    <p>
+      After login you see total points, points change today, and your achievements
+      (Awarded and Not yet awarded). You only complete chores assigned to you —
+      scan a chore’s QR sticker to confirm and complete it.
+    </p>
 
     <h3 class="help-subhead">Completing a chore</h3>
     <ol class="help-list">
@@ -133,6 +155,7 @@
       <li><strong>Once per chore per day</strong> — “already done” if you finished earlier</li>
       <li><strong>Late is OK the same day</strong> — after due + grace it still counts (as late)</li>
       <li><strong>Photos</strong> — required chores need a valid image</li>
+      <li><strong>Your chores only</strong> — a sibling’s QR won’t complete under your login</li>
       <li><strong>Achievements</strong> — open Achievements for progress and unlocks</li>
     </ul>
   </section>
@@ -171,14 +194,16 @@
       <li><strong>Timing bonus</strong> — Early / on-time / late amount from Rewards</li>
       <li><strong>Achievement points</strong> — when a new achievement unlocks on complete</li>
     </ul>
-    <p class="muted small">Your balance is the sum of the points ledger on the server.</p>
+    <p class="muted small">Your balance is the sum of the points ledger on the server. Each child has their own balance.</p>
   </section>
 
   <section class="card help-section" id="troubleshooting">
     <h2 class="section-title">Troubleshooting</h2>
     <ul class="help-list">
       <li><strong>QR opens wrong site</strong> — stickers may use an old public URL; re-print after the URL is final</li>
-      <li><strong>“Wrong account”</strong> — log out and log in as the <strong>child</strong> to complete</li>
+      <li><strong>“Wrong account”</strong> — log out and log in as a <strong>child</strong>, not a parent</li>
+      <li><strong>“Not your chore”</strong> — log in as the child this chore is assigned to</li>
+      <li><strong>Can’t create a chore</strong> — add a child under <strong>Children</strong> first</li>
       <li><strong>Can’t complete without photo</strong> — photo policy is required; attach JPEG/PNG/WebP</li>
       <li><strong>Already done</strong> — same chore only once per local day</li>
       <li><strong>Keeps logging out</strong> — sessions are cookies; after a server secret change, log in again</li>
@@ -190,10 +215,9 @@
     <ul class="help-list">
       <li>Push or SMS reminders</li>
       <li>Points shop / redemption</li>
-      <li>Self-serve signup and parent-created child accounts (planned)</li>
-      <li>Multi-child first-class household UI</li>
+      <li>Public self-serve signup for new households</li>
       <li>Native mobile apps</li>
-      <li>Parent “mark done for her” override</li>
+      <li>Parent “mark done for them” override</li>
     </ul>
   </section>
 

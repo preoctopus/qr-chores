@@ -4,7 +4,7 @@ Guidance for AI agents and humans working in this repo. Product decisions from t
 
 ## What this is
 
-**QR Chores** is a mobile-first family web app: parents manage chores for their daughter; each chore has a **stable QR code** (reused every day). She scans the code on her phone to confirm completion (with photo rules per chore) and earns **points and achievements**.
+**QR Chores** is a mobile-first family web app: parents manage **one or more children** and chores; each chore has a **stable QR code** (reused every day) and is **assigned to one child**. That child scans the code on their phone to confirm completion (with photo rules per chore) and earns **points and achievements**.
 
 **v1 is complete** (phases 1–5 + lint/coverage/integration tests). Prefer small, tested changes over large rewrites.
 
@@ -25,12 +25,12 @@ Guidance for AI agents and humans working in this repo. Product decisions from t
 
 ## Roles & auth
 
-- **Normal login** (email + password), session cookie (HTTP-only, signed).
+- **Normal login** (username + password; often email-shaped, no mailbox verification), session cookie (HTTP-only, signed).
 - Roles:
-  - **`parent`** — Dad and Mom each have their own account. Manage chores, QRs, rewards; track status.
-  - **`child`** — Daughter. Complete chores, see points/achievements.
-- QR URLs use unguessable tokens but **still require child login** before complete.
-- Parent routes require `role=parent`. Complete flow requires `role=child`.
+  - **`parent`** — Dad and Mom each have their own account. Manage **children**, chores (per assignee), QRs, rewards; track status.
+  - **`child`** — One or more kids per parent. Complete **their** assigned chores; see points/achievements.
+- QR URLs use unguessable tokens but **still require the assigned child’s login** before complete.
+- Parent routes require `role=parent`. Complete flow requires `role=child` and matching assignee.
 
 ## Product rules (canonical)
 
@@ -42,7 +42,7 @@ Guidance for AI agents and humans working in this repo. Product decisions from t
 6. **Double-complete same day is blocked.** Show “already done” with timestamp/photo.
 7. **Deactivate** stops a QR without losing history; **delete** permanently removes chore + completions + photo files.
 8. **Notifications (SMS/push) are out of scope for v1.**
-9. **Multi-child:** parents register children under their account; chores are assigned to one child; siblings cannot complete each other’s QR chores. Admin API (`X-Admin-Key`) bootstraps parent accounts.
+9. **Multi-child:** parents manage children under **Children** (`/children`); each chore has one **assignee** child; siblings cannot complete each other’s QR chores.
 
 ### Timing (v1 defaults)
 
@@ -75,15 +75,15 @@ Guidance for AI agents and humans working in this repo. Product decisions from t
 
 ### Parent
 
-Login → **Today** board → **Chores** (CRUD, deactivate/delete, QR, print) → **Rewards** (timing bonuses + achievements) → **History** (completions + photos).
+Login → **Today** board → **Children** (add/edit/activate/deactivate) → **Chores** (CRUD with **assignee**, deactivate/delete, QR, print) → **Rewards** (timing bonuses + achievements) → **History** (completions + photos).
 
 ### Child (QR)
 
-Scan QR → `GET /c/{token}` → login if needed (preserve `next`) → confirm (name, due, late?, photo) → `POST` complete → celebration (points + unlocks).
+Scan QR → `GET /c/{token}` → login if needed (preserve `next`) → must be the **assignee** → confirm (name, due, late?, photo) → `POST` complete → celebration (points + unlocks).
 
 ### Child (home)
 
-Login → points (total balance + points change today) + achievements (awarded and not yet awarded). Scanning QR code is the only path to chore confirmation/completion.
+Login → points (total balance + points change today) + achievements (awarded and not yet awarded). Scanning QR code is the only path to chore confirmation/completion (own chores only).
 
 ## Routes
 
@@ -91,9 +91,12 @@ Login → points (total balance + points change today) + achievements (awarded a
 |-------|------|---------|
 | `/login` | All | Auth |
 | `/` | Role redirect | Parent dashboard or child home |
-| `/today` | Parent | Live status board |
+| `/today` | Parent | Live status board (chores for this parent’s children) |
 | `/history` | Parent | Recent completions + photos |
-| `/chores` | Parent | List / create / edit / activate / deactivate |
+| `/children` | Parent | List / add / edit / activate / deactivate children |
+| `/children/new` | Parent | Create child account |
+| `/children/{id}/edit` | Parent | Edit child profile / password |
+| `/chores` | Parent | List / create / edit / activate / deactivate (per assignee) |
 | `/chores/{id}/delete` | Parent | Confirm + hard delete |
 | `/chores/{id}/qr` | Parent | QR page |
 | `/chores/{id}/qr.png` | Parent | QR PNG |
@@ -111,7 +114,7 @@ Login → points (total balance + points change today) + achievements (awarded a
 
 - **Audience:** native apps, automation, MCP. Family UX stays Jinja + `/help`.
 - **Auth:** opaque Bearer from `POST /api/v1/auth/login` (preferred) **or** session cookie. Dual-path in `auth/deps.py`.
-- **Roles:** same as HTML — parent board/CRUD/rewards; child home/confirm/complete/achievements; photos any auth user.
+- **Roles:** same as HTML — parent board/children/CRUD/rewards; child home/confirm/complete/achievements (assignee-scoped); photos any auth user.
 - **Domain:** thin routers under `routers/api/`; awards only in `services/`.
 - **Errors:** always JSON on `/api/*` (never HTML login redirect). `401` / `403` / `404` / `422`; domain complete failures use `400` with `{ "detail": { "message", "code" } }`.
 - **OpenAPI:** `/docs` + `/openapi.json` in non-production only. Bearer scheme registered for try-it-out.
@@ -119,8 +122,8 @@ Login → points (total balance + points change today) + achievements (awarded a
 
 ## Data model (conceptual)
 
-- **User** — email, display_name, password_hash, role (`parent`|`child`)
-- **Chore** — title, description, **qr_token** (unique, stable), due_time, schedule_days, photo_policy, base_points, is_active
+- **User** — email (username), first_name, last_name, display_name, password_hash, role (`parent`|`child`), **parent_id** (children → parent who manages them)
+- **Chore** — title, description, **qr_token** (unique, stable), due_time, schedule_days, photo_policy, base_points, is_active, **assignee_user_id** (child who owns the chore)
 - **ChoreCompletion** — chore_id, user_id, local_date, completed_at, timing, photo_object_key, points_awarded (base + timing bonus only; not achievement rewards); **UNIQUE (chore_id, local_date)**
 - **PointLedger** — user_id, delta, reason, ref_type, ref_id (sum = balance; “points today” is ledger deltas for the local day)
 - **Achievement** — title, description, icon_key, criteria_type, criteria_json, points_reward, is_active
@@ -175,7 +178,7 @@ qr-chores/
 | `PHOTO_MAX_BYTES` | Max upload size (default 5 MB); enforced while reading the upload stream |
 | `PORT` | Cloud Run listens on `8080` |
 | `RUN_MIGRATIONS` / `RUN_SEED` | Docker entrypoint flags |
-| `ADMIN_API_KEY` | Enables `POST /api/v1/admin/users` (bootstrap registration); empty disables |
+| `ADMIN_API_KEY` | Optional internal registration API key (not family-facing UX) |
 | `QR_CHORES_EMAIL` / `QR_CHORES_PASSWORD` | Optional MCP auto-login |
 | `MCP_TRANSPORT` / `MCP_HOST` / `MCP_PORT` / `MCP_PATH` | FastMCP HTTP in Docker (default `http` / `127.0.0.1` / `8001` / `/mcp`) |
 
@@ -202,6 +205,7 @@ Local default port: **8765** (8000 is often taken).
 7. Security hardening (redirects, photo paths, upload caps, prod guards) ✅  
 8. Internal `/api/v1` (auth, child, parent, rewards, photos) ✅ — see `docs/API.md`
 9. Client libraries (`clients/python` FastMCP + **`qrc` CLI** + `clients/kotlin`) + shared mock-api ✅ — see `clients/`
+10. Multi-child (Children UI/API, per-chore assignee, sibling isolation) ✅
 
 ## Quality gates (required)
 
@@ -288,10 +292,10 @@ Fix failures before declaring the task complete, opening a PR as ready, or askin
 
 - Push/SMS notifications  
 - Points shop / redemption  
-- Multi-child first-class UX  
+- Public self-serve signup for new households  
 - Native mobile apps  
 - OAuth (password accounts only for now)  
-- Parent “mark done for her” override  
+- Parent “mark done for them” override  
 
 ## When unsure
 

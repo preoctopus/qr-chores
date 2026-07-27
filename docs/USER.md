@@ -10,20 +10,20 @@ Family guide for parents and kids. For developers and deploy, see [AGENTS.md](..
 
 ### Accounts
 
-QR Chores uses **email + password** logins. There are two roles:
+QR Chores uses **username + password** logins (often an email-shaped username; the app does not require a real mailbox). There are two roles:
 
 | Role | Who | What they can do |
 |------|-----|------------------|
-| **Parent** | Mom and Dad (separate logins) | Manage chores, QR codes, rewards, today board, history |
-| **Child** | Daughter | See today’s chores, complete them, earn points and achievements |
+| **Parent** | Mom and Dad (separate logins) | Manage **children**, chores, QR codes, rewards, today board, history |
+| **Child** | One or more kids | See their chores, complete them via QR, earn points and achievements |
 
-There is **no public “sign up” page**. Accounts are created by seed (local/bootstrap) or by an admin. A future update will let parents create child accounts in the app.
+There is **no public “sign up” page**. Parent logins are provided for your household. Parents create and manage **child** accounts in the app under **Children**.
 
 ### Log in
 
 1. Open the app URL (for example `https://chores.indecline.ca` or your local/dev URL).
-2. Enter email and password.
-3. Parents land on **Today**; the child lands on **Home**.
+2. Enter username and password.
+3. Parents land on **Today**; each child lands on **Home** (their points, achievements, and chores only).
 
 Use **Log out** in the top bar when switching people on a shared phone.
 
@@ -44,7 +44,7 @@ On iOS, “Add to Home Screen” only appears in Safari (not Chrome). After inst
 
 ### Today
 
-The **Today** board shows chores scheduled for this calendar day:
+The **Today** board shows chores scheduled for this calendar day (for your children):
 
 | Status | Meaning |
 |--------|---------|
@@ -52,15 +52,37 @@ The **Today** board shows chores scheduled for this calendar day:
 | **Done** | Completed (may also say early / late) |
 | **Late** | Still open and past due + grace, or completed late |
 
-Tap through the nav: **Today · Chores · History · Rewards**.
+Tap through the nav: **Today · History · Children · Chores · Rewards**.
 
-### Creating and editing chores
+### Children
 
-On **Chores** → **Add chore** (or edit an existing one):
+Use **Children** to add and manage kids who will complete chores.
+
+**Add child** (or edit an existing one):
 
 | Field | Notes |
 |-------|--------|
-| **Title / description** | What she needs to do |
+| **First name / last name** | Shown in the app (chore lists, assignee picker) |
+| **Username** | What they type at login (not verified as a real email) |
+| **Password** | Required when creating; optional when editing (leave blank to keep the current password) |
+
+Tips:
+
+- Add at least one child **before** creating chores — every chore must be assigned to someone.
+- **Edit** updates name, username, or password.
+- **Deactivate** stops that child from logging in as an active user (and they won’t appear as an assignee for new chores). History for past work stays.
+- **Activate** turns them back on.
+
+Each child has their own login. Siblings cannot complete each other’s chores.
+
+### Creating and editing chores
+
+On **Chores** → **New chore** (or edit an existing one):
+
+| Field | Notes |
+|-------|--------|
+| **Title / description** | What needs doing |
+| **Assigned to** | **Required** — which child owns this chore (and its QR) |
 | **Due time** | Local wall-clock time (app timezone, usually America/Chicago) |
 | **Schedule days** | Which weekdays this chore appears |
 | **Base points** | Awarded once per day when completed |
@@ -69,6 +91,7 @@ On **Chores** → **Add chore** (or edit an existing one):
 Tips:
 
 - One chore = one stable QR for as long as the chore is active.
+- Only the **assigned** child can complete that QR while logged in.
 - **Deactivate** stops the QR without wiping history.
 - **Delete** permanently removes the chore, completions, and proof photos.
 
@@ -77,7 +100,7 @@ Tips:
 - Each chore has **one QR code forever** while it’s active (token does not rotate daily).
 - Open **QR** on a chore to view or download the PNG.
 - Use **Print** for a sticker sheet of all active chores.
-- Completing still requires the **child** to be logged in after scanning.
+- Completing still requires the **assigned child** to be logged in after scanning.
 
 **Important:** Stickers encode the public site URL (`BASE_URL`). Don’t change that URL after you print, or the stickers break.
 
@@ -88,7 +111,7 @@ On **Rewards** you configure:
 1. **Timing bonuses** — extra points for Early / On time / Late (see [Timing](#timing-early-on-time-late) below). These stack on top of each chore’s base points.
 2. **Achievements** — badges with criteria such as streak days, on-time counts, photo completions, total completions. Points for unlocks are set per achievement.
 
-Awards are calculated **on the server** when she completes a chore. The app never trusts the phone for point totals.
+Awards are calculated **on the server** when a child completes a chore. The app never trusts the phone for point totals. Points and achievements are tracked **per child**.
 
 ### History
 
@@ -105,7 +128,7 @@ After login you see:
 - Total points and points earned today
 - Awarded and Not yet awarded achievements
 
-To complete a chore, scan its physical QR code sticker.
+You only complete chores **assigned to you**. To finish one, scan its physical QR code sticker.
 
 ### Completing a chore
 
@@ -119,6 +142,8 @@ You’ll get a celebration screen with:
 - Total points for this completion
 - Breakdown: base points, timing bonus (if any), achievement points
 - New achievements, if any
+
+If the QR belongs to a sibling’s chore, you’ll see that it isn’t yours — log in with the correct child’s account.
 
 ### Rules that matter
 
@@ -174,7 +199,7 @@ The same rules appear in the app on:
 | **Timing bonus** | Early / on-time / late amount from Rewards |
 | **Achievement points** | When a new achievement unlocks on complete |
 
-Your balance is the sum of the points ledger (server-side), not a number the phone invents.
+Your balance is the sum of the points ledger (server-side), not a number the phone invents. Each child has their own balance.
 
 ---
 
@@ -183,7 +208,9 @@ Your balance is the sum of the points ledger (server-side), not a number the pho
 | Problem | What to try |
 |---------|-------------|
 | QR opens wrong site or fails | Stickers may have been printed with an old `BASE_URL`; re-print after the URL is final |
-| “Wrong account” when completing | Log out and log in as the **child** |
+| “Wrong account” when completing | Log out and log in as a **child**, not a parent |
+| “Not your chore” / assigned to someone else | Log in as the child this chore is assigned to (siblings can’t finish each other’s QRs) |
+| Can’t create a chore / no assignee | Add a child under **Children** first |
 | Can’t complete without photo | Chore photo policy is **required** — attach JPEG/PNG/WebP |
 | Already done | Same chore can only be completed once per local day |
 | Session keeps logging out | Cookie sessions; after a secret key change everyone must log in again |
@@ -194,10 +221,9 @@ Your balance is the sum of the points ledger (server-side), not a number the pho
 
 - Push or SMS reminders  
 - Points shop / redemption  
-- Self-serve signup and parent-created child accounts (planned)  
-- Multi-child first-class household UI  
+- Public self-serve signup for new households  
 - Native mobile apps  
-- Parent “mark done for her” override  
+- Parent “mark done for them” override  
 
 ---
 

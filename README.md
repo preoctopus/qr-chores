@@ -1,12 +1,12 @@
 # QR Chores
 
-A mobile-first family chore app. Parents manage a chore list; each chore gets a **stable QR code**. Your daughter scans the code on her phone to mark the chore done (with optional or required photo proof), and earns **points and achievements** along the way.
+A mobile-first family chore app. Parents manage **children** and chores; each chore gets a **stable QR code** and is **assigned to one child**. That child scans the code on their phone to mark the chore done (with optional or required photo proof), and earns **points and achievements** along the way.
 
 Built as a **Python** app with **uv**, **FastAPI**, and **Docker**, meant to run on **Google Cloud Run**.
 
 | Docs | |
 |------|--|
-| **Using QR Chores** (parents & child) | [docs/USER.md](./docs/USER.md) · in-app at `/help` |
+| **Using QR Chores** (parents & kids) | [docs/USER.md](./docs/USER.md) · in-app at `/help` |
 | **Internal JSON API** (native apps / MCP) | [docs/API.md](./docs/API.md) · `/api/v1` |
 | **Client libraries** (Python FastMCP + Kotlin) | [clients/](./clients/) · [CONTRACT](./clients/CONTRACT.md) |
 | Product & coding rules for agents | [AGENTS.md](./AGENTS.md) |
@@ -20,23 +20,31 @@ Built as a **Python** app with **uv**, **FastAPI**, and **Docker**, meant to run
 
 | Role | People | What they do |
 |------|--------|----------------|
-| **Parent** | Mom and Dad (separate logins) | Add/edit/delete chores, print QR stickers, configure points & achievements, track today + history |
-| **Child** | Daughter | Log in, scan QR / open list, confirm + photo, earn points and unlock achievements |
+| **Parent** | Mom and Dad (separate logins) | Manage **Children**, assign chores, print QR stickers, configure points & achievements, track today + history |
+| **Child** | One or more kids | Log in, scan **their** QR stickers, confirm + photo, earn points and unlock achievements |
+
+Parent nav: **Today · History · Children · Chores · Rewards**.
 
 ---
 
 ## How it works
 
+### Children & assignment
+
+- Parents add and manage kids under **Children** (name, username, password; activate/deactivate).
+- Every chore is **assigned to one child**. Only that child can complete its QR while logged in.
+- Siblings cannot finish each other’s chores.
+
 ### Stable QR codes
 
 - Each chore has **one QR code** reused every day (print stickers once).
 - URL shape: `{BASE_URL}/c/{token}`.
-- Completing still requires the child to be **logged in**.
+- Completing still requires the **assigned child** to be **logged in**.
 - **Keep `BASE_URL` stable** before printing stickers.
 
 ### Completing a chore
 
-1. Scan the QR (or tap the chore on home).
+1. Scan the QR for a chore assigned to you.
 2. Confirm page: name, due time, late indicator.
 3. Photo when the chore requires/allows it (JPEG / PNG / WebP).
 4. Tap **I did it** → early / on time / late, points, achievements, celebration.
