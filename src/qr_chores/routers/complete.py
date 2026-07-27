@@ -15,11 +15,11 @@ from qr_chores.models.user import User, UserRole
 from qr_chores.services.achievements import ICON_CHOICES
 from qr_chores.services.completion import (
     CompletionError,
-    PhotoUpload,
     complete_chore,
     get_completion_for_today,
 )
 from qr_chores.services.timeutil import format_due_time, is_scheduled_on, local_now, local_today
+from qr_chores.services.uploads import read_photo_upload
 from qr_chores.templating import templates
 
 router = APIRouter(tags=["complete"])
@@ -30,40 +30,6 @@ ICON_EMOJI = {k: v.split(" ", 1)[0] for k, v in ICON_CHOICES}
 async def _load_chore(db: AsyncSession, token: str) -> Chore | None:
     result = await db.execute(select(Chore).where(Chore.qr_token == token))
     return result.scalar_one_or_none()
-
-
-async def _read_photo(
-    upload: UploadFile | None,
-    *,
-    max_bytes: int,
-) -> PhotoUpload | None:
-    """Read upload in chunks; refuse bodies larger than max_bytes."""
-    if upload is None:
-        return None
-    # Empty file input still sends a part with empty filename
-    if not upload.filename:
-        return None
-
-    chunks: list[bytes] = []
-    total = 0
-    # Read one extra byte past the limit so we can reject without loading huge files
-    chunk_size = 64 * 1024
-    while True:
-        chunk = await upload.read(chunk_size)
-        if not chunk:
-            break
-        total += len(chunk)
-        if total > max_bytes:
-            max_mb = max(1, max_bytes // (1024 * 1024))
-            raise CompletionError(
-                f"Photo is too large (max {max_mb} MB).",
-                "too_large",
-            )
-        chunks.append(chunk)
-
-    if not chunks:
-        return None
-    return PhotoUpload(data=b"".join(chunks), content_type=upload.content_type)
 
 
 @router.get("/c/{token}", response_model=None)
@@ -155,7 +121,7 @@ async def complete_submit(
         )
 
     try:
-        photo_upload = await _read_photo(photo, max_bytes=settings.photo_max_bytes)
+        photo_upload = await read_photo_upload(photo, max_bytes=settings.photo_max_bytes)
         result = await complete_chore(
             db,
             chore=chore,

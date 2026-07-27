@@ -12,6 +12,7 @@ from qr_chores import __version__
 from qr_chores.config import get_settings
 from qr_chores.db import init_db
 from qr_chores.routers import auth, chores, complete, health, pages, photos, rewards
+from qr_chores.routers.api import api_router
 from qr_chores.templating import templates
 
 
@@ -53,10 +54,12 @@ def create_app() -> FastAPI:
     app.include_router(complete.router)
     app.include_router(photos.router)
     app.include_router(rewards.router)
+    app.include_router(api_router)
 
     @app.exception_handler(StarletteHTTPException)
     async def http_exception_handler(request: Request, exc: StarletteHTTPException):
-        if request.url.path == "/healthz":
+        # Internal JSON API and healthz always return JSON (never HTML redirects).
+        if request.url.path == "/healthz" or request.url.path.startswith("/api/"):
             return JSONResponse({"detail": exc.detail}, status_code=exc.status_code)
 
         if exc.status_code == status.HTTP_401_UNAUTHORIZED:

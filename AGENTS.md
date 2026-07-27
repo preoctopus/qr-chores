@@ -103,6 +103,7 @@ Login → today’s list + total points → tap chore → same confirm path as Q
 | `/c/{token}` | Child | Confirm + photo + complete |
 | `/me/achievements` | Child | Achievement collection / progress |
 | `/photos/{completion_id}` | Logged-in | Stream proof photo |
+| `/api/v1/*` | Auth (Bearer / session) | **Internal** JSON API for native apps — see `docs/API.md` (not end-user Help) |
 | `/healthz` | Public | Cloud Run health |
 
 ## Data model (conceptual)
@@ -123,6 +124,7 @@ qr-chores/
   Dockerfile
   scripts/entrypoint.sh      # RUN_MIGRATIONS / RUN_SEED
   docs/DEPLOY.md
+  docs/API.md                # Internal /api/v1 for native apps (not user Help)
   README.md / AGENTS.md
   src/qr_chores/
     main.py
@@ -131,7 +133,9 @@ qr-chores/
     seed.py
     auth/
     models/
+    schemas/                 # Pydantic models for /api/v1
     routers/
+      api/                   # Internal JSON API
     services/                # qr, completion, achievements, points, storage, timeutil
     templates/
     static/
