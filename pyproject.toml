@@ -45,6 +45,7 @@ package = true
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
 testpaths = ["tests"]
+pythonpath = ["tests"]
 markers = [
     "integration: multi-step flows across HTTP routes and persistence",
 ]

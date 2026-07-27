@@ -1,6 +1,8 @@
 """Shared pytest fixtures."""
 
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, Iterator
+from datetime import date, datetime
+from zoneinfo import ZoneInfo
 
 import pytest
 import pytest_asyncio
@@ -12,6 +14,25 @@ from qr_chores.config import Settings, get_settings
 from qr_chores.db import Base, get_db
 from qr_chores.main import create_app
 from qr_chores.models.user import User, UserRole
+from qr_chores.services.timeutil import clear_frozen_time, frozen_at
+
+
+@pytest.fixture(autouse=True)
+def _reset_app_clock() -> Iterator[None]:
+    """Ensure no test leaves the app clock frozen for another test."""
+    clear_frozen_time()
+    yield
+    clear_frozen_time()
+
+
+@pytest.fixture
+def freeze_app_time(test_settings: Settings):
+    """Pin APP_TIMEZONE wall clock: ``with freeze_app_time(date|datetime): ...``."""
+
+    def _freeze(when: datetime | date, *, tz: str | ZoneInfo | None = None):
+        return frozen_at(when, tz=tz or test_settings.app_timezone)
+
+    return _freeze
 
 
 @pytest.fixture

@@ -54,13 +54,19 @@ class PhotoUpload:
 
 async def get_completion_for_today(
     db: AsyncSession,
-    chore: Chore,
+    chore: Chore | int,
     settings: Settings,
 ) -> ChoreCompletion | None:
+    """Return today's completion for a chore (by model or id).
+
+    Accepts ``chore_id`` as int so callers can recover after ``session.rollback()``
+    without touching an expired ORM instance.
+    """
     today = local_today(settings)
+    chore_id = chore if isinstance(chore, int) else chore.id
     result = await db.execute(
         select(ChoreCompletion).where(
-            ChoreCompletion.chore_id == chore.id,
+            ChoreCompletion.chore_id == chore_id,
             ChoreCompletion.local_date == today,
         )
     )
@@ -121,11 +127,19 @@ async def complete_chore(
     if not chore.is_active:
         raise CompletionError("This chore is no longer active.", "inactive")
 
+    # Capture primitives before the write transaction: after IntegrityError +
+    # rollback, ORM instances may be expired and unsafe to attribute-load.
+    chore_id = chore.id
+    chore_title = chore.title
+    schedule_days = chore.schedule_days
+    due_time = chore.due_time
+    base = max(0, chore.base_points)
+
     today = local_today(settings)
-    if not is_scheduled_on(chore.schedule_days, today):
+    if not is_scheduled_on(schedule_days, today):
         raise CompletionError("This chore is not scheduled for today.", "not_scheduled")
 
-    existing = await get_completion_for_today(db, chore, settings)
+    existing = await get_completion_for_today(db, chore_id, settings)
     if existing is not None:
         return CompletionResult(completion=existing, chore=chore, already_done=True)
 
@@ -139,17 +153,16 @@ async def complete_chore(
     now = local_now(settings)
     timing = classify_timing(
         completed_at=now,
-        due_time=chore.due_time,
+        due_time=due_time,
         local_date=today,
         settings=settings,
     )
     bonuses = await get_timing_bonuses(db)
-    base = max(0, chore.base_points)
     timing_bonus = _timing_bonus_amount(timing, bonuses)
     points_awarded = base + timing_bonus
 
     completion = ChoreCompletion(
-        chore_id=chore.id,
+        chore_id=chore_id,
         user_id=user.id,
         local_date=today,
         completed_at=now,
@@ -165,7 +178,7 @@ async def complete_chore(
             db,
             user_id=user.id,
             delta=base,
-            reason=f"Completed: {chore.title}",
+            reason=f"Completed: {chore_title}",
             ref_type="completion",
             ref_id=completion.id,
         )
@@ -195,9 +208,15 @@ async def complete_chore(
 
             with suppress(StorageError):
                 get_photo_storage(settings).delete(photo_key)
-        existing = await get_completion_for_today(db, chore, settings)
+        existing = await get_completion_for_today(db, chore_id, settings)
         if existing is not None:
-            return CompletionResult(completion=existing, chore=chore, already_done=True)
+            # Re-load chore so the result is not bound to an expired instance.
+            reloaded = await db.get(Chore, chore_id)
+            return CompletionResult(
+                completion=existing,
+                chore=reloaded or chore,
+                already_done=True,
+            )
         raise CompletionError("Could not save completion.", "db") from exc
 
     await db.refresh(completion)

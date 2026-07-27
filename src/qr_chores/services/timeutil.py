@@ -1,5 +1,9 @@
 """Timezone and schedule helpers."""
 
+from __future__ import annotations
+
+from collections.abc import Iterator
+from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta
 from zoneinfo import ZoneInfo
@@ -21,17 +25,68 @@ TIMING_BONUS_LABELS: dict[TimingStatus, str] = {
     TimingStatus.late: "Late bonus",
 }
 
+# Optional pinned instant for tests (timezone-aware). Production leaves this None.
+_frozen_instant: datetime | None = None
+
 
 def app_tz(settings: Settings) -> ZoneInfo:
     return ZoneInfo(settings.app_timezone)
 
 
 def local_now(settings: Settings) -> datetime:
-    return datetime.now(tz=app_tz(settings))
+    """Current wall-clock time in APP_TIMEZONE (or a test freeze)."""
+    tz = app_tz(settings)
+    if _frozen_instant is not None:
+        return _frozen_instant.astimezone(tz)
+    return datetime.now(tz=tz)
 
 
 def local_today(settings: Settings) -> date:
     return local_now(settings).date()
+
+
+def _resolve_freeze_instant(
+    when: datetime | date,
+    *,
+    tz: str | ZoneInfo,
+) -> datetime:
+    zone = ZoneInfo(tz) if isinstance(tz, str) else tz
+    if isinstance(when, datetime):
+        if when.tzinfo is None:
+            return when.replace(tzinfo=zone)
+        return when
+    # date only — noon local avoids DST midnight edge cases
+    return datetime.combine(when, time(12, 0), tzinfo=zone)
+
+
+@contextmanager
+def frozen_at(
+    when: datetime | date,
+    *,
+    tz: str | ZoneInfo = "America/Chicago",
+) -> Iterator[datetime]:
+    """Pin :func:`local_now` / :func:`local_today` for the duration of the block.
+
+    Intended for tests (schedule days, timing windows, day boundaries). Nestable.
+
+    * ``date`` → that local calendar day at 12:00.
+    * naive ``datetime`` → interpreted as wall clock in ``tz``.
+    * aware ``datetime`` → converted when read via ``local_now``.
+    """
+    global _frozen_instant
+    instant = _resolve_freeze_instant(when, tz=tz)
+    previous = _frozen_instant
+    _frozen_instant = instant
+    try:
+        yield instant
+    finally:
+        _frozen_instant = previous
+
+
+def clear_frozen_time() -> None:
+    """Drop any pinned clock (tests / fixtures)."""
+    global _frozen_instant
+    _frozen_instant = None
 
 
 def is_scheduled_on(schedule_days: str, day: date) -> bool:
