@@ -12,17 +12,25 @@
     <p class="stat-value" id="points-pop">+{{ points.total }}</p>
     <p class="celebration-title">{{ chore.title }}</p>
     <p class="muted">
-      {{ completion.timing.value.replace('_', ' ')|capitalize }}
+      {{ timing_status_label(completion.timing) }}
     </p>
     <ul class="points-breakdown">
       <li>Base <strong>+{{ points.base }}</strong></li>
       {% if points.timing_bonus %}
-      <li>Timing <strong>+{{ points.timing_bonus }}</strong></li>
+      <li>{{ timing_bonus_label(completion.timing) }} <strong>+{{ points.timing_bonus }}</strong></li>
       {% endif %}
       {% if points.achievement_points %}
       <li>Achievements <strong>+{{ points.achievement_points }}</strong></li>
       {% endif %}
     </ul>
+    <div class="timing-help timing-help-compact" role="note">
+      <p class="timing-help-intro">{{ timing_rules_intro }}</p>
+      <ul class="timing-help-list">
+        {% for line in timing_rules %}
+        <li>{{ line }}</li>
+        {% endfor %}
+      </ul>
+    </div>
     {% endif %}
     {% if completion.photo_object_key %}
     <a href="/photos/{{ completion.id }}" class="photo-thumb-link">
