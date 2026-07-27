@@ -276,11 +276,21 @@ async def test_rewards_admin(client: AsyncClient, parent_user: User) -> None:
     patched = await client.patch(
         f"/api/v1/rewards/achievements/{ach_id}",
         headers=headers,
-        json={"threshold": 5, "points_reward": 20},
+        json={
+            "title": "Photo pro+",
+            "description": "Snap it well",
+            "icon_key": "  camera  ",
+            "criteria_type": "photo_completions",
+            "threshold": 5,
+            "points_reward": 20,
+        },
     )
     assert patched.status_code == 200
-    assert patched.json()["threshold"] == 5
-    assert patched.json()["points_reward"] == 20
+    body = patched.json()
+    assert body["threshold"] == 5
+    assert body["points_reward"] == 20
+    assert body["title"] == "Photo pro+"
+    assert body["icon_key"] == "camera"
 
     toggled = await client.post(
         f"/api/v1/rewards/achievements/{ach_id}/toggle",

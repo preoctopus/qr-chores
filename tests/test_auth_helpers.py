@@ -37,6 +37,13 @@ def test_safe_next_url_blocks_relative_without_slash() -> None:
     assert _safe_next_url("c/token") == "/"
 
 
+def test_safe_next_url_blocks_scheme_in_path_form() -> None:
+    # urlparse quirks: path that still carries scheme/netloc style danger
+    assert _safe_next_url("/\\n/evil") == "/"
+    # path/query mismatch (fragment stripped; odd encodings)
+    assert _safe_next_url("/ok#frag") == "/ok"
+
+
 def test_home_for_role() -> None:
     assert _home_for_role(UserRole.parent) == "/today"
     assert _home_for_role(UserRole.child) == "/home"

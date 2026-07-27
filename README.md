@@ -72,7 +72,7 @@ Parent nav: **Today · History · Children · Chores · Rewards**.
 | Database | **SQLite** (`aiosqlite`) locally · **Postgres** (`asyncpg`) on Cloud Run |
 | Photos | **Local files** (dev) or **GCS** objects (prod) — DB stores only a key |
 | Lint / format | [ruff](https://docs.astral.sh/ruff/) |
-| Tests | pytest + coverage (≥ 75%) |
+| Tests | pytest + coverage (≥ 90%) |
 | Deploy | Docker → Google Cloud Run |
 | CI | GitHub Actions: ruff → pytest+cov → Docker build |
 
@@ -144,7 +144,7 @@ Auth is **Bearer** (preferred for native) or the same session cookie as the HTML
 uv run ruff check src tests
 uv run ruff format --check src tests
 
-# Unit + integration tests with coverage (fails under 75%)
+# Unit + integration tests with coverage (fails under 90%)
 uv run pytest -q
 
 # Integration tests only
@@ -300,7 +300,7 @@ qr-chores/
 3. **Photos** ✅ — policy, local/GCS, history  
 4. **Points & achievements** ✅ — ledger, bonuses, unlocks, celebration  
 5. **Polish** ✅ — print stickers, empty/error pages, deploy docs  
-6. **Quality** ✅ — ruff, coverage ≥ 75%, unit + integration tests  
+6. **Quality** ✅ — ruff, coverage ≥ 90%, unit + integration tests  
 7. **Hardening** ✅ — open-redirect fixes, photo path safety, upload size cap, prod secret/docs guards  
 8. **Internal JSON API** ✅ — `/api/v1` auth, child + parent surfaces; see [docs/API.md](./docs/API.md)
 

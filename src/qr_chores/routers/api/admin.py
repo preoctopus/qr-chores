@@ -32,7 +32,7 @@ async def admin_register_user(
         role = UserRole(role_raw)
     except ValueError as exc:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="role must be 'parent' or 'child'",
         ) from exc
 

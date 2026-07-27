@@ -201,3 +201,145 @@ async def test_html_children_page(client: AsyncClient, parent_user: User) -> Non
     assert created.status_code == 303
     listed = await client.get("/children")
     assert "Html Kid" in listed.text
+
+
+@pytest.mark.asyncio
+async def test_admin_register_invalid_role(client: AsyncClient, monkeypatch) -> None:
+    monkeypatch.setenv("ADMIN_API_KEY", "test-admin-key")
+    from qr_chores.config import get_settings
+
+    get_settings.cache_clear()
+    try:
+        r = await client.post(
+            "/api/v1/admin/users",
+            headers={"X-Admin-Key": "test-admin-key"},
+            json={
+                "email": "bad-role@example.com",
+                "password": "parent-pass",
+                "first_name": "Bad",
+                "last_name": "Role",
+                "role": "wizard",
+            },
+        )
+        assert r.status_code == 422
+        assert "parent" in r.text.lower() or "child" in r.text.lower()
+    finally:
+        get_settings.cache_clear()
+
+
+@pytest.mark.asyncio
+async def test_admin_register_duplicate_and_child_without_parent(
+    client: AsyncClient, monkeypatch
+) -> None:
+    monkeypatch.setenv("ADMIN_API_KEY", "test-admin-key")
+    from qr_chores.config import get_settings
+
+    get_settings.cache_clear()
+    headers = {"X-Admin-Key": "test-admin-key"}
+    try:
+        first = await client.post(
+            "/api/v1/admin/users",
+            headers=headers,
+            json={
+                "email": "once@example.com",
+                "password": "parent-pass",
+                "first_name": "Once",
+                "last_name": "Parent",
+                "role": "parent",
+            },
+        )
+        assert first.status_code == 201, first.text
+
+        dup = await client.post(
+            "/api/v1/admin/users",
+            headers=headers,
+            json={
+                "email": "once@example.com",
+                "password": "parent-pass",
+                "first_name": "Twice",
+                "last_name": "Parent",
+                "role": "parent",
+            },
+        )
+        assert dup.status_code == 409
+        assert dup.json()["detail"]["code"] == "username_taken"
+
+        orphan = await client.post(
+            "/api/v1/admin/users",
+            headers=headers,
+            json={
+                "email": "orphan-child@example.com",
+                "password": "child-pass",
+                "first_name": "Orphan",
+                "last_name": "Child",
+                "role": "child",
+            },
+        )
+        assert orphan.status_code == 400
+        assert orphan.json()["detail"]["code"] == "parent_required"
+    finally:
+        get_settings.cache_clear()
+
+
+@pytest.mark.asyncio
+async def test_api_children_get_update_not_found_and_conflicts(
+    client: AsyncClient, parent_user: User, child_user: User, app
+) -> None:
+    token = await api_login(client, parent_user.email, "parent-pass")
+    headers = auth(token)
+
+    missing = await client.get("/api/v1/children/999999", headers=headers)
+    assert missing.status_code == 404
+
+    missing_patch = await client.patch(
+        "/api/v1/children/999999",
+        headers=headers,
+        json={"first_name": "Nope"},
+    )
+    assert missing_patch.status_code == 404
+
+    missing_deact = await client.post("/api/v1/children/999999/deactivate", headers=headers)
+    assert missing_deact.status_code == 404
+
+    missing_act = await client.post("/api/v1/children/999999/activate", headers=headers)
+    assert missing_act.status_code == 404
+
+    # conflict on create
+    conflict = await client.post(
+        "/api/v1/children",
+        headers=headers,
+        json={
+            "email": child_user.email,
+            "password": "child-pass",
+            "first_name": "Dup",
+            "last_name": "Kid",
+        },
+    )
+    assert conflict.status_code == 409
+    assert conflict.json()["detail"]["code"] == "username_taken"
+
+    other = await create_user(
+        app.state.session_factory,
+        email="api-sib@example.com",
+        first_name="Api",
+        last_name="Sib",
+        password="child-pass",
+        role=UserRole.child,
+        parent_id=parent_user.id,
+    )
+    patch_conflict = await client.patch(
+        f"/api/v1/children/{child_user.id}",
+        headers=headers,
+        json={"email": other.email},
+    )
+    assert patch_conflict.status_code == 409
+
+    # get existing + include_inactive filter
+    got = await client.get(f"/api/v1/children/{child_user.id}", headers=headers)
+    assert got.status_code == 200
+    assert got.json()["id"] == child_user.id
+
+    listed_active = await client.get(
+        "/api/v1/children", headers=headers, params={"include_inactive": "false"}
+    )
+    assert listed_active.status_code == 200

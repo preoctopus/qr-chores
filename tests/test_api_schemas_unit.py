@@ -84,6 +84,8 @@ def test_chore_create_defaults_and_strip() -> None:
 def test_chore_create_description_blank_to_none() -> None:
     body = ChoreCreate(title="X", due_time=time(10, 0), description="   ", assignee_user_id=1)
     assert body.description is None
+    body_none = ChoreCreate(title="X", due_time=time(10, 0), description=None, assignee_user_id=1)
+    assert body_none.description is None
 
 
 def test_chore_create_schedule_days_normalized() -> None:
@@ -132,6 +134,12 @@ def test_chore_update_partial_and_none_fields() -> None:
 def test_chore_update_blank_title_rejected() -> None:
     with pytest.raises(ValidationError):
         ChoreUpdate(title="  ")
+
+
+def test_chore_update_title_none_passthrough() -> None:
+    body = ChoreUpdate(title=None, photo_policy=None)
+    assert body.title is None
+    assert body.photo_policy is None
 
 
 def test_chore_update_invalid_photo_policy() -> None:

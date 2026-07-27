@@ -14,6 +14,30 @@ async def test_root_redirects_to_login_when_anonymous(client: AsyncClient) -> No
 
 
 @pytest.mark.asyncio
+async def test_root_redirects_logged_in_parent_and_child(
+    client: AsyncClient, parent_user: User, child_user: User
+) -> None:
+    await client.post(
+        "/login",
+        data={"email": parent_user.email, "password": "parent-pass", "next": ""},
+        follow_redirects=False,
+    )
+    parent_root = await client.get("/", follow_redirects=False)
+    assert parent_root.status_code == 303
+    assert parent_root.headers["location"] == "/today"
+
+    await client.get("/logout", follow_redirects=False)
+    await client.post(
+        "/login",
+        data={"email": child_user.email, "password": "child-pass", "next": ""},
+        follow_redirects=False,
+    )
+    child_root = await client.get("/", follow_redirects=False)
+    assert child_root.status_code == 303
+    assert child_root.headers["location"] == "/home"
+
+
+@pytest.mark.asyncio
 async def test_login_page_renders(client: AsyncClient) -> None:
     response = await client.get("/login")
     assert response.status_code == 200

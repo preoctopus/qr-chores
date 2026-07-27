@@ -82,6 +82,8 @@ async def children_create(
         await db.commit()
     except UserServiceError as exc:
         await db.rollback()
+        # Rollback expires ORM attrs; re-load before Jinja touches user.*
+        await db.refresh(user)
         return templates.TemplateResponse(
             request,
             "child_form.html",
@@ -154,6 +156,9 @@ async def children_edit(
         await db.commit()
     except UserServiceError as exc:
         await db.rollback()
+        # Rollback expires ORM attrs; re-load before Jinja touches user/child.*
+        await db.refresh(user)
+        await db.refresh(child)
         return templates.TemplateResponse(
             request,
             "child_form.html",

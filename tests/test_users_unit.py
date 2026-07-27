@@ -113,3 +113,160 @@ async def test_update_profile(db_session: AsyncSession) -> None:
     )
     assert user.email == "new-user"
     assert user.display_name == "New Name"
+
+
+def test_normalize_username_too_long() -> None:
+    with pytest.raises(UserServiceError) as exc:
+        normalize_username("a" * 321)
+    assert exc.value.code == "username_too_long"
+
+
+@pytest.mark.asyncio
+async def test_create_user_validation_errors(db_session: AsyncSession) -> None:
+    parent = await create_user(
+        db_session,
+        email="p-val@example.com",
+        password="secret",
+        first_name="P",
+        last_name="Val",
+        role=UserRole.parent,
+    )
+
+    with pytest.raises(UserServiceError) as exc:
+        await create_user(
+            db_session,
+            email="no-pass",
+            password="   ",
+            first_name="A",
+            last_name="B",
+            role=UserRole.parent,
+        )
+    assert exc.value.code == "password_required"
+
+    with pytest.raises(UserServiceError) as exc:
+        await create_user(
+            db_session,
+            email="long-pass",
+            password="x" * 257,
+            first_name="A",
+            last_name="B",
+            role=UserRole.parent,
+        )
+    assert exc.value.code == "password_too_long"
+
+    with pytest.raises(UserServiceError) as exc:
+        await create_user(
+            db_session,
+            email="no-first",
+            password="ok",
+            first_name="  ",
+            last_name="B",
+            role=UserRole.parent,
+        )
+    assert exc.value.code == "first_name_required"
+
+    with pytest.raises(UserServiceError) as exc:
+        await create_user(
+            db_session,
+            email="no-last",
+            password="ok",
+            first_name="A",
+            last_name="",
+            role=UserRole.parent,
+        )
+    assert exc.value.code == "last_name_required"
+
+    with pytest.raises(UserServiceError) as exc:
+        await create_user(
+            db_session,
+            email="parent-with-parent",
+            password="ok",
+            first_name="A",
+            last_name="B",
+            role=UserRole.parent,
+            parent_id=parent.id,
+        )
+    assert exc.value.code == "invalid_parent"
+
+
+@pytest.mark.asyncio
+async def test_list_children_exclude_inactive(db_session: AsyncSession) -> None:
+    parent = await create_user(
+        db_session,
+        email="list-p@example.com",
+        password="secret",
+        first_name="List",
+        last_name="Parent",
+        role=UserRole.parent,
+    )
+    active = await create_user(
+        db_session,
+        email="list-active",
+        password="ok",
+        first_name="Active",
+        last_name="Kid",
+        role=UserRole.child,
+        parent_id=parent.id,
+    )
+    inactive = await create_user(
+        db_session,
+        email="list-inactive",
+        password="ok",
+        first_name="Inactive",
+        last_name="Kid",
+        role=UserRole.child,
+        parent_id=parent.id,
+        is_active=False,
+    )
+    all_kids = await list_children_for_parent(db_session, parent.id, include_inactive=True)
+    only_active = await list_children_for_parent(db_session, parent.id, include_inactive=False)
+    assert {k.id for k in all_kids} == {active.id, inactive.id}
+    assert [k.id for k in only_active] == [active.id]
+
+
+@pytest.mark.asyncio
+async def test_update_profile_validation(db_session: AsyncSession) -> None:
+    a = await create_user(
+        db_session,
+        email="upd-a",
+        password="pass",
+        first_name="A",
+        last_name="One",
+        role=UserRole.parent,
+    )
+    b = await create_user(
+        db_session,
+        email="upd-b",
+        password="pass",
+        first_name="B",
+        last_name="Two",
+        role=UserRole.parent,
+    )
+
+    with pytest.raises(UserServiceError) as exc:
+        await update_user_profile(db_session, a, first_name="  ")
+    assert exc.value.code == "first_name_required"
+
+    with pytest.raises(UserServiceError) as exc:
+        await update_user_profile(db_session, a, last_name="")
+    assert exc.value.code == "last_name_required"
+
+    with pytest.raises(UserServiceError) as exc:
+        await update_user_profile(db_session, a, email=b.email)
+    assert exc.value.code == "username_taken"
+
+    with pytest.raises(UserServiceError) as exc:
+        await update_user_profile(db_session, a, password="p" * 257)
+    assert exc.value.code == "password_too_long"
+
+    # same email is fine; empty password ignored; is_active toggle
+    await update_user_profile(
+        db_session,
+        a,
+        email=a.email,
+        password="   ",
+        is_active=False,
+    )
+    assert a.is_active is False
+    await update_user_profile(db_session, a, is_active=True)
+    assert a.is_active is True

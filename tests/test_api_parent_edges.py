@@ -44,6 +44,43 @@ async def _create_chore(session_factory, **kwargs) -> Chore:
 
 
 @pytest.mark.asyncio
+async def test_create_chore_rejects_inactive_assignee(
+    client: AsyncClient, parent_user: User, child_user: User, app
+) -> None:
+    token = await api_login(client, parent_user.email, "parent-pass")
+    headers = auth_header(token)
+    # deactivate via API
+    deact = await client.post(
+        f"/api/v1/children/{child_user.id}/deactivate",
+        headers=headers,
+    )
+    assert deact.status_code == 200
+
+    bad = await client.post(
+        "/api/v1/chores",
+        headers=headers,
+        json={
+            "title": "No inactive assignee",
+            "due_time": "20:00:00",
+            "assignee_user_id": child_user.id,
+        },
+    )
+    assert bad.status_code == 400
+    assert bad.json()["detail"]["code"] == "bad_assignee"
+
+
+@pytest.mark.asyncio
+async def test_chore_with_null_assignee_hidden(client: AsyncClient, parent_user: User, app) -> None:
+    """Chores without assignee are not parent-owned (404)."""
+    chore = await _create_chore(
+        app.state.session_factory, title="Orphan chore", assignee_user_id=None
+    )
+    token = await api_login(client, parent_user.email, "parent-pass")
+    headers = auth_header(token)
+    assert (await client.get(f"/api/v1/chores/{chore.id}", headers=headers)).status_code == 404
+
+
+@pytest.mark.asyncio
 async def test_chore_404s(client: AsyncClient, parent_user: User) -> None:
     token = await api_login(client, parent_user.email, "parent-pass")
     headers = auth_header(token)

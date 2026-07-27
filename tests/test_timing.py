@@ -44,6 +44,19 @@ def test_classify_on_time() -> None:
     )
 
 
+def test_classify_naive_completed_at_treated_as_app_tz() -> None:
+    settings = _settings()
+    day = date(2026, 7, 27)
+    due = time(20, 0)
+    # naive wall clock in America/Chicago
+    completed = datetime(2026, 7, 27, 19, 50)
+    assert completed.tzinfo is None
+    assert (
+        classify_timing(completed_at=completed, due_time=due, local_date=day, settings=settings)
+        == TimingStatus.on_time
+    )
+
+
 def test_classify_early() -> None:
     settings = _settings()
     tz = ZoneInfo("America/Chicago")

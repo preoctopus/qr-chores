@@ -73,6 +73,28 @@ async def test_complete_requires_auth(client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
+async def test_bearer_malformed_and_session_as_bearer(
+    client: AsyncClient, child_user: User, test_settings
+) -> None:
+    """Non-Bearer schemes ignored; session cookie value accepted as Bearer."""
+    from qr_chores.auth.session import dump_session
+
+    bad = await client.get("/api/v1/me", headers={"Authorization": "Basic xyz"})
+    assert bad.status_code == 401
+    empty = await client.get("/api/v1/me", headers={"Authorization": "Bearer "})
+    assert empty.status_code == 401
+
+    # Session-salt token accepted as Bearer (compat path in deps)
+    session_token = dump_session(test_settings, child_user.id)
+    me = await client.get(
+        "/api/v1/me",
+        headers={"Authorization": f"Bearer {session_token}"},
+    )
+    assert me.status_code == 200
+    assert me.json()["email"] == child_user.email
+
+
+@pytest.mark.asyncio
 async def test_me_with_bearer(client: AsyncClient, child_user: User) -> None:
     token = await api_login(client, child_user.email, "child-pass")
     response = await client.get(

@@ -55,7 +55,7 @@ addopts = [
     "--cov=qr_chores",
     "--cov-report=term-missing",
     "--cov-report=xml:coverage.xml",
-    "--cov-fail-under=75",
+    "--cov-fail-under=90",
 ]
 
 [tool.coverage.run]

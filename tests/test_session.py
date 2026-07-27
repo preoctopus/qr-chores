@@ -35,3 +35,15 @@ def test_api_token_roundtrip() -> None:
     # Session and API salts must not be interchangeable
     assert load_session(settings, token) is None
     assert load_api_token(settings, dump_session(settings, 99)) is None
+
+
+def test_load_rejects_non_int_uid() -> None:
+    """Payload without integer uid is ignored."""
+    from itsdangerous import URLSafeTimedSerializer
+
+    from qr_chores.auth import session as session_mod
+
+    settings = Settings(secret_key="abc", session_max_age_seconds=3600)
+    ser = URLSafeTimedSerializer(settings.secret_key, salt=session_mod._SESSION_SALT)
+    bad = ser.dumps({"uid": "not-an-int"})
+    assert load_session(settings, bad) is None

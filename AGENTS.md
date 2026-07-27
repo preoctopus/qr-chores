@@ -20,7 +20,7 @@ Guidance for AI agents and humans working in this repo. Product decisions from t
 | Photos | Local disk in dev; **GCS** in prod — DB stores only `photo_object_key` |
 | QR codes | **segno** (PNG, error correction M) |
 | Lint / format | **ruff** |
-| Tests | **pytest** + **pytest-asyncio** + **pytest-cov** (≥ 75%) |
+| Tests | **pytest** + **pytest-asyncio** + **pytest-cov** (≥ 90%) |
 | Deploy | **Docker** → **Google Cloud Run** (see `docs/DEPLOY.md`) |
 
 ## Roles & auth
@@ -207,7 +207,7 @@ Local default port: **8765** (8000 is often taken).
 3. Photos ✅  
 4. Points & achievements ✅  
 5. Polish + deploy docs ✅  
-6. Lint, coverage (≥ 75%), unit + integration tests ✅  
+6. Lint, coverage (≥ 90%), unit + integration tests ✅  
 7. Security hardening (redirects, photo paths, upload caps, prod guards) ✅  
 8. Internal `/api/v1` (auth, child, parent, rewards, photos) ✅ — see `docs/API.md`
 9. Client libraries (`clients/python` FastMCP + **`qrc` CLI** + `clients/kotlin`) + shared mock-api ✅ — see `clients/`
@@ -218,7 +218,7 @@ Local default port: **8765** (8000 is often taken).
 ```bash
 uv run ruff check src tests
 uv run ruff format --check src tests
-uv run pytest -q                 # includes coverage fail-under=75
+uv run pytest -q                 # includes coverage fail-under=90
 ```
 
 When changing clients:
