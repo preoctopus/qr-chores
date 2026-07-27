@@ -192,10 +192,6 @@
       <button class="btn btn-primary btn-sm" type="button" onclick="window.print()">Print sheet</button>
       {% endif %}
     </header>
-    <p class="print-hint">
-      Sticker-ready layout (letter, 3 across). Dashed borders are cut guides.
-      Codes stay valid as long as <code>BASE_URL</code> does not change.
-    </p>
     {% if items %}
     <div class="print-meta">
       <span class="chip chip-pending">{{ items|length }} active chore{{ 's' if items|length != 1 else '' }}</span>

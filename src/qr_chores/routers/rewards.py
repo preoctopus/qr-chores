@@ -67,9 +67,14 @@ async def rewards_save_bonuses(
     for key in DEFAULT_BONUSES:
         raw = str(data.get(key) or DEFAULT_BONUSES[key])
         try:
-            val = max(0, int(raw))
+            parsed = int(raw)
         except ValueError:
-            val = int(DEFAULT_BONUSES[key])
+            parsed = int(DEFAULT_BONUSES[key])
+        # Late bonus may be negative (penalty); early / on-time stay non-negative.
+        if key == "late_bonus_points":
+            val = max(-1_000_000, min(1_000_000, parsed))
+        else:
+            val = max(0, min(1_000_000, parsed))
         await set_setting(db, key, str(val))
     await db.commit()
     return RedirectResponse("/rewards", status_code=status.HTTP_303_SEE_OTHER)

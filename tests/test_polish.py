@@ -117,7 +117,10 @@ def test_user_documentation_exists_and_is_linked() -> None:
     assert "Early" in text and "On time" in text and "Late" in text
     assert "Parent guide" in text
     assert "Child guide" in text
-    assert "BASE_URL" in text
+    # User docs must not reference deploy env var names (e.g. BASE_URL).
+    assert "BASE_URL" not in text
+    assert "public site URL" in text or "public URL" in text
+    assert "negative" in text.lower()  # late bonus may be a penalty
     assert "Install as an app" in text
     assert "Add to Home screen" in text or "Add to Home Screen" in text
     readme_text = readme.read_text(encoding="utf-8")

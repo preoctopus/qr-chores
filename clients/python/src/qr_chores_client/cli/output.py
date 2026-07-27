@@ -254,10 +254,12 @@ def print_rewards(resp: Any) -> None:
     d = resp.model_dump(mode="json") if isinstance(resp, BaseModel) else dict(resp)
     bonuses = d.get("bonuses") or {}
     console.print("[bold]Timing bonuses[/]")
+    late = int(bonuses.get("late_bonus_points", 0) or 0)
+    late_fmt = f"{late:+d}"
     console.print(
         f"  early [green]+{bonuses.get('early_bonus_points', 0)}[/]  ·  "
         f"on-time [cyan]+{bonuses.get('on_time_bonus_points', 0)}[/]  ·  "
-        f"late [yellow]+{bonuses.get('late_bonus_points', 0)}[/]"
+        f"late [yellow]{late_fmt}[/]"
     )
     table = Table(show_header=True, header_style="bold", expand=True, title="Achievements (admin)")
     table.add_column("ID", justify="right")

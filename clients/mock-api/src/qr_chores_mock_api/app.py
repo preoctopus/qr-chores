@@ -61,7 +61,8 @@ class ChoreUpdate(BaseModel):
 class TimingBonusesUpdate(BaseModel):
     early_bonus_points: int = Field(ge=0)
     on_time_bonus_points: int = Field(ge=0)
-    late_bonus_points: int = Field(ge=0)
+    # Late may be negative (penalty).
+    late_bonus_points: int = Field(ge=-1_000_000, le=1_000_000)
 
 
 class AchievementWrite(BaseModel):

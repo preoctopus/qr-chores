@@ -46,7 +46,11 @@ def bonuses(
     ctx: typer.Context,
     early: int = typer.Option(..., "--early", help="Early completion bonus points."),
     on_time: int = typer.Option(..., "--on-time", help="On-time bonus points."),
-    late: int = typer.Option(..., "--late", help="Late completion bonus points."),
+    late: int = typer.Option(
+        ...,
+        "--late",
+        help="Late completion bonus points (negative allowed as a penalty).",
+    ),
 ) -> None:
     """Replace timing bonuses (PUT /api/v1/rewards/bonuses)."""
     cfg = get_config(ctx)
@@ -64,7 +68,7 @@ def bonuses(
         return
     output.success(
         f"Bonuses set: early +{result.early_bonus_points}, "
-        f"on-time +{result.on_time_bonus_points}, late +{result.late_bonus_points}"
+        f"on-time +{result.on_time_bonus_points}, late {result.late_bonus_points:+d}"
     )
 
 

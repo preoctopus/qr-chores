@@ -163,6 +163,7 @@ async def test_completion_adds_base_points_to_ledger(domain) -> None:
         (TimingStatus.early, "early_bonus_points", 7),
         (TimingStatus.on_time, "on_time_bonus_points", 4),
         (TimingStatus.late, "late_bonus_points", 1),
+        (TimingStatus.late, "late_bonus_points", -2),
     ],
 )
 async def test_timing_bonus_awarded_per_status(

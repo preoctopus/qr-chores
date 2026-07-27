@@ -26,7 +26,8 @@ class TimingBonusesUpdate(BaseModel):
 
     early_bonus_points: Annotated[int, Field(ge=0, le=1_000_000)]
     on_time_bonus_points: Annotated[int, Field(ge=0, le=1_000_000)]
-    late_bonus_points: Annotated[int, Field(ge=0, le=1_000_000)]
+    # Late may be negative so parents can set a late penalty (e.g. -2).
+    late_bonus_points: Annotated[int, Field(ge=-1_000_000, le=1_000_000)]
 
 
 class AchievementAdminOut(BaseModel):

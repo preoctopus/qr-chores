@@ -210,6 +210,21 @@ async def test_parent_rewards_pages(client: AsyncClient, parent_user: User) -> N
     )
     assert bonuses.status_code == 303
 
+    late_penalty = await client.post(
+        "/rewards/bonuses",
+        data={
+            "early_bonus_points": "9",
+            "on_time_bonus_points": "3",
+            "late_bonus_points": "-2",
+        },
+        follow_redirects=False,
+    )
+    assert late_penalty.status_code == 303
+    page_after = await client.get("/rewards")
+    assert page_after.status_code == 200
+    assert 'name="late_bonus_points"' in page_after.text
+    assert 'value="-2"' in page_after.text
+
 
 @pytest.mark.asyncio
 async def test_child_achievements_page(client: AsyncClient, child_user: User, app) -> None:

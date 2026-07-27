@@ -62,6 +62,7 @@ async def test_parent_can_access_today(client: AsyncClient, parent_user: User) -
     response = await client.get("/today")
     assert response.status_code == 200
     assert "Today" in response.text
+    assert f"Hey, {parent_user.first_name}" in response.text
     assert parent_user.display_name in response.text
 
 
@@ -93,6 +94,7 @@ async def test_child_can_access_home(client: AsyncClient, child_user: User) -> N
     )
     response = await client.get("/home")
     assert response.status_code == 200
+    assert f"Hey, {child_user.first_name}" in response.text
     assert child_user.display_name in response.text
 
 

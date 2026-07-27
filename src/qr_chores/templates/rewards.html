@@ -38,8 +38,8 @@
       </label>
       <label class="field">
         <span>Late bonus</span>
-        <input type="number" name="late_bonus_points" min="0" value="{{ bonuses.late_bonus_points }}">
-        <span class="muted small">Extra points after the grace window (often 0).</span>
+        <input type="number" name="late_bonus_points" value="{{ bonuses.late_bonus_points }}">
+        <span class="muted small">Points after the grace window. Use <strong>0</strong> for none, or a <strong>negative</strong> value as a late penalty.</span>
       </label>
       <button type="submit" class="btn btn-primary btn-block">Save bonuses</button>
     </form>

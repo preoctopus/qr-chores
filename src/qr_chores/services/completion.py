@@ -109,11 +109,17 @@ def _resolve_photo_key(
 
 
 def _timing_bonus_amount(timing: TimingStatus, bonuses: dict[str, int]) -> int:
+    """Return timing bonus points for a completion status.
+
+    Early and on-time bonuses are clamped to non-negative values. Late may be
+    negative so parents can configure a late *penalty* (e.g. -2 points).
+    """
     if timing == TimingStatus.early:
         return max(0, bonuses.get("early_bonus_points", 0))
     if timing == TimingStatus.on_time:
         return max(0, bonuses.get("on_time_bonus_points", 0))
-    return max(0, bonuses.get("late_bonus_points", 0))
+    # Late bonus intentionally allows negatives (penalty). Zero skips ledger row.
+    return int(bonuses.get("late_bonus_points", 0))
 
 
 async def complete_chore(

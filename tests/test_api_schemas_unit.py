@@ -161,13 +161,22 @@ def test_timing_bonuses_update_ok() -> None:
     assert body.early_bonus_points == 5
 
 
-def test_timing_bonuses_negative_rejected() -> None:
+def test_timing_bonuses_early_negative_rejected() -> None:
     with pytest.raises(ValidationError):
         TimingBonusesUpdate(
             early_bonus_points=-1,
             on_time_bonus_points=0,
             late_bonus_points=0,
         )
+
+
+def test_timing_bonuses_late_negative_allowed() -> None:
+    body = TimingBonusesUpdate(
+        early_bonus_points=0,
+        on_time_bonus_points=0,
+        late_bonus_points=-2,
+    )
+    assert body.late_bonus_points == -2
 
 
 def test_achievement_create_ok_and_stripping() -> None:

@@ -35,7 +35,7 @@
       </ul>
 
       <div class="nav-actions">
-        <button class="btn btn-secondary open-signup-modal" id="nav-login-btn">Log In</button>
+        <a class="btn btn-secondary" id="nav-login-btn" href="/login">Log In</a>
         <button class="btn btn-primary btn-glow open-signup-modal" id="nav-cta-btn">Start Free Trial</button>
         <button class="mobile-toggle" id="mobile-toggle" aria-label="Toggle Navigation Menu">☰</button>
       </div>
@@ -173,7 +173,7 @@
           <h3>3. Configuring Rewards & Achievements</h3>
           <p>Under <strong>Rewards</strong>, parents control point multipliers and custom achievement badges:</p>
           <ul style="margin-left:24px; color:var(--text-muted); line-height:1.8;">
-            <li><strong>Timing Bonuses:</strong> Set extra points for completing chores Early, On-Time, or Late. These stack directly on top of base chore points.</li>
+            <li><strong>Timing Bonuses:</strong> Set extra points for completing chores Early, On-Time, or Late. These stack on top of base chore points. Late may be <strong>negative</strong> (a late penalty) or 0 for no late adjustment.</li>
             <li><strong>Achievement Criteria:</strong> Create badges triggered by 7-day streaks, total completions, photo uploads, or on-time milestones.</li>
           </ul>
         </article>
@@ -303,7 +303,7 @@
               1. In the Parent menu, click <strong>Print Sticker Sheet</strong>.<br>
               2. Print on standard Avery or sticker label paper.<br>
               3. Affix stickers directly to physical chore locations (e.g. Dishwasher, Dog Food Bin, Trash Can, Desk).<br>
-              4. <strong>Crucial invariant:</strong> Keep your public application domain (<code>BASE_URL</code>) stable after printing so printed stickers remain valid indefinitely.
+              4. <strong>Crucial invariant:</strong> Keep your public application domain stable after printing so printed stickers remain valid indefinitely.
             </div>
           </div>
         </article>
@@ -322,7 +322,7 @@
             <tbody>
               <tr>
                 <td><strong>QR code opens wrong page or fails</strong></td>
-                <td>Verify that your application's <code>BASE_URL</code> environment setting matches your current web domain. Re-print sticker sheet if server address was modified.</td>
+                <td>Verify that the app’s public web address matches the URL printed on stickers. Re-print the sticker sheet if the site address was changed.</td>
               </tr>
               <tr>
                 <td><strong>"Wrong Account" error upon scanning</strong></td>
@@ -381,8 +381,8 @@
         <div class="footer-col">
           <h4>Account</h4>
           <ul class="footer-links">
-            <li><a href="#" class="open-signup-modal">Parent Login</a></li>
-            <li><a href="#" class="open-signup-modal">Child Login</a></li>
+            <li><a href="/login">Parent Login</a></li>
+            <li><a href="/login">Child Login</a></li>
             <li><a href="#" class="open-signup-modal">Start Free Trial</a></li>
           </ul>
         </div>

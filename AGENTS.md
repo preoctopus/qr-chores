@@ -56,6 +56,8 @@ Guidance for AI agents and humans working in this repo. Product decisions from t
 
 - Base points on the chore (once per day when completed).
 - Timing bonuses from `app_settings` keys: `early_bonus_points`, `on_time_bonus_points`, `late_bonus_points` (parent-editable on `/rewards`).
+  - **Early** and **on-time** bonuses are non-negative.
+  - **Late** bonus may be **negative** (a late penalty, e.g. `-2`). Zero means no late adjustment. Applied via `PointLedger` like other timing bonuses.
 - Achievement criteria: `streak_days`, `complete_on_time_count`, `complete_early_count`, `total_completions`, `photo_completions`.
 - Always record points in **`PointLedger`** (sum = balance); do not trust the client for awards.
 

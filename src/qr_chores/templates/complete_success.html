@@ -9,18 +9,18 @@
     <p class="muted">{{ chore.title }} was already done today.</p>
     {% else %}
     <p class="stat-label">You did it</p>
-    <p class="stat-value" id="points-pop">+{{ points.total }}</p>
+    <p class="stat-value" id="points-pop">{{ '%+d'|format(points.total) }}</p>
     <p class="celebration-title">{{ chore.title }}</p>
     <p class="muted">
       {{ timing_status_label(completion.timing) }}
     </p>
     <ul class="points-breakdown">
-      <li>Base <strong>+{{ points.base }}</strong></li>
+      <li>Base <strong>{{ '%+d'|format(points.base) }}</strong></li>
       {% if points.timing_bonus %}
-      <li>{{ timing_bonus_label(completion.timing) }} <strong>+{{ points.timing_bonus }}</strong></li>
+      <li>{{ timing_bonus_label(completion.timing) }} <strong>{{ '%+d'|format(points.timing_bonus) }}</strong></li>
       {% endif %}
       {% if points.achievement_points %}
-      <li>Achievements <strong>+{{ points.achievement_points }}</strong></li>
+      <li>Achievements <strong>{{ '%+d'|format(points.achievement_points) }}</strong></li>
       {% endif %}
     </ul>
     <div class="timing-help timing-help-compact" role="note">

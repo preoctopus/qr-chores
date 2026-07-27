@@ -201,6 +201,9 @@ All require **`role=parent`** (and authentication), except photo fetch (any auth
 }
 ```
 
+- `early_bonus_points` / `on_time_bonus_points`: integers ≥ 0 (and ≤ 1_000_000).
+- `late_bonus_points`: integer in −1_000_000…1_000_000. **Negative values are allowed** and act as a late penalty (e.g. `-2` subtracts 2 points when the completion is late).
+
 **Achievement create body:**
 
 ```json
