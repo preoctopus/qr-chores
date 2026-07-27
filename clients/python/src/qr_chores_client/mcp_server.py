@@ -1,4 +1,4 @@
-"""FastMCP server wrapping QrChoresClient as tools."""
+"""FastMCP server wrapping QrChoresClient as tools with OAuth 2.1 support."""
 
 from __future__ import annotations
 
@@ -7,9 +7,12 @@ import json
 import logging
 import logging.handlers
 import os
+import secrets
 import sys
+import time
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from pydantic import BaseModel
@@ -25,9 +28,25 @@ from qr_chores_client.models import (
 logger = logging.getLogger("qr_chores_mcp")
 
 try:
-    from fastmcp import FastMCP
+    from fastmcp import Context, FastMCP
+    from fastmcp.server.auth.auth import AccessToken, ClientRegistrationOptions
+    from fastmcp.server.auth.providers.in_memory import (
+        DEFAULT_ACCESS_TOKEN_EXPIRY_SECONDS,
+        DEFAULT_AUTH_CODE_EXPIRY_SECONDS,
+        AuthorizationCode,
+        AuthorizationParams,
+        InMemoryOAuthProvider,
+        RefreshToken,
+        construct_redirect_uri,
+    )
+    from mcp.shared.auth import OAuthClientInformationFull
+    from mcp.shared.auth import OAuthToken as OAuthTokenData
+    from starlette.requests import Request
+    from starlette.responses import JSONResponse
+    from starlette.routing import Route
 except ImportError:  # pragma: no cover
     FastMCP = None  # type: ignore[misc, assignment]
+    Context = None  # type: ignore[misc, assignment]
 
 
 def _to_jsonable(value: Any) -> Any:
@@ -64,6 +83,309 @@ def _default_api_base_url() -> str:
     return "http://127.0.0.1:8765"
 
 
+def _get_db_and_store():
+    try:
+        from qr_chores.db import SessionLocal
+        from qr_chores.services import oauth_store
+
+        return SessionLocal, oauth_store
+    except Exception:
+        return None, None
+
+
+class DatabaseOAuthProvider(InMemoryOAuthProvider if FastMCP else object):  # type: ignore[misc]
+    """Postgres / SQLite DB-backed OAuth 2.1 provider for FastMCP."""
+
+    def __init__(self, base_url: str, api_base_url: str | None = None) -> None:
+        super().__init__(
+            base_url=base_url,
+            client_registration_options=ClientRegistrationOptions(enabled=True),
+        )
+        self.api_base_url = (api_base_url or _default_api_base_url()).rstrip("/")
+
+    async def get_client(self, client_id: str) -> OAuthClientInformationFull | None:
+        if not client_id:
+            return None
+        session_factory, store = _get_db_and_store()
+        if session_factory and store:
+            async with session_factory() as session:
+                db_client = await store.get_oauth_client(session, client_id)
+                if db_client:
+                    return OAuthClientInformationFull(
+                        client_id=db_client.client_id,
+                        client_secret=db_client.client_secret,
+                        client_name=db_client.client_name,
+                        redirect_uris=json.loads(db_client.redirect_uris_json),
+                        grant_types=json.loads(db_client.grant_types_json),
+                        response_types=json.loads(db_client.response_types_json),
+                        token_endpoint_auth_method=db_client.token_endpoint_auth_method,
+                    )
+        if client_id in self.clients:
+            return self.clients[client_id]
+        auto_client = OAuthClientInformationFull(
+            client_id=client_id,
+            client_name=f"Client {client_id}",
+            redirect_uris=[
+                "https://chatgpt.com/aip/g-123/oauth/callback",
+                "https://chat.openai.com/aip/g-123/oauth/callback",
+                "http://localhost/callback",
+            ],
+            token_endpoint_auth_method="none",
+            grant_types=["authorization_code", "refresh_token"],
+            response_types=["code"],
+        )
+        await self.register_client(auto_client)
+        return auto_client
+
+    async def register_client(self, client_info: OAuthClientInformationFull) -> None:
+        if not client_info.client_id:
+            raise ValueError("client_id is required")
+        session_factory, store = _get_db_and_store()
+        if session_factory and store:
+            async with session_factory() as session:
+                await store.save_oauth_client(
+                    session=session,
+                    client_id=client_info.client_id,
+                    client_secret=client_info.client_secret,
+                    client_name=client_info.client_name or "",
+                    redirect_uris=list(client_info.redirect_uris or []),
+                    grant_types=list(client_info.grant_types or []),
+                    response_types=list(client_info.response_types or []),
+                    token_endpoint_auth_method=client_info.token_endpoint_auth_method or "none",
+                )
+        self.clients[client_info.client_id] = client_info
+
+    async def authorize(
+        self, client: OAuthClientInformationFull, params: AuthorizationParams
+    ) -> str:
+        auth_code_value = f"auth_code_{secrets.token_hex(16)}"
+        expires_at = datetime.now(UTC) + timedelta(seconds=DEFAULT_AUTH_CODE_EXPIRY_SECONDS)
+        user_id = getattr(params, "user_id", 1)
+
+        scopes_list = list(params.scopes or [])
+        auth_code_obj = AuthorizationCode(
+            code=auth_code_value,
+            client_id=client.client_id,
+            redirect_uri=params.redirect_uri,
+            redirect_uri_provided_explicitly=params.redirect_uri_provided_explicitly,
+            scopes=scopes_list,
+            expires_at=int(expires_at.timestamp()),
+            code_challenge=params.code_challenge,
+        )
+        self.auth_codes[auth_code_value] = auth_code_obj
+
+        session_factory, store = _get_db_and_store()
+        if session_factory and store:
+            async with session_factory() as session:
+                await store.create_oauth_code(
+                    session=session,
+                    code=auth_code_value,
+                    client_id=client.client_id,
+                    user_id=user_id,
+                    redirect_uri=str(params.redirect_uri),
+                    code_challenge=params.code_challenge or "",
+                    code_challenge_method="S256",
+                    scopes=scopes_list,
+                    expires_at=expires_at,
+                )
+
+        return construct_redirect_uri(
+            str(params.redirect_uri), code=auth_code_value, state=params.state
+        )
+
+    async def load_authorization_code(
+        self, client: OAuthClientInformationFull, authorization_code: str
+    ) -> AuthorizationCode | None:
+        session_factory, store = _get_db_and_store()
+        if session_factory and store:
+            async with session_factory() as session:
+                db_code = await store.get_oauth_code(session, authorization_code)
+                if db_code:
+                    if db_code.client_id != client.client_id:
+                        return None
+                    exp_timestamp = int(db_code.expires_at.timestamp())
+                    return AuthorizationCode(
+                        code=db_code.code,
+                        client_id=db_code.client_id,
+                        redirect_uri=db_code.redirect_uri,
+                        redirect_uri_provided_explicitly=True,
+                        scopes=json.loads(db_code.scopes_json),
+                        expires_at=exp_timestamp,
+                        code_challenge=db_code.code_challenge,
+                    )
+        return await super().load_authorization_code(client, authorization_code)
+
+    async def exchange_authorization_code(
+        self, client: OAuthClientInformationFull, authorization_code: AuthorizationCode
+    ) -> OAuthTokenData:
+        user_id = 1
+        session_factory, store = _get_db_and_store()
+        if session_factory and store:
+            async with session_factory() as session:
+                db_code = await store.get_oauth_code(session, authorization_code.code)
+                if db_code:
+                    user_id = db_code.user_id
+                await store.delete_oauth_code(session, authorization_code.code)
+
+        if authorization_code.code in self.auth_codes:
+            del self.auth_codes[authorization_code.code]
+
+        access_token_val = f"oauth_access_{secrets.token_hex(32)}"
+        refresh_token_val = f"oauth_refresh_{secrets.token_hex(32)}"
+        expires_at_dt = datetime.now(UTC) + timedelta(seconds=DEFAULT_ACCESS_TOKEN_EXPIRY_SECONDS)
+        expires_at_ts = int(expires_at_dt.timestamp())
+
+        tok_obj = AccessToken(
+            token=access_token_val,
+            client_id=client.client_id,
+            scopes=authorization_code.scopes or [],
+            expires_at=expires_at_ts,
+        )
+        self.access_tokens[access_token_val] = tok_obj
+        if refresh_token_val:
+            ref_obj = RefreshToken(
+                token=refresh_token_val,
+                client_id=client.client_id,
+                scopes=authorization_code.scopes or [],
+                expires_at=expires_at_ts,
+            )
+            self.refresh_tokens[refresh_token_val] = ref_obj
+
+        if session_factory and store:
+            async with session_factory() as session:
+                await store.create_oauth_token(
+                    session=session,
+                    access_token=access_token_val,
+                    refresh_token=refresh_token_val,
+                    client_id=client.client_id,
+                    user_id=user_id,
+                    scopes=authorization_code.scopes or [],
+                    expires_at=expires_at_dt,
+                )
+
+        return OAuthTokenData(
+            access_token=access_token_val,
+            token_type="Bearer",
+            expires_in=DEFAULT_ACCESS_TOKEN_EXPIRY_SECONDS,
+            refresh_token=refresh_token_val,
+            scope=" ".join(authorization_code.scopes or []),
+        )
+
+    async def load_access_token(self, token: str) -> AccessToken | None:
+        session_factory, store = _get_db_and_store()
+        if session_factory and store:
+            async with session_factory() as session:
+                db_token = await store.get_oauth_token(session, token)
+                if not db_token:
+                    return None
+                exp_ts = int(db_token.expires_at.timestamp())
+                if time.time() > exp_ts:
+                    return None
+                return AccessToken(
+                    token=db_token.access_token,
+                    client_id=db_token.client_id,
+                    scopes=json.loads(db_token.scopes_json),
+                    expires_at=exp_ts,
+                )
+        return await super().load_access_token(token)
+
+    async def verify_token(self, token: str) -> AccessToken | None:
+        return await self.load_access_token(token)
+
+    async def revoke_token(self, token: Any) -> None:
+        tok_str = getattr(token, "token", str(token))
+        session_factory, store = _get_db_and_store()
+        if session_factory and store:
+            async with session_factory() as session:
+                await store.revoke_oauth_token(session, tok_str)
+
+    def get_routes(self, mcp_path: str | None = None) -> list[Route]:
+        base_routes = super().get_routes(mcp_path)
+        prefix = (mcp_path or "/mcp").rstrip("/")
+        issuer = str(self.issuer_url or self.base_url).rstrip("/")
+
+        new_routes: list[Route] = []
+        for r in base_routes:
+            if isinstance(r, Route):
+                new_routes.append(r)
+                if r.path in ("/authorize", "/token", "/register"):
+                    new_routes.append(
+                        Route(
+                            path=f"{prefix}{r.path}",
+                            endpoint=r.endpoint,
+                            methods=r.methods,
+                        )
+                    )
+
+        auth_meta = {
+            "issuer": str(self.issuer_url or self.base_url),
+            "authorization_endpoint": f"{issuer}{prefix}/authorize",
+            "token_endpoint": f"{issuer}{prefix}/token",
+            "registration_endpoint": f"{issuer}{prefix}/register",
+            "response_types_supported": ["code"],
+            "grant_types_supported": ["authorization_code", "refresh_token"],
+            "token_endpoint_auth_methods_supported": [
+                "none",
+                "client_secret_post",
+                "client_secret_basic",
+            ],
+            "code_challenge_methods_supported": ["S256"],
+        }
+
+        resource_meta = {
+            "resource": str(self._get_resource_url(mcp_path)),
+            "authorization_servers": [str(self.issuer_url or self.base_url)],
+            "scopes_supported": [],
+            "bearer_methods_supported": ["header"],
+        }
+
+        async def _custom_auth_meta(req: Request) -> JSONResponse:
+            return JSONResponse(auth_meta)
+
+        async def _custom_res_meta(req: Request) -> JSONResponse:
+            return JSONResponse(resource_meta)
+
+        final_routes: list[Route] = [
+            Route(
+                "/.well-known/oauth-protected-resource", endpoint=_custom_res_meta, methods=["GET"]
+            ),
+        ]
+        for r in new_routes:
+            if isinstance(r, Route) and r.path == "/.well-known/oauth-authorization-server":
+                final_routes.append(
+                    Route(
+                        "/.well-known/oauth-authorization-server",
+                        endpoint=_custom_auth_meta,
+                        methods=["GET"],
+                    )
+                )
+                final_routes.append(
+                    Route(
+                        f"{prefix}/.well-known/oauth-authorization-server",
+                        endpoint=_custom_auth_meta,
+                        methods=["GET"],
+                    )
+                )
+                final_routes.append(
+                    Route(
+                        "/.well-known/openid-configuration",
+                        endpoint=_custom_auth_meta,
+                        methods=["GET"],
+                    )
+                )
+                final_routes.append(
+                    Route(
+                        f"{prefix}/.well-known/openid-configuration",
+                        endpoint=_custom_auth_meta,
+                        methods=["GET"],
+                    )
+                )
+            else:
+                final_routes.append(r)
+
+        return final_routes
+
+
 class ClientHolder:
     """Holds a shared async client for MCP tool calls."""
 
@@ -75,13 +397,18 @@ class ClientHolder:
         base_url: str | None = None,
         email: str | None = None,
         password: str | None = None,
+        access_token: str | None = None,
     ) -> QrChoresClient:
         # Keep an already-injected client unless the caller overrides base_url.
         if self.client is not None and base_url is None:
+            if access_token:
+                self.client.access_token = access_token
             return self.client
         url = (base_url or _env("QR_CHORES_BASE_URL") or _default_api_base_url()).rstrip("/")
         if self.client is None or self.client.base_url != url:
-            self.client = QrChoresClient(url)
+            self.client = QrChoresClient(url, access_token=access_token)
+        elif access_token:
+            self.client.access_token = access_token
         return self.client
 
     async def ensure_logged_in(
@@ -98,6 +425,24 @@ class ClientHolder:
         if em and pw:
             await client.login(em, pw)
         return client
+
+    async def get_client_for_request(
+        self,
+        ctx: Any | None = None,
+        base_url: str | None = None,
+    ) -> QrChoresClient:
+        token: str | None = None
+        if ctx and hasattr(ctx, "request_context") and ctx.request_context:
+            req = getattr(ctx.request_context, "request", None)
+            if req and hasattr(req, "headers"):
+                auth_h = req.headers.get("authorization") or req.headers.get("Authorization")
+                if auth_h and auth_h.lower().startswith("bearer "):
+                    token = auth_h[7:].strip()
+
+        if token:
+            return self.ensure(base_url=base_url, access_token=token)
+
+        return await self.ensure_logged_in(base_url=base_url)
 
 
 _holder = ClientHolder()
@@ -123,14 +468,24 @@ def create_mcp_server() -> Any:
                 await _holder.client.aclose()
                 _holder.client = None
 
+    auth_provider = None
+    oauth_enabled = _env("MCP_OAUTH_ENABLED", "1").strip().lower() in {"1", "true", "yes", "on"}
+    transport = (_env("MCP_TRANSPORT", "stdio") or "stdio").strip().lower()
+    if oauth_enabled and transport in {"http", "streamable-http", "sse"}:
+        host = _env("MCP_HOST", "127.0.0.1") or "127.0.0.1"
+        port = int(_env("MCP_PORT", "8001") or "8001")
+        base_url = _env("MCP_PUBLIC_URL") or _env("BASE_URL") or f"http://{host}:{port}"
+        auth_provider = DatabaseOAuthProvider(base_url=base_url)
+
     mcp = FastMCP(
         "qr-chores",
         instructions=(
             "Tools for the QR Chores family chore API (/api/v1). "
-            "Set QR_CHORES_BASE_URL, QR_CHORES_EMAIL, QR_CHORES_PASSWORD for auto-login, "
-            "or call the login tool with credentials."
+            "Supports OAuth 2.1 for ChatGPT / remote connectors, or set QR_CHORES_EMAIL "
+            "and QR_CHORES_PASSWORD for auto-login."
         ),
         lifespan=lifespan,
+        auth=auth_provider,
     )
 
     @mcp.tool
@@ -152,21 +507,21 @@ def create_mcp_server() -> Any:
         return {"status": "logged_out"}
 
     @mcp.tool
-    async def get_me() -> dict[str, Any]:
+    async def get_me(ctx: Any = None) -> dict[str, Any]:
         """Return the currently authenticated user."""
-        client = await _holder.ensure_logged_in()
+        client = await _holder.get_client_for_request(ctx)
         return _to_jsonable(await client.get_me())
 
     @mcp.tool
-    async def get_home() -> dict[str, Any]:
+    async def get_home(ctx: Any = None) -> dict[str, Any]:
         """Child home board for today (requires child role)."""
-        client = await _holder.ensure_logged_in()
+        client = await _holder.get_client_for_request(ctx)
         return _to_jsonable(await client.get_home())
 
     @mcp.tool
-    async def get_confirm(qr_token: str) -> dict[str, Any]:
+    async def get_confirm(qr_token: str, ctx: Any = None) -> dict[str, Any]:
         """Confirm payload for a chore QR token (child)."""
-        client = await _holder.ensure_logged_in()
+        client = await _holder.get_client_for_request(ctx)
         return _to_jsonable(await client.get_confirm(qr_token))
 
     @mcp.tool
@@ -174,9 +529,10 @@ def create_mcp_server() -> Any:
         qr_token: str,
         photo_base64: str | None = None,
         photo_filename: str = "photo.jpg",
+        ctx: Any = None,
     ) -> dict[str, Any]:
         """Complete a chore by QR token. Optionally attach a base64-encoded photo."""
-        client = await _holder.ensure_logged_in()
+        client = await _holder.get_client_for_request(ctx)
         photo: bytes | None = None
         if photo_base64:
             photo = base64.b64decode(photo_base64)
@@ -189,27 +545,27 @@ def create_mcp_server() -> Any:
         )
 
     @mcp.tool
-    async def get_achievements() -> dict[str, Any]:
+    async def get_achievements(ctx: Any = None) -> dict[str, Any]:
         """Child achievement progress."""
-        client = await _holder.ensure_logged_in()
+        client = await _holder.get_client_for_request(ctx)
         return _to_jsonable(await client.get_achievements())
 
     @mcp.tool
-    async def get_today() -> dict[str, Any]:
+    async def get_today(ctx: Any = None) -> dict[str, Any]:
         """Parent today board."""
-        client = await _holder.ensure_logged_in()
+        client = await _holder.get_client_for_request(ctx)
         return _to_jsonable(await client.get_today())
 
     @mcp.tool
-    async def get_history(limit: int = 50) -> dict[str, Any]:
+    async def get_history(limit: int = 50, ctx: Any = None) -> dict[str, Any]:
         """Parent completion history."""
-        client = await _holder.ensure_logged_in()
+        client = await _holder.get_client_for_request(ctx)
         return _to_jsonable(await client.get_history(limit=limit))
 
     @mcp.tool
-    async def list_chores(include_inactive: bool = True) -> dict[str, Any]:
+    async def list_chores(include_inactive: bool = True, ctx: Any = None) -> dict[str, Any]:
         """List chores (parent)."""
-        client = await _holder.ensure_logged_in()
+        client = await _holder.get_client_for_request(ctx)
         return _to_jsonable(await client.list_chores(include_inactive=include_inactive))
 
     @mcp.tool
@@ -220,9 +576,10 @@ def create_mcp_server() -> Any:
         schedule_days: str = "0123456",
         photo_policy: str = "none",
         base_points: int = 10,
+        ctx: Any = None,
     ) -> dict[str, Any]:
         """Create a chore (parent)."""
-        client = await _holder.ensure_logged_in()
+        client = await _holder.get_client_for_request(ctx)
         chore = ChoreCreate(
             title=title,
             description=description,
@@ -234,9 +591,9 @@ def create_mcp_server() -> Any:
         return _to_jsonable(await client.create_chore(chore))
 
     @mcp.tool
-    async def get_chore(chore_id: int) -> dict[str, Any]:
+    async def get_chore(chore_id: int, ctx: Any = None) -> dict[str, Any]:
         """Get chore by id (parent)."""
-        client = await _holder.ensure_logged_in()
+        client = await _holder.get_client_for_request(ctx)
         return _to_jsonable(await client.get_chore(chore_id))
 
     @mcp.tool
@@ -249,9 +606,10 @@ def create_mcp_server() -> Any:
         photo_policy: str | None = None,
         base_points: int | None = None,
         clear_description: bool = False,
+        ctx: Any = None,
     ) -> dict[str, Any]:
         """Partial update of a chore (parent)."""
-        client = await _holder.ensure_logged_in()
+        client = await _holder.get_client_for_request(ctx)
         update = ChoreUpdate(
             title=title,
             description=description,
@@ -264,39 +622,39 @@ def create_mcp_server() -> Any:
         return _to_jsonable(await client.update_chore(chore_id, update))
 
     @mcp.tool
-    async def delete_chore(chore_id: int) -> dict[str, Any]:
+    async def delete_chore(chore_id: int, ctx: Any = None) -> dict[str, Any]:
         """Hard-delete a chore (parent)."""
-        client = await _holder.ensure_logged_in()
+        client = await _holder.get_client_for_request(ctx)
         return _to_jsonable(await client.delete_chore(chore_id))
 
     @mcp.tool
-    async def activate_chore(chore_id: int) -> dict[str, Any]:
+    async def activate_chore(chore_id: int, ctx: Any = None) -> dict[str, Any]:
         """Activate a chore (parent)."""
-        client = await _holder.ensure_logged_in()
+        client = await _holder.get_client_for_request(ctx)
         return _to_jsonable(await client.activate_chore(chore_id))
 
     @mcp.tool
-    async def deactivate_chore(chore_id: int) -> dict[str, Any]:
+    async def deactivate_chore(chore_id: int, ctx: Any = None) -> dict[str, Any]:
         """Deactivate a chore (parent)."""
-        client = await _holder.ensure_logged_in()
+        client = await _holder.get_client_for_request(ctx)
         return _to_jsonable(await client.deactivate_chore(chore_id))
 
     @mcp.tool
-    async def get_qr_info(chore_id: int) -> dict[str, Any]:
+    async def get_qr_info(chore_id: int, ctx: Any = None) -> dict[str, Any]:
         """QR metadata for a chore (parent)."""
-        client = await _holder.ensure_logged_in()
+        client = await _holder.get_client_for_request(ctx)
         return _to_jsonable(await client.get_qr_info(chore_id))
 
     @mcp.tool
-    async def get_qr_png(chore_id: int) -> dict[str, Any]:
+    async def get_qr_png(chore_id: int, ctx: Any = None) -> dict[str, Any]:
         """QR PNG bytes as base64 (parent)."""
-        client = await _holder.ensure_logged_in()
+        client = await _holder.get_client_for_request(ctx)
         return _to_jsonable(await client.get_qr_png(chore_id))
 
     @mcp.tool
-    async def get_rewards() -> dict[str, Any]:
+    async def get_rewards(ctx: Any = None) -> dict[str, Any]:
         """Timing bonuses and achievements (parent)."""
-        client = await _holder.ensure_logged_in()
+        client = await _holder.get_client_for_request(ctx)
         return _to_jsonable(await client.get_rewards())
 
     @mcp.tool
@@ -304,9 +662,10 @@ def create_mcp_server() -> Any:
         early_bonus_points: int,
         on_time_bonus_points: int,
         late_bonus_points: int,
+        ctx: Any = None,
     ) -> dict[str, Any]:
         """Update timing bonus points (parent)."""
-        client = await _holder.ensure_logged_in()
+        client = await _holder.get_client_for_request(ctx)
         return _to_jsonable(
             await client.update_bonuses(
                 early_bonus_points=early_bonus_points,
@@ -323,9 +682,10 @@ def create_mcp_server() -> Any:
         icon_key: str = "star",
         threshold: int = 1,
         points_reward: int = 0,
+        ctx: Any = None,
     ) -> dict[str, Any]:
         """Create an achievement (parent)."""
-        client = await _holder.ensure_logged_in()
+        client = await _holder.get_client_for_request(ctx)
         ach = AchievementCreate(
             title=title,
             description=description,
@@ -345,9 +705,10 @@ def create_mcp_server() -> Any:
         criteria_type: str | None = None,
         threshold: int | None = None,
         points_reward: int | None = None,
+        ctx: Any = None,
     ) -> dict[str, Any]:
         """Update an achievement (parent)."""
-        client = await _holder.ensure_logged_in()
+        client = await _holder.get_client_for_request(ctx)
         update = AchievementUpdate(
             title=title,
             description=description,
@@ -359,15 +720,15 @@ def create_mcp_server() -> Any:
         return _to_jsonable(await client.update_achievement(achievement_id, update))
 
     @mcp.tool
-    async def toggle_achievement(achievement_id: int) -> dict[str, Any]:
+    async def toggle_achievement(achievement_id: int, ctx: Any = None) -> dict[str, Any]:
         """Toggle achievement is_active (parent)."""
-        client = await _holder.ensure_logged_in()
+        client = await _holder.get_client_for_request(ctx)
         return _to_jsonable(await client.toggle_achievement(achievement_id))
 
     @mcp.tool
-    async def get_photo(completion_id: int) -> dict[str, Any]:
+    async def get_photo(completion_id: int, ctx: Any = None) -> dict[str, Any]:
         """Fetch proof photo bytes as base64 (any authenticated user)."""
-        client = await _holder.ensure_logged_in()
+        client = await _holder.get_client_for_request(ctx)
         return _to_jsonable(await client.get_photo(completion_id))
 
     return mcp
