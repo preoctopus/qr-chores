@@ -7,6 +7,7 @@ from qr_chores.models.chore import (
     PhotoPolicy,
     TimingStatus,
 )
+from qr_chores.models.oauth import OAuthClient, OAuthCode, OAuthToken
 from qr_chores.models.rewards import (
     Achievement,
     AppSetting,
@@ -23,6 +24,9 @@ __all__ = [
     "Chore",
     "ChoreCompletion",
     "CriteriaType",
+    "OAuthClient",
+    "OAuthCode",
+    "OAuthToken",
     "PhotoPolicy",
     "PointLedger",
     "TimingStatus",

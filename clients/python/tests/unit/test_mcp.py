@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import base64
 import os
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -358,3 +359,128 @@ def test_env_helper():
         assert _env("QR_CHORES_TEST_ONLY", "fallback") == "fallback"
     finally:
         del os.environ["QR_CHORES_TEST_ONLY"]
+
+
+@pytest.mark.asyncio
+async def test_oauth_well_known_metadata():
+    from starlette.testclient import TestClient
+
+    from qr_chores_client.mcp_server import DatabaseOAuthProvider, FastMCP
+
+    auth = DatabaseOAuthProvider(base_url="http://127.0.0.1:8001")
+    server = FastMCP("test-oauth", auth=auth)
+    app = server.http_app(transport="http", path="/mcp", stateless_http=True)
+
+    with TestClient(app) as client:
+        res_auth = client.get("/.well-known/oauth-authorization-server")
+        assert res_auth.status_code == 200
+        auth_data = res_auth.json()
+        assert "authorization_endpoint" in auth_data
+        assert "token_endpoint" in auth_data
+
+        res_prot = client.get("/.well-known/oauth-protected-resource/mcp")
+        assert res_prot.status_code == 200
+        assert res_prot.json()["resource"] == "http://127.0.0.1:8001/mcp"
+
+        res_root = client.get("/.well-known/oauth-protected-resource")
+        assert res_root.status_code == 200
+        assert res_root.json()["resource"] == "http://127.0.0.1:8001/mcp"
+
+
+@pytest.mark.asyncio
+async def test_oauth_client_registration_and_token_flow():
+    import hashlib
+    import secrets
+
+    from starlette.testclient import TestClient
+
+    from qr_chores_client.mcp_server import DatabaseOAuthProvider, FastMCP
+
+    auth = DatabaseOAuthProvider(base_url="http://127.0.0.1:8001")
+    server = FastMCP("test-oauth-flow", auth=auth)
+
+    @server.tool
+    async def echo_auth(ctx: Any = None) -> dict:
+        req = (
+            getattr(ctx.request_context, "request", None)
+            if ctx and hasattr(ctx, "request_context")
+            else None
+        )
+        auth_h = req.headers.get("authorization") if req else None
+        return {"auth": auth_h}
+
+    app = server.http_app(transport="http", path="/mcp", stateless_http=True)
+
+    with TestClient(app) as client:
+        # Dynamic client registration under /mcp/register
+        reg = client.post(
+            "/mcp/register",
+            json={"client_name": "Test App", "redirect_uris": ["http://localhost/callback"]},
+        )
+        assert reg.status_code == 201
+        cinfo = reg.json()
+        assert "client_id" in cinfo
+
+        # Authorize request with PKCE S256 under /mcp/authorize
+        code_verifier = "test_verifier_" + secrets.token_hex(16)
+        code_challenge = (
+            base64.urlsafe_b64encode(hashlib.sha256(code_verifier.encode()).digest())
+            .decode()
+            .rstrip("=")
+        )
+        auth_res = client.get(
+            f"/mcp/authorize?response_type=code&client_id={cinfo['client_id']}&redirect_uri=http://localhost/callback&state=state123&code_challenge={code_challenge}&code_challenge_method=S256",
+            follow_redirects=False,
+        )
+        assert auth_res.status_code == 302
+        loc = auth_res.headers["location"]
+        assert "code=" in loc
+        code = loc.split("code=")[1].split("&")[0]
+
+        # Token exchange under /mcp/token
+        tok_res = client.post(
+            "/mcp/token",
+            data={
+                "grant_type": "authorization_code",
+                "client_id": cinfo["client_id"],
+                "client_secret": cinfo.get("client_secret", ""),
+                "code": code,
+                "redirect_uri": "http://localhost/callback",
+                "code_verifier": code_verifier,
+            },
+            auth=(cinfo["client_id"], cinfo.get("client_secret", "")),
+        )
+        assert tok_res.status_code == 200
+        tokens = tok_res.json()
+        assert "access_token" in tokens
+        access_tok = tokens["access_token"]
+
+        # Call MCP tool with Bearer header
+        mcp_res = client.post(
+            "/mcp",
+            json={
+                "jsonrpc": "2.0",
+                "id": 1,
+                "method": "tools/call",
+                "params": {"name": "echo_auth", "arguments": {}},
+            },
+            headers={
+                "Authorization": f"Bearer {access_tok}",
+                "Accept": "application/json, text/event-stream",
+            },
+        )
+        assert mcp_res.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_oauth_provider_revocation_and_auto_client():
+    from qr_chores_client.mcp_server import DatabaseOAuthProvider
+
+    auth = DatabaseOAuthProvider(base_url="http://127.0.0.1:8001")
+    # Auto-register unknown client_id
+    cinfo = await auth.get_client("unknown-chatgpt-id")
+    assert cinfo is not None
+    assert cinfo.client_id == "unknown-chatgpt-id"
+
+    # Revoke token
+    await auth.revoke_token("dummy-token")
