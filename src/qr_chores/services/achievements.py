@@ -48,7 +48,7 @@ async def _count_completions(
 
 
 async def _streak_days(db: AsyncSession, user_id: int, settings: Settings) -> int:
-    """Consecutive local dates (ending today) with at least one completion."""
+    """Consecutive local dates ending today (or yesterday if today has no completions yet) with at least one completion."""
     result = await db.execute(
         select(ChoreCompletion.local_date).where(ChoreCompletion.user_id == user_id).distinct()
     )
@@ -56,8 +56,8 @@ async def _streak_days(db: AsyncSession, user_id: int, settings: Settings) -> in
     if not days:
         return 0
     today = local_today(settings)
+    cursor = today if today in days else today - timedelta(days=1)
     streak = 0
-    cursor = today
     while cursor in days:
         streak += 1
         cursor = cursor - timedelta(days=1)
