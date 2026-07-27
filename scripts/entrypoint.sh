@@ -1,6 +1,7 @@
 #!/bin/sh
 # Cloud Run / Docker entrypoint
 set -e
+export PYTHONPATH="/app/src:${PYTHONPATH}"
 
 if [ "${RUN_MIGRATIONS:-0}" = "1" ]; then
   echo "Running Alembic migrations..."
@@ -20,6 +21,17 @@ if command -v nginx > /dev/null 2>&1 && [ -f /app/docker/nginx.conf.template ]; 
 
   echo "Starting FastAPI app on 127.0.0.1:8000..."
   uvicorn qr_chores.main:app --host 127.0.0.1 --port 8000 &
+
+  echo "Waiting for FastAPI app to start..."
+  i=0
+  while [ $i -lt 50 ]; do
+    if python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz')" > /dev/null 2>&1; then
+      echo "FastAPI app is ready!"
+      break
+    fi
+    sleep 0.2
+    i=$((i+1))
+  done
 
   echo "Starting Nginx reverse proxy on 0.0.0.0:${PORT}..."
   exec nginx -g 'daemon off;' -c /tmp/nginx.conf

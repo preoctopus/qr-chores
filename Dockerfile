@@ -36,6 +36,7 @@ RUN chmod +x /app/scripts/entrypoint.sh \
     && chown -R appuser:appuser /app /var/log/nginx /var/lib/nginx /tmp
 
 ENV PATH="/app/.venv/bin:$PATH" \
+    PYTHONPATH="/app/src" \
     PYTHONUNBUFFERED=1 \
     PORT=8080 \
     RUN_MIGRATIONS=0 \
