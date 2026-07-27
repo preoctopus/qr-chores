@@ -103,8 +103,18 @@ Login → today’s list + total points → tap chore → same confirm path as Q
 | `/c/{token}` | Child | Confirm + photo + complete |
 | `/me/achievements` | Child | Achievement collection / progress |
 | `/photos/{completion_id}` | Logged-in | Stream proof photo |
-| `/api/v1/*` | Auth (Bearer / session) | **Internal** JSON API for native apps — see `docs/API.md` (not end-user Help) |
+| `/api/v1/*` | Auth (Bearer / session) | **Internal** JSON API for native apps — full surface in `docs/API.md` (not end-user Help) |
 | `/healthz` | Public | Cloud Run health |
+
+### Internal API (`/api/v1`) — agent notes
+
+- **Audience:** native apps, automation, MCP. Family UX stays Jinja + `/help`.
+- **Auth:** opaque Bearer from `POST /api/v1/auth/login` (preferred) **or** session cookie. Dual-path in `auth/deps.py`.
+- **Roles:** same as HTML — parent board/CRUD/rewards; child home/confirm/complete/achievements; photos any auth user.
+- **Domain:** thin routers under `routers/api/`; awards only in `services/`.
+- **Errors:** always JSON on `/api/*` (never HTML login redirect). `401` / `403` / `404` / `422`; domain complete failures use `400` with `{ "detail": { "message", "code" } }`.
+- **OpenAPI:** `/docs` + `/openapi.json` in non-production only. Bearer scheme registered for try-it-out.
+- **Deferred:** login rate-limiting (document only until needed).
 
 ## Data model (conceptual)
 
@@ -181,6 +191,7 @@ Local default port: **8765** (8000 is often taken).
 5. Polish + deploy docs ✅  
 6. Lint, coverage (≥ 75%), unit + integration tests ✅  
 7. Security hardening (redirects, photo paths, upload caps, prod guards) ✅  
+8. Internal `/api/v1` (auth, child, parent, rewards, photos) ✅ — see `docs/API.md`
 
 ## Quality gates (required)
 

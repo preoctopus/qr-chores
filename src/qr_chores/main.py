@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, Request, status
+from fastapi.openapi.utils import get_openapi
 from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException as StarletteHTTPException
@@ -14,6 +15,30 @@ from qr_chores.db import init_db
 from qr_chores.routers import auth, chores, complete, health, pages, photos, rewards
 from qr_chores.routers.api import api_router
 from qr_chores.templating import templates
+
+OPENAPI_TAGS = [
+    {"name": "api-auth", "description": "Login, logout, and current user (`/api/v1`)."},
+    {"name": "api-child", "description": "Child home, QR confirm/complete, achievements."},
+    {"name": "api-parent", "description": "Parent today board, history, and chore CRUD."},
+    {"name": "api-rewards", "description": "Timing bonuses and achievement admin."},
+    {"name": "api-photos", "description": "Authenticated completion photo download."},
+    {"name": "auth", "description": "HTML session login/logout."},
+    {"name": "pages", "description": "Server-rendered pages."},
+    {"name": "chores", "description": "HTML parent chore management."},
+    {"name": "rewards", "description": "HTML rewards admin."},
+    {"name": "photos", "description": "HTML photo serving."},
+    {"name": "health", "description": "Health checks."},
+]
+
+APP_DESCRIPTION = """\
+Family chore app (HTML UI + internal JSON API).
+
+**Internal API** (`/api/v1`): for native apps, automation, and MCP — not end-user docs.
+See `docs/API.md` in the repo. Auth: `Authorization: Bearer <token>` from
+`POST /api/v1/auth/login`, or the same session cookie as the HTML UI.
+
+Production (`ENVIRONMENT=production`) disables interactive OpenAPI.
+"""
 
 
 @asynccontextmanager
@@ -28,6 +53,46 @@ def _wants_html(request: Request) -> bool:
     return "text/html" in accept
 
 
+def _install_openapi(app: FastAPI) -> None:
+    """Attach Bearer security scheme for /api/v1 interactive docs."""
+
+    def custom_openapi() -> dict:
+        if app.openapi_schema:
+            return app.openapi_schema
+        schema = get_openapi(
+            title=app.title,
+            version=app.version,
+            description=app.description,
+            routes=app.routes,
+            tags=OPENAPI_TAGS,
+        )
+        components = schema.setdefault("components", {})
+        schemes = components.setdefault("securitySchemes", {})
+        schemes["BearerAuth"] = {
+            "type": "http",
+            "scheme": "bearer",
+            "bearerFormat": "opaque",
+            "description": (
+                "Opaque access token from POST /api/v1/auth/login. "
+                "Send as: Authorization: Bearer <access_token>"
+            ),
+        }
+        # Mark /api/v1 routes (except login) as accepting Bearer by default in docs.
+        for path, methods in schema.get("paths", {}).items():
+            if not path.startswith("/api/v1"):
+                continue
+            for method, operation in methods.items():
+                if method == "parameters" or not isinstance(operation, dict):
+                    continue
+                if path == "/api/v1/auth/login" and method == "post":
+                    continue
+                operation.setdefault("security", [{"BearerAuth": []}])
+        app.openapi_schema = schema
+        return app.openapi_schema
+
+    app.openapi = custom_openapi  # type: ignore[method-assign]
+
+
 def create_app() -> FastAPI:
     settings = get_settings()
     # Hide interactive API docs outside local development.
@@ -38,11 +103,14 @@ def create_app() -> FastAPI:
     app = FastAPI(
         title=settings.app_name,
         version=__version__,
+        description=APP_DESCRIPTION,
         lifespan=lifespan,
         docs_url=docs_url,
         redoc_url=redoc_url,
         openapi_url=openapi_url,
+        openapi_tags=OPENAPI_TAGS,
     )
+    _install_openapi(app)
 
     static_dir = Path(__file__).resolve().parent / "static"
     app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")

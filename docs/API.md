@@ -133,17 +133,157 @@ Product rules are identical to the HTML flow: one completion per chore per local
 
 ---
 
+## Parent endpoints
+
+All require **`role=parent`** (and authentication), except photo fetch (any authenticated user).
+
+### Board & history
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/api/v1/today` | Today’s status board (same domain rules as `/today`) |
+| `GET` | `/api/v1/history?limit=50` | Recent completions (default 50, max 200) |
+
+### Chores
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/api/v1/chores` | List chores (`include_inactive`, default true) |
+| `POST` | `/api/v1/chores` | Create chore (assigns stable `qr_token`) |
+| `GET` | `/api/v1/chores/{id}` | Chore detail |
+| `PATCH` | `/api/v1/chores/{id}` | Partial update |
+| `POST` | `/api/v1/chores/{id}/deactivate` | Soft-stop QR (keep history) |
+| `POST` | `/api/v1/chores/{id}/activate` | Re-activate |
+| `DELETE` | `/api/v1/chores/{id}` | Hard delete + completions + photo files |
+| `GET` | `/api/v1/chores/{id}/qr` | QR metadata (`qr_url`, `png_path`) |
+| `GET` | `/api/v1/chores/{id}/qr.png` | QR PNG bytes |
+
+**Create body example:**
+
+```json
+{
+  "title": "Unload dishwasher",
+  "description": "Empty top rack first",
+  "due_time": "20:00:00",
+  "schedule_days": "0123456",
+  "photo_policy": "optional",
+  "base_points": 10
+}
+```
+
+`schedule_days` is a string of weekday digits (`0`=Mon … `6`=Sun). `photo_policy`: `required` | `optional` | `none`.
+
+**PATCH** accepts any subset of create fields. Set `clear_description: true` to null out description.
+
+### Rewards
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/api/v1/rewards` | Timing bonuses + achievements |
+| `PUT` | `/api/v1/rewards/bonuses` | Replace timing bonus points |
+| `POST` | `/api/v1/rewards/achievements` | Create achievement |
+| `PATCH` | `/api/v1/rewards/achievements/{id}` | Update achievement |
+| `POST` | `/api/v1/rewards/achievements/{id}/toggle` | Toggle `is_active` |
+
+**Bonuses body:**
+
+```json
+{
+  "early_bonus_points": 5,
+  "on_time_bonus_points": 2,
+  "late_bonus_points": 0
+}
+```
+
+**Achievement create body:**
+
+```json
+{
+  "title": "Early bird",
+  "description": "Complete early 5 times",
+  "icon_key": "bird",
+  "criteria_type": "complete_early_count",
+  "threshold": 5,
+  "points_reward": 25
+}
+```
+
+`criteria_type`: `total_completions` | `complete_on_time_count` | `complete_early_count` | `photo_completions` | `streak_days`.
+
+### Photos
+
+| Method | Path | Role | Description |
+|--------|------|------|-------------|
+| `GET` | `/api/v1/photos/{completion_id}` | Any auth | Stream proof photo bytes |
+
+Same access rules as HTML `GET /photos/{completion_id}`. Missing / no photo → **404**.
+
+---
+
 ## Errors
 
-- All `/api/*` responses use JSON error bodies (never HTML login redirects).
-- Prefer standard HTTP status codes: `401`, `403`, `404`, `400`, `422` (validation).
+All `/api/*` responses use **JSON** bodies (never HTML login redirects or error pages).
+
+| Status | When | `detail` shape |
+|--------|------|----------------|
+| **401** | Missing/invalid auth or bad login | string, e.g. `"Not authenticated"` |
+| **403** | Authenticated but wrong role | string, e.g. `"Insufficient permissions"` |
+| **404** | Unknown chore / QR / photo / achievement | string message |
+| **400** | Domain rule on complete (photo required, not scheduled, etc.) | object: `{ "message": "…", "code": "photo_required" }` |
+| **422** | Pydantic/query validation | FastAPI list of field errors |
+
+Common complete `code` values: `photo_required`, `photo_invalid`, `photo_too_large`, `not_scheduled`, and similar domain codes from `services/completion.py`.
+
+Validation errors keep FastAPI’s default structure (array under `detail`). Auth/role/not-found use a plain string `detail` for simplicity.
+
+**Deferred:** login rate limiting (nice-to-have; not implemented).
+
+---
+
+## OpenAPI
+
+| Environment | Interactive docs |
+|-------------|------------------|
+| `development` (default) | `/docs`, `/redoc`, `/openapi.json` |
+| `production` | Disabled |
+
+OpenAPI includes a **BearerAuth** security scheme. Request bodies for login, chore create, bonuses, and achievements include examples.
+
+---
+
+## Endpoint index
+
+| Method | Path | Role |
+|--------|------|------|
+| `POST` | `/api/v1/auth/login` | public |
+| `POST` | `/api/v1/auth/logout` | any |
+| `GET` | `/api/v1/me` | auth |
+| `GET` | `/api/v1/home` | child |
+| `GET` | `/api/v1/c/{qr_token}` | child |
+| `POST` | `/api/v1/c/{qr_token}/complete` | child |
+| `GET` | `/api/v1/achievements` | child |
+| `GET` | `/api/v1/today` | parent |
+| `GET` | `/api/v1/history` | parent |
+| `GET`/`POST` | `/api/v1/chores` | parent |
+| `GET`/`PATCH`/`DELETE` | `/api/v1/chores/{id}` | parent |
+| `POST` | `/api/v1/chores/{id}/activate` | parent |
+| `POST` | `/api/v1/chores/{id}/deactivate` | parent |
+| `GET` | `/api/v1/chores/{id}/qr` | parent |
+| `GET` | `/api/v1/chores/{id}/qr.png` | parent |
+| `GET` | `/api/v1/rewards` | parent |
+| `PUT` | `/api/v1/rewards/bonuses` | parent |
+| `POST` | `/api/v1/rewards/achievements` | parent |
+| `PATCH` | `/api/v1/rewards/achievements/{id}` | parent |
+| `POST` | `/api/v1/rewards/achievements/{id}/toggle` | parent |
+| `GET` | `/api/v1/photos/{completion_id}` | any auth |
+| `GET` | `/healthz` | public (not under `/api/v1`) |
 
 ---
 
 ## Example (curl)
 
 ```bash
-# Login
+# Login (child)
 TOKEN=$(curl -s -X POST "$BASE_URL/api/v1/auth/login" \
   -H 'Content-Type: application/json' \
   -d '{"email":"daughter@example.com","password":"child-pass"}' \
@@ -154,13 +294,15 @@ curl -s "$BASE_URL/api/v1/me" -H "Authorization: Bearer $TOKEN" | jq .
 
 # Today (child)
 curl -s "$BASE_URL/api/v1/home" -H "Authorization: Bearer $TOKEN" | jq .
+
+# Parent board
+PTOKEN=$(curl -s -X POST "$BASE_URL/api/v1/auth/login" \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"dad@example.com","password":"parent-pass"}' \
+  | jq -r .access_token)
+curl -s "$BASE_URL/api/v1/today" -H "Authorization: Bearer $PTOKEN" | jq .
+curl -s "$BASE_URL/api/v1/chores" -H "Authorization: Bearer $PTOKEN" | jq .
 ```
-
----
-
-## Roadmap (not in this version)
-
-Parent board, chore CRUD, rewards, and photo fetch under `/api/v1` are planned as follow-ups to issue #27. HTML parent routes remain canonical until then.
 
 ---
 
@@ -170,3 +312,4 @@ Parent board, chore CRUD, rewards, and photo fetch under `/api/v1` are planned a
 - Store tokens in the platform secure store; do not log them.
 - Trust only server-awarded points from API responses; do not invent scores client-side.
 - QR tokens are unguessable but still require a child-authenticated complete call.
+- Prefer **deactivate** over **delete** unless you intend to wipe history and photo files.

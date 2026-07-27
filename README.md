@@ -7,6 +7,7 @@ Built as a **Python** app with **uv**, **FastAPI**, and **Docker**, meant to run
 | Docs | |
 |------|--|
 | **Using QR Chores** (parents & child) | [docs/USER.md](./docs/USER.md) · in-app at `/help` |
+| **Internal JSON API** (native apps / MCP) | [docs/API.md](./docs/API.md) · `/api/v1` |
 | Product & coding rules for agents | [AGENTS.md](./AGENTS.md) |
 | Cloud Run + Cloud SQL + GCS deploy | [docs/DEPLOY.md](./docs/DEPLOY.md) |
 
@@ -107,6 +108,25 @@ uv run uvicorn qr_chores.main:app --reload --port 8765
 Open http://127.0.0.1:8765
 
 > Prefer **8765** (or any free port). Port 8000 is often used by other local apps.
+
+### Internal JSON API (`/api/v1`)
+
+For native apps, scripts, and MCP — **not** the family Help page. Full reference: [docs/API.md](./docs/API.md).
+
+In development, interactive OpenAPI is at http://127.0.0.1:8765/docs (disabled when `ENVIRONMENT=production`).
+
+```bash
+# Login → bearer token
+TOKEN=$(curl -s -X POST http://127.0.0.1:8765/api/v1/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"daughter@example.com","password":"child-pass"}' \
+  | jq -r .access_token)
+
+curl -s http://127.0.0.1:8765/api/v1/home \
+  -H "Authorization: Bearer $TOKEN" | jq .
+```
+
+Auth is **Bearer** (preferred for native) or the same session cookie as the HTML UI. Roles match the app: child complete, parent board/CRUD/rewards.
 
 ### Tests, lint, and coverage
 
@@ -217,12 +237,15 @@ qr-chores/
 ├── src/qr_chores/           # FastAPI application
 │   ├── auth/
 │   ├── models/
+│   ├── schemas/             # /api/v1 Pydantic models
 │   ├── routers/
+│   │   └── api/             # /api/v1 JSON API
 │   ├── services/
 │   ├── templates/
 │   └── static/
 ├── migrations/              # Alembic
 ├── scripts/entrypoint.sh
+├── docs/API.md              # Internal API (native apps)
 ├── docs/DEPLOY.md
 ├── tests/
 │   └── integration/         # multi-step flows
@@ -245,6 +268,7 @@ qr-chores/
 5. **Polish** ✅ — print stickers, empty/error pages, deploy docs  
 6. **Quality** ✅ — ruff, coverage ≥ 75%, unit + integration tests  
 7. **Hardening** ✅ — open-redirect fixes, photo path safety, upload size cap, prod secret/docs guards  
+8. **Internal JSON API** ✅ — `/api/v1` auth, child + parent surfaces; see [docs/API.md](./docs/API.md)
 
 ---
 

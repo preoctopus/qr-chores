@@ -10,6 +10,10 @@ PROTECTED = (
     "/api/v1/home",
     "/api/v1/achievements",
     "/api/v1/c/some-token",
+    "/api/v1/today",
+    "/api/v1/history",
+    "/api/v1/chores",
+    "/api/v1/rewards",
 )
 
 
