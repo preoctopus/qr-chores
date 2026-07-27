@@ -1,7 +1,5 @@
 """Child-facing API: home, confirm, complete, achievements."""
 
-import json
-
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -29,7 +27,7 @@ from qr_chores.schemas.chores import (
     HomeResponse,
     PointsBreakdownOut,
 )
-from qr_chores.services.achievements import progress_for
+from qr_chores.services.achievements import criteria_threshold, progress_for
 from qr_chores.services.chores import today_board
 from qr_chores.services.completion import (
     CompletionError,
@@ -183,11 +181,7 @@ async def api_achievements(
 
     rows: list[AchievementProgressOut] = []
     for ach in achievements:
-        try:
-            data = json.loads(ach.criteria_json or "{}")
-        except json.JSONDecodeError:
-            data = {}
-        threshold = int(data.get("count", data.get("days", 1)))
+        threshold = criteria_threshold(ach)
         progress = await progress_for(db, user.id, ach, settings)
         unlocked = ach.id in owned_ids
         capped = threshold if unlocked else min(progress, threshold)

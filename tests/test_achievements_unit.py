@@ -12,8 +12,8 @@ from qr_chores.models.chore import Chore, ChoreCompletion, PhotoPolicy, TimingSt
 from qr_chores.models.rewards import Achievement, CriteriaType
 from qr_chores.models.user import User, UserRole
 from qr_chores.services.achievements import (
-    _criteria_threshold,
     _streak_days,
+    criteria_threshold,
     ensure_default_achievements,
     progress_for,
 )
@@ -29,7 +29,7 @@ def test_criteria_threshold_parses() -> None:
         criteria_json='{"days": 4}',
         points_reward=1,
     )
-    assert _criteria_threshold(ach) == 4
+    assert criteria_threshold(ach) == 4
 
     ach2 = Achievement(
         title="t",
@@ -39,7 +39,52 @@ def test_criteria_threshold_parses() -> None:
         criteria_json="not-json",
         points_reward=1,
     )
-    assert _criteria_threshold(ach2) == 1
+    assert criteria_threshold(ach2) == 1
+
+
+def test_criteria_threshold_streak_prefers_days_over_count() -> None:
+    """When both keys are present, streak uses days; other types use count."""
+    streak = Achievement(
+        title="t",
+        description="",
+        icon_key="star",
+        criteria_type=CriteriaType.streak_days,
+        criteria_json='{"days": 7, "count": 2}',
+        points_reward=1,
+    )
+    assert criteria_threshold(streak) == 7
+
+    total = Achievement(
+        title="t",
+        description="",
+        icon_key="star",
+        criteria_type=CriteriaType.total_completions,
+        criteria_json='{"days": 7, "count": 2}',
+        points_reward=1,
+    )
+    assert criteria_threshold(total) == 2
+
+
+def test_criteria_threshold_fallback_keys() -> None:
+    streak_via_count = Achievement(
+        title="t",
+        description="",
+        icon_key="star",
+        criteria_type=CriteriaType.streak_days,
+        criteria_json='{"count": 5}',
+        points_reward=1,
+    )
+    assert criteria_threshold(streak_via_count) == 5
+
+    total_via_days = Achievement(
+        title="t",
+        description="",
+        icon_key="star",
+        criteria_type=CriteriaType.total_completions,
+        criteria_json='{"days": 9}',
+        points_reward=1,
+    )
+    assert criteria_threshold(total_via_days) == 9
 
 
 @pytest.mark.asyncio

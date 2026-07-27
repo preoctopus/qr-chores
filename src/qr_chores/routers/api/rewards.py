@@ -18,18 +18,10 @@ from qr_chores.schemas.rewards import (
     TimingBonusesOut,
     TimingBonusesUpdate,
 )
-from qr_chores.services.achievements import ensure_default_achievements
+from qr_chores.services.achievements import criteria_threshold, ensure_default_achievements
 from qr_chores.services.points import DEFAULT_BONUSES, get_timing_bonuses, set_setting
 
 router = APIRouter(tags=["api-rewards"])
-
-
-def _threshold_from_achievement(ach: Achievement) -> int:
-    try:
-        data = json.loads(ach.criteria_json or "{}")
-    except json.JSONDecodeError:
-        return 1
-    return int(data.get("count", data.get("days", 1)))
 
 
 def _criteria_json(criteria_type: CriteriaType, threshold: int) -> str:
@@ -45,7 +37,7 @@ def _achievement_out(ach: Achievement) -> AchievementAdminOut:
         description=ach.description,
         icon_key=ach.icon_key,
         criteria_type=ach.criteria_type.value,
-        threshold=_threshold_from_achievement(ach),
+        threshold=criteria_threshold(ach),
         points_reward=ach.points_reward,
         is_active=ach.is_active,
     )
@@ -140,9 +132,7 @@ async def api_update_achievement(
     if body.criteria_type is not None:
         ach.criteria_type = CriteriaType(body.criteria_type)
     if body.threshold is not None or body.criteria_type is not None:
-        threshold = (
-            body.threshold if body.threshold is not None else _threshold_from_achievement(ach)
-        )
+        threshold = body.threshold if body.threshold is not None else criteria_threshold(ach)
         ach.criteria_json = _criteria_json(ach.criteria_type, threshold)
     if body.points_reward is not None:
         ach.points_reward = body.points_reward

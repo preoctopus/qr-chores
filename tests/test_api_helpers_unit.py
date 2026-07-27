@@ -10,8 +10,8 @@ from qr_chores.routers.api.child import _completion_http_error
 from qr_chores.routers.api.rewards import (
     _achievement_out,
     _criteria_json,
-    _threshold_from_achievement,
 )
+from qr_chores.services.achievements import criteria_threshold
 from qr_chores.services.completion import CompletionError
 
 
@@ -49,7 +49,7 @@ def test_threshold_from_achievement_count() -> None:
         points_reward=1,
         is_active=True,
     )
-    assert _threshold_from_achievement(ach) == 12
+    assert criteria_threshold(ach) == 12
 
 
 def test_threshold_from_achievement_days() -> None:
@@ -62,7 +62,7 @@ def test_threshold_from_achievement_days() -> None:
         points_reward=1,
         is_active=True,
     )
-    assert _threshold_from_achievement(ach) == 4
+    assert criteria_threshold(ach) == 4
 
 
 def test_threshold_from_achievement_empty_and_invalid() -> None:
@@ -75,7 +75,7 @@ def test_threshold_from_achievement_empty_and_invalid() -> None:
         points_reward=1,
         is_active=True,
     )
-    assert _threshold_from_achievement(empty) == 1
+    assert criteria_threshold(empty) == 1
 
     bad = Achievement(
         title="T",
@@ -86,7 +86,7 @@ def test_threshold_from_achievement_empty_and_invalid() -> None:
         points_reward=1,
         is_active=True,
     )
-    assert _threshold_from_achievement(bad) == 1
+    assert criteria_threshold(bad) == 1
 
     none_json = Achievement(
         title="T",
@@ -99,7 +99,7 @@ def test_threshold_from_achievement_empty_and_invalid() -> None:
     )
     # criteria_json is str in model; exercise empty-ish path via ""
     none_json.criteria_json = ""
-    assert _threshold_from_achievement(none_json) == 1
+    assert criteria_threshold(none_json) == 1
 
 
 def test_achievement_out_maps_fields() -> None:

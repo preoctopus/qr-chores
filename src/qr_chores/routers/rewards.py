@@ -15,6 +15,7 @@ from qr_chores.models.user import User, UserRole
 from qr_chores.services.achievements import (
     CRITERIA_LABELS,
     ICON_CHOICES,
+    criteria_threshold,
     ensure_default_achievements,
 )
 from qr_chores.services.points import DEFAULT_BONUSES, get_timing_bonuses, set_setting
@@ -108,14 +109,6 @@ def _criteria_json(criteria_type: CriteriaType, threshold: int) -> str:
     return json.dumps({"count": threshold})
 
 
-def _threshold_from_achievement(ach: Achievement) -> int:
-    try:
-        data = json.loads(ach.criteria_json or "{}")
-    except json.JSONDecodeError:
-        return 1
-    return int(data.get("count", data.get("days", 1)))
-
-
 @router.post("/rewards/achievements", response_model=None)
 async def achievement_create(
     request: Request,
@@ -207,7 +200,7 @@ async def achievement_edit_form(
                 "description": ach.description,
                 "icon_key": ach.icon_key,
                 "criteria_type": ach.criteria_type.value,
-                "threshold": str(_threshold_from_achievement(ach)),
+                "threshold": str(criteria_threshold(ach)),
                 "points_reward": str(ach.points_reward),
             },
             "criteria_types": list(CriteriaType),
