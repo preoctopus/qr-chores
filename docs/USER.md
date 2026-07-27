@@ -91,15 +91,14 @@ Awards are calculated **on the server** when she completes a chore. The app neve
 
 After login you see:
 
-- Today’s scheduled chores
-- Total points
-- Recent achievement unlocks
+- Total points and points earned today
+- Awarded and Not yet awarded achievements
 
-Tap a chore (or scan its QR) to open the confirm page.
+To complete a chore, scan its physical QR code sticker.
 
 ### Completing a chore
 
-1. **Scan the QR** on the sticker, **or** tap the chore on Home.
+1. **Scan the QR** on the sticker.
 2. Confirm the name and due time.
 3. If a **photo** is required or optional, take or choose a picture (JPEG, PNG, or WebP; size limit applies).
 4. Tap **I did it**.

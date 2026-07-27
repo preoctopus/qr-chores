@@ -114,13 +114,18 @@ async def test_inactive_chore_not_completable(client: AsyncClient, child_user: U
 
 
 @pytest.mark.asyncio
-async def test_child_home_shows_chore(client: AsyncClient, child_user: User, app) -> None:
+async def test_child_home_shows_points_and_achievements(
+    client: AsyncClient, child_user: User, app
+) -> None:
     chore = await _create_chore(app.state.session_factory, title="Wipe counters")
     await _login_child(client, child_user)
     home = await client.get("/home")
     assert home.status_code == 200
-    assert "Wipe counters" in home.text
-    assert chore.qr_token in home.text
+    assert "Total points" in home.text
+    assert "Awarded Achievements" in home.text
+    # QR-only completion: chores are not listed on child home
+    assert "Wipe counters" not in home.text
+    assert chore.qr_token not in home.text
 
 
 @pytest.mark.asyncio
