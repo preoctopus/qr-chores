@@ -15,6 +15,9 @@ RUN uv sync --frozen --no-dev
 
 FROM python:3.12-slim AS runtime
 
+RUN apt-get update && apt-get install -y --no-install-recommends nginx gettext-base \
+    && rm -rf /var/lib/apt/lists/*
+
 RUN useradd --create-home --uid 10001 appuser
 WORKDIR /app
 
@@ -25,9 +28,12 @@ COPY --from=builder /app/README.md /app/README.md
 COPY migrations ./migrations
 COPY alembic.ini ./
 COPY scripts/entrypoint.sh ./scripts/entrypoint.sh
+COPY marketing ./marketing
+COPY docker ./docker
 
 RUN chmod +x /app/scripts/entrypoint.sh \
-    && chown -R appuser:appuser /app
+    && mkdir -p /var/log/nginx /var/lib/nginx /tmp \
+    && chown -R appuser:appuser /app /var/log/nginx /var/lib/nginx /tmp
 
 ENV PATH="/app/.venv/bin:$PATH" \
     PYTHONUNBUFFERED=1 \

@@ -1,6 +1,6 @@
 """API auth: login, logout, me."""
 
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -27,14 +27,20 @@ async def _user_out(db: AsyncSession, user: User) -> UserOut:
     )
 
 
-def _set_session_cookie(response: Response, settings: Settings, user_id: int) -> None:
+def _set_session_cookie(
+    response: Response, settings: Settings, user_id: int, request: Request | None = None
+) -> None:
+    is_https = (
+        request
+        and (request.headers.get("x-forwarded-proto") == "https" or request.url.scheme == "https")
+    ) or settings.base_url.startswith("https://")
     response.set_cookie(
         key=settings.session_cookie_name,
         value=dump_session(settings, user_id),
         max_age=settings.session_max_age_seconds,
         httponly=True,
         samesite="lax",
-        secure=settings.base_url.startswith("https://"),
+        secure=bool(is_https),
         path="/",
     )
 
@@ -43,6 +49,7 @@ def _set_session_cookie(response: Response, settings: Settings, user_id: int) ->
 async def api_login(
     body: LoginRequest,
     response: Response,
+    request: Request,
     db: AsyncSession = Depends(get_db),
     settings: Settings = Depends(get_settings),
 ) -> TokenResponse:
@@ -58,7 +65,7 @@ async def api_login(
         )
 
     access_token = dump_api_token(settings, user.id)
-    _set_session_cookie(response, settings, user.id)
+    _set_session_cookie(response, settings, user.id, request=request)
     return TokenResponse(
         access_token=access_token,
         token_type="bearer",

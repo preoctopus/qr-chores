@@ -102,6 +102,11 @@ async def login_submit(
     if destination == "/":
         destination = _home_for_role(user.role)
 
+    is_https = (
+        request.headers.get("x-forwarded-proto") == "https"
+        or request.url.scheme == "https"
+        or settings.base_url.startswith("https://")
+    )
     response = RedirectResponse(destination, status_code=status.HTTP_303_SEE_OTHER)
     response.set_cookie(
         key=settings.session_cookie_name,
@@ -109,7 +114,7 @@ async def login_submit(
         max_age=settings.session_max_age_seconds,
         httponly=True,
         samesite="lax",
-        secure=settings.base_url.startswith("https://"),
+        secure=is_https,
         path="/",
     )
     return response

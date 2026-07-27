@@ -19,7 +19,12 @@ from qr_chores.services.chores import (
     parse_schedule_days,
     schedule_labels,
 )
-from qr_chores.services.qr import chore_url, generate_qr_png, new_qr_token
+from qr_chores.services.qr import (
+    chore_url,
+    generate_qr_png,
+    get_base_url_from_request,
+    new_qr_token,
+)
 from qr_chores.services.timeutil import format_due_time
 from qr_chores.templating import templates
 
@@ -328,7 +333,7 @@ async def chore_qr_page(
     chore = await db.get(Chore, chore_id)
     if chore is None:
         return RedirectResponse("/chores", status_code=status.HTTP_303_SEE_OTHER)
-    url = chore_url(settings, chore.qr_token)
+    url = chore_url(settings, chore.qr_token, request=request)
     return templates.TemplateResponse(
         request,
         "chore_qr.html",
@@ -344,6 +349,7 @@ async def chore_qr_page(
 
 @router.get("/chores/{chore_id}/qr.png")
 async def chore_qr_png(
+    request: Request,
     chore_id: int,
     user: User = Depends(require_role(UserRole.parent)),
     db: AsyncSession = Depends(get_db),
@@ -352,7 +358,7 @@ async def chore_qr_png(
     chore = await db.get(Chore, chore_id)
     if chore is None:
         return Response(status_code=status.HTTP_404_NOT_FOUND)
-    png = generate_qr_png(chore_url(settings, chore.qr_token))
+    png = generate_qr_png(chore_url(settings, chore.qr_token, request=request))
     return Response(
         content=png,
         media_type="image/png",
@@ -375,7 +381,7 @@ async def print_qrs(
     items = [
         {
             "chore": c,
-            "url": chore_url(settings, c.qr_token),
+            "url": chore_url(settings, c.qr_token, request=request),
             "png_path": f"/chores/{c.id}/qr.png",
         }
         for c in chores
@@ -388,6 +394,6 @@ async def print_qrs(
             "title": "Print QR codes",
             "items": items,
             "format_due_time": format_due_time,
-            "base_url": settings.base_url.rstrip("/"),
+            "base_url": get_base_url_from_request(settings, request),
         },
     )

@@ -1,0 +1,78 @@
+worker_processes auto;
+error_log /var/log/nginx/error.log warn;
+pid /tmp/nginx.pid;
+
+events {
+    worker_connections 1024;
+}
+
+http {
+    include /etc/nginx/mime.types;
+    default_type application/octet-stream;
+
+    log_format main '$remote_addr - $remote_user [$time_local] "$request" '
+                    '$status $body_bytes_sent "$http_referer" '
+                    '"$http_user_agent" "$http_x_forwarded_for"';
+
+    access_log /var/log/nginx/access.log main;
+
+    sendfile on;
+    keepalive_timeout 65;
+    client_max_body_size 10M;
+
+    server {
+        listen ${PORT};
+        server_name _;
+
+        root /app/marketing;
+        index index.html;
+
+        # Static marketing website files (index.html, guide.html, styles.css, script.js)
+        location / {
+            try_files $uri $uri/ @fastapi;
+        }
+
+        # Static marketing assets (images, logos, video)
+        location /assets/ {
+            alias /app/marketing/assets/;
+            expires 7d;
+            add_header Cache-Control "public, no-transform";
+        }
+
+        # QR code scan links (/c/{token})
+        location /c/ {
+            proxy_pass http://127.0.0.1:8000;
+            proxy_set_header Host $http_host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+
+        # Internal JSON API (/api/v1/...)
+        location /api/ {
+            proxy_pass http://127.0.0.1:8000;
+            proxy_set_header Host $http_host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+
+        # Health check
+        location /healthz {
+            proxy_pass http://127.0.0.1:8000;
+            proxy_set_header Host $http_host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+
+        # FastAPI application fallback
+        location @fastapi {
+            proxy_pass http://127.0.0.1:8000;
+            proxy_set_header Host $http_host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+    }
+}

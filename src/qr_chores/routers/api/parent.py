@@ -1,6 +1,6 @@
 """Parent-facing API: today board, history, chore CRUD, QR."""
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -202,6 +202,7 @@ async def api_delete_chore(
 
 @router.get("/chores/{chore_id}/qr", response_model=QrInfoOut)
 async def api_chore_qr(
+    request: Request,
     chore_id: int,
     user: User = Depends(require_role(UserRole.parent)),
     db: AsyncSession = Depends(get_db),
@@ -215,13 +216,14 @@ async def api_chore_qr(
         chore_id=chore.id,
         title=chore.title,
         qr_token=chore.qr_token,
-        qr_url=chore_url(settings, chore.qr_token),
+        qr_url=chore_url(settings, chore.qr_token, request=request),
         png_path=f"/api/v1/chores/{chore.id}/qr.png",
     )
 
 
 @router.get("/chores/{chore_id}/qr.png")
 async def api_chore_qr_png(
+    request: Request,
     chore_id: int,
     user: User = Depends(require_role(UserRole.parent)),
     db: AsyncSession = Depends(get_db),
@@ -231,7 +233,7 @@ async def api_chore_qr_png(
     chore = await db.get(Chore, chore_id)
     if chore is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Chore not found")
-    png = generate_qr_png(chore_url(settings, chore.qr_token))
+    png = generate_qr_png(chore_url(settings, chore.qr_token, request=request))
     return Response(
         content=png,
         media_type="image/png",
