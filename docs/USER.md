@@ -27,6 +27,17 @@ There is **no public “sign up” page**. Accounts are created by seed (local/b
 
 Use **Log out** in the top bar when switching people on a shared phone.
 
+### Install as an app
+
+QR Chores works best **added to your home screen** (full-screen, easy to find — no App Store or Play Store).
+
+| Platform | Steps |
+|----------|--------|
+| **Chrome on Android** | Open the site → **⋮** menu → **Add to Home screen** / **Install app** → confirm |
+| **Safari on iPhone / iPad** | Open the site in **Safari** → **Share** → **Add to Home Screen** → **Add** |
+
+On iOS, “Add to Home Screen” only appears in Safari (not Chrome). After installing, open from the home-screen icon. More detail is in the in-app **Help** (`/help`).
+
 ---
 
 ## Parent guide

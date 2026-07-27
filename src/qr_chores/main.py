@@ -1,5 +1,6 @@
 """FastAPI application entrypoint."""
 
+import mimetypes
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -15,6 +16,9 @@ from qr_chores.db import init_db
 from qr_chores.routers import auth, chores, complete, health, pages, photos, rewards
 from qr_chores.routers.api import api_router
 from qr_chores.templating import templates
+
+# StaticFiles uses mimetypes; ensure web app manifests get the correct type.
+mimetypes.add_type("application/manifest+json", ".webmanifest")
 
 OPENAPI_TAGS = [
     {"name": "api-auth", "description": "Login, logout, and current user (`/api/v1`)."},

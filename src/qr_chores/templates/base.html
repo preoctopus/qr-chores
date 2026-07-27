@@ -6,9 +6,13 @@
   <title>{% block title %}{{ title or "QR Chores" }}{% endblock %} · QR Chores</title>
   <meta name="theme-color" content="#7c5cff">
   <meta name="application-name" content="ChoreQuest">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Chores">
   <link rel="icon" href="/static/favicon.ico" sizes="any">
   <link rel="apple-touch-icon" href="/static/icons/app-logo-192.png">
-  <link rel="manifest" href="/static/manifest.json">
+  <link rel="manifest" href="/static/manifest.webmanifest">
   <link rel="stylesheet" href="/static/css/app.css">
   {% block head %}{% endblock %}
 </head>
