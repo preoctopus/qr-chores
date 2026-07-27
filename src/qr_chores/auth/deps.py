@@ -1,5 +1,6 @@
 """FastAPI auth dependencies."""
 
+import hmac
 from collections.abc import Callable
 
 from fastapi import Depends, HTTPException, Request, status
@@ -68,3 +69,22 @@ def require_role(*roles: UserRole) -> Callable:
         return user
 
     return _dep
+
+
+def require_admin_api_key(
+    request: Request,
+    settings: Settings = Depends(get_settings),
+) -> None:
+    """Require ``X-Admin-Key`` matching ``ADMIN_API_KEY`` (constant-time)."""
+    configured = (settings.admin_api_key or "").strip()
+    if not configured:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Admin API is not configured (set ADMIN_API_KEY).",
+        )
+    provided = (request.headers.get("X-Admin-Key") or "").strip()
+    if not provided or not hmac.compare_digest(provided, configured):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or missing admin API key.",
+        )

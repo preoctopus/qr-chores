@@ -127,9 +127,13 @@ async def test_chores_missing_ids_redirect(client: AsyncClient, parent_user: Use
 
 
 @pytest.mark.asyncio
-async def test_chores_edit_invalid_policy(client: AsyncClient, parent_user: User, app) -> None:
+async def test_chores_edit_invalid_policy(
+    client: AsyncClient, parent_user: User, app, child_user: User
+) -> None:
     await _login_parent(client, parent_user)
-    chore = await _create_chore(app.state.session_factory, title="Keep me")
+    chore = await _create_chore(
+        app.state.session_factory, title="Keep me", assignee_user_id=child_user.id
+    )
     response = await client.post(
         f"/chores/{chore.id}/edit",
         data={
@@ -274,6 +278,7 @@ async def test_complete_not_scheduled_http(client: AsyncClient, child_user: User
         app.state.session_factory,
         schedule_days="",  # never scheduled
         title="Off day only",
+        assignee_user_id=child_user.id,
     )
     await _login_child(client, child_user)
     response = await client.post(f"/c/{chore.qr_token}")
@@ -285,7 +290,9 @@ async def test_complete_not_scheduled_http(client: AsyncClient, child_user: User
 async def test_complete_already_done_confirm_page(
     client: AsyncClient, child_user: User, app
 ) -> None:
-    chore = await _create_chore(app.state.session_factory, title="Once only")
+    chore = await _create_chore(
+        app.state.session_factory, title="Once only", assignee_user_id=child_user.id
+    )
     await _login_child(client, child_user)
     assert (await client.post(f"/c/{chore.qr_token}")).status_code == 200
     again = await client.get(f"/c/{chore.qr_token}")
@@ -301,8 +308,7 @@ async def test_complete_rejects_oversized_photo(
     from qr_chores.config import get_settings
 
     chore = await _create_chore(
-        app.state.session_factory,
-        photo_policy=PhotoPolicy.required,
+        app.state.session_factory, photo_policy=PhotoPolicy.required, assignee_user_id=child_user.id
     )
     # Tiny limit so we don't allocate multi-MB fixtures
     monkeypatch.setenv("PHOTO_MAX_BYTES", "50")
@@ -333,7 +339,7 @@ async def test_photo_missing_completion(client: AsyncClient, parent_user: User) 
 async def test_photo_completion_without_key(
     client: AsyncClient, parent_user: User, child_user: User, app
 ) -> None:
-    chore = await _create_chore(app.state.session_factory)
+    chore = await _create_chore(app.state.session_factory, assignee_user_id=child_user.id)
     await _login_child(client, child_user)
     await client.post(f"/c/{chore.qr_token}")
 

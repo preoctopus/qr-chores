@@ -22,6 +22,22 @@
     </label>
 
     <label class="field">
+      <span>Assigned to</span>
+      <select name="assignee_user_id" required>
+        <option value="" disabled {% if not form.assignee_user_id %}selected{% endif %}>Select a child…</option>
+        {% for kid in children %}
+        <option value="{{ kid.id }}"
+          {% if form.assignee_user_id and form.assignee_user_id|string == kid.id|string %}selected{% endif %}>
+          {{ kid.display_name }}
+        </option>
+        {% endfor %}
+      </select>
+      {% if not children %}
+      <p class="muted small">Add a child under <a href="/children">Children</a> first.</p>
+      {% endif %}
+    </label>
+
+    <label class="field">
       <span>Due time</span>
       <input type="time" name="due_time" required value="{{ form.due_time or '20:00' }}">
     </label>

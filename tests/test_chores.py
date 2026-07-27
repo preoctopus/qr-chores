@@ -49,7 +49,9 @@ async def test_child_cannot_list_chores(client: AsyncClient, child_user: User) -
 
 
 @pytest.mark.asyncio
-async def test_parent_creates_chore(client: AsyncClient, parent_user: User, app) -> None:
+async def test_parent_creates_chore(
+    client: AsyncClient, parent_user: User, app, child_user: User
+) -> None:
     await _login_parent(client, parent_user)
     response = await client.post(
         "/chores",
@@ -60,6 +62,7 @@ async def test_parent_creates_chore(client: AsyncClient, parent_user: User, app)
             "base_points": "15",
             "photo_policy": "optional",
             "schedule_day": ["0", "1", "2", "3", "4", "5", "6"],
+            "assignee_user_id": str(child_user.id),
         },
         follow_redirects=False,
     )
@@ -78,9 +81,13 @@ async def test_parent_creates_chore(client: AsyncClient, parent_user: User, app)
 
 
 @pytest.mark.asyncio
-async def test_parent_lists_and_views_qr(client: AsyncClient, parent_user: User, app) -> None:
+async def test_parent_lists_and_views_qr(
+    client: AsyncClient, parent_user: User, app, child_user: User
+) -> None:
     await _login_parent(client, parent_user)
-    chore = await _create_chore(app.state.session_factory, title="Make bed")
+    chore = await _create_chore(
+        app.state.session_factory, title="Make bed", assignee_user_id=child_user.id
+    )
 
     listing = await client.get("/chores")
     assert listing.status_code == 200
@@ -98,9 +105,13 @@ async def test_parent_lists_and_views_qr(client: AsyncClient, parent_user: User,
 
 
 @pytest.mark.asyncio
-async def test_parent_edits_and_deactivates(client: AsyncClient, parent_user: User, app) -> None:
+async def test_parent_edits_and_deactivates(
+    client: AsyncClient, parent_user: User, app, child_user: User
+) -> None:
     await _login_parent(client, parent_user)
-    chore = await _create_chore(app.state.session_factory, title="Old name")
+    chore = await _create_chore(
+        app.state.session_factory, title="Old name", assignee_user_id=child_user.id
+    )
 
     edit = await client.post(
         f"/chores/{chore.id}/edit",
@@ -111,6 +122,7 @@ async def test_parent_edits_and_deactivates(client: AsyncClient, parent_user: Us
             "base_points": "5",
             "photo_policy": "required",
             "schedule_day": ["0", "1", "2", "3", "4"],
+            "assignee_user_id": str(child_user.id),
         },
         follow_redirects=False,
     )
@@ -133,10 +145,12 @@ async def test_parent_edits_and_deactivates(client: AsyncClient, parent_user: Us
 
 @pytest.mark.asyncio
 async def test_parent_deletes_chore_without_history(
-    client: AsyncClient, parent_user: User, app
+    client: AsyncClient, parent_user: User, app, child_user: User
 ) -> None:
     await _login_parent(client, parent_user)
-    chore = await _create_chore(app.state.session_factory, title="Temp chore")
+    chore = await _create_chore(
+        app.state.session_factory, title="Temp chore", assignee_user_id=child_user.id
+    )
     chore_id = chore.id
 
     confirm = await client.get(f"/chores/{chore_id}/delete")
@@ -161,7 +175,9 @@ async def test_parent_deletes_chore_with_completions(
     client: AsyncClient, parent_user: User, child_user: User, app
 ) -> None:
     await _login_parent(client, parent_user)
-    chore = await _create_chore(app.state.session_factory, title="Done once")
+    chore = await _create_chore(
+        app.state.session_factory, title="Done once", assignee_user_id=child_user.id
+    )
     chore_id = chore.id
 
     async with app.state.session_factory() as session:
@@ -201,7 +217,7 @@ async def test_parent_deletes_chore_with_completions(
 
 @pytest.mark.asyncio
 async def test_child_cannot_delete_chore(client: AsyncClient, child_user: User, app) -> None:
-    chore = await _create_chore(app.state.session_factory)
+    chore = await _create_chore(app.state.session_factory, assignee_user_id=child_user.id)
     await client.post(
         "/login",
         data={"email": child_user.email, "password": "child-pass", "next": ""},
@@ -211,9 +227,13 @@ async def test_child_cannot_delete_chore(client: AsyncClient, child_user: User, 
 
 
 @pytest.mark.asyncio
-async def test_parent_activate_and_edit_form(client: AsyncClient, parent_user: User, app) -> None:
+async def test_parent_activate_and_edit_form(
+    client: AsyncClient, parent_user: User, app, child_user: User
+) -> None:
     await _login_parent(client, parent_user)
-    chore = await _create_chore(app.state.session_factory, title="Inactive", is_active=False)
+    chore = await _create_chore(
+        app.state.session_factory, title="Inactive", is_active=False, assignee_user_id=child_user.id
+    )
 
     form = await client.get(f"/chores/{chore.id}/edit")
     assert form.status_code == 200

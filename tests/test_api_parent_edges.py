@@ -71,9 +71,18 @@ async def test_chore_404s(client: AsyncClient, parent_user: User) -> None:
 
 
 @pytest.mark.asyncio
-async def test_include_inactive_filter(client: AsyncClient, parent_user: User, app) -> None:
-    active = await _create_chore(app.state.session_factory, title="Active one")
-    inactive = await _create_chore(app.state.session_factory, title="Inactive one", is_active=False)
+async def test_include_inactive_filter(
+    client: AsyncClient, parent_user: User, app, child_user: User
+) -> None:
+    active = await _create_chore(
+        app.state.session_factory, title="Active one", assignee_user_id=child_user.id
+    )
+    inactive = await _create_chore(
+        app.state.session_factory,
+        title="Inactive one",
+        is_active=False,
+        assignee_user_id=child_user.id,
+    )
     token = await api_login(client, parent_user.email, "parent-pass")
     headers = auth_header(token)
 
@@ -93,9 +102,14 @@ async def test_include_inactive_filter(client: AsyncClient, parent_user: User, a
 
 
 @pytest.mark.asyncio
-async def test_clear_description_patch(client: AsyncClient, parent_user: User, app) -> None:
+async def test_clear_description_patch(
+    client: AsyncClient, parent_user: User, app, child_user: User
+) -> None:
     chore = await _create_chore(
-        app.state.session_factory, title="Has desc", description="remove me"
+        app.state.session_factory,
+        title="Has desc",
+        description="remove me",
+        assignee_user_id=child_user.id,
     )
     token = await api_login(client, parent_user.email, "parent-pass")
     headers = auth_header(token)
@@ -111,7 +125,7 @@ async def test_clear_description_patch(client: AsyncClient, parent_user: User, a
 
 @pytest.mark.asyncio
 async def test_child_forbidden_on_parent_writes(client: AsyncClient, child_user: User, app) -> None:
-    chore = await _create_chore(app.state.session_factory)
+    chore = await _create_chore(app.state.session_factory, assignee_user_id=child_user.id)
     token = await api_login(client, child_user.email, "child-pass")
     headers = auth_header(token)
 
@@ -203,8 +217,10 @@ async def test_create_invalid_photo_policy_http(client: AsyncClient, parent_user
 
 
 @pytest.mark.asyncio
-async def test_patch_all_fields(client: AsyncClient, parent_user: User, app) -> None:
-    chore = await _create_chore(app.state.session_factory)
+async def test_patch_all_fields(
+    client: AsyncClient, parent_user: User, app, child_user: User
+) -> None:
+    chore = await _create_chore(app.state.session_factory, assignee_user_id=child_user.id)
     token = await api_login(client, parent_user.email, "parent-pass")
     headers = auth_header(token)
 

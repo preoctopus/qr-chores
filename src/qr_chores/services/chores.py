@@ -5,6 +5,7 @@ from datetime import datetime, time, timedelta
 
 from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from qr_chores.config import Settings
 from qr_chores.models.chore import Chore, ChoreCompletion, TimingStatus
@@ -40,25 +41,70 @@ class ChoreDayStatus:
         return "pending"
 
 
-async def list_active_chores(db: AsyncSession) -> list[Chore]:
-    result = await db.execute(
-        select(Chore).where(Chore.is_active.is_(True)).order_by(Chore.due_time, Chore.title)
+async def list_active_chores(
+    db: AsyncSession,
+    *,
+    assignee_user_id: int | None = None,
+) -> list[Chore]:
+    q = (
+        select(Chore)
+        .options(selectinload(Chore.assignee))
+        .where(Chore.is_active.is_(True))
+        .order_by(Chore.due_time, Chore.title)
     )
-    return list(result.scalars().all())
-
-
-async def list_all_chores(db: AsyncSession, *, include_inactive: bool = True) -> list[Chore]:
-    q = select(Chore).order_by(Chore.is_active.desc(), Chore.due_time, Chore.title)
-    if not include_inactive:
-        q = q.where(Chore.is_active.is_(True))
+    if assignee_user_id is not None:
+        q = q.where(Chore.assignee_user_id == assignee_user_id)
     result = await db.execute(q)
     return list(result.scalars().all())
 
 
-async def today_board(db: AsyncSession, settings: Settings) -> list[ChoreDayStatus]:
+async def list_all_chores(
+    db: AsyncSession,
+    *,
+    include_inactive: bool = True,
+    assignee_user_id: int | None = None,
+    parent_id: int | None = None,
+) -> list[Chore]:
+    """List chores. When ``parent_id`` is set, only chores assigned to that parent's children."""
+    from qr_chores.models.user import User, UserRole
+
+    q = (
+        select(Chore)
+        .options(selectinload(Chore.assignee))
+        .order_by(Chore.is_active.desc(), Chore.due_time, Chore.title)
+    )
+    if not include_inactive:
+        q = q.where(Chore.is_active.is_(True))
+    if assignee_user_id is not None:
+        q = q.where(Chore.assignee_user_id == assignee_user_id)
+    if parent_id is not None:
+        child_ids = select(User.id).where(
+            User.role == UserRole.child,
+            User.parent_id == parent_id,
+        )
+        q = q.where(Chore.assignee_user_id.in_(child_ids))
+    result = await db.execute(q)
+    return list(result.scalars().all())
+
+
+async def today_board(
+    db: AsyncSession,
+    settings: Settings,
+    *,
+    assignee_user_id: int | None = None,
+    parent_id: int | None = None,
+) -> list[ChoreDayStatus]:
     today = local_today(settings)
     now = local_now(settings)
-    chores = await list_active_chores(db)
+    if parent_id is not None and assignee_user_id is None:
+        chores = await list_all_chores(
+            db,
+            include_inactive=False,
+            parent_id=parent_id,
+        )
+        chores = [c for c in chores if c.is_active]
+    else:
+        chores = await list_active_chores(db, assignee_user_id=assignee_user_id)
     scheduled = [c for c in chores if is_scheduled_on(c.schedule_days, today)]
     if not scheduled:
         return []

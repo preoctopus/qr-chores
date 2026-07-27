@@ -73,6 +73,7 @@ async def test_required_photo_blocks_without_file(
         app.state.session_factory,
         photo_policy=PhotoPolicy.required,
         title="Mop floor",
+        assignee_user_id=child_user.id,
     )
     await _login_child(client, child_user)
     response = await client.post(f"/c/{chore.qr_token}")
@@ -93,6 +94,7 @@ async def test_required_photo_succeeds_with_png(
         photo_policy=PhotoPolicy.required,
         title="Wipe sink",
         base_points=20,
+        assignee_user_id=child_user.id,
     )
     await _login_child(client, child_user)
     response = await client.post(
@@ -131,8 +133,7 @@ async def test_optional_photo_works_without_file(
     client: AsyncClient, child_user: User, app
 ) -> None:
     chore = await _create_chore(
-        app.state.session_factory,
-        photo_policy=PhotoPolicy.optional,
+        app.state.session_factory, photo_policy=PhotoPolicy.optional, assignee_user_id=child_user.id
     )
     await _login_child(client, child_user)
     response = await client.post(f"/c/{chore.qr_token}")
@@ -147,8 +148,7 @@ async def test_optional_photo_saves_when_provided(
     client: AsyncClient, child_user: User, app
 ) -> None:
     chore = await _create_chore(
-        app.state.session_factory,
-        photo_policy=PhotoPolicy.optional,
+        app.state.session_factory, photo_policy=PhotoPolicy.optional, assignee_user_id=child_user.id
     )
     await _login_child(client, child_user)
     response = await client.post(
@@ -166,8 +166,7 @@ async def test_none_policy_ignores_need_for_photo(
     client: AsyncClient, child_user: User, app
 ) -> None:
     chore = await _create_chore(
-        app.state.session_factory,
-        photo_policy=PhotoPolicy.none,
+        app.state.session_factory, photo_policy=PhotoPolicy.none, assignee_user_id=child_user.id
     )
     await _login_child(client, child_user)
     page = await client.get(f"/c/{chore.qr_token}")
@@ -181,8 +180,7 @@ async def test_none_policy_ignores_need_for_photo(
 @pytest.mark.asyncio
 async def test_photo_requires_auth(client: AsyncClient, child_user: User, app) -> None:
     chore = await _create_chore(
-        app.state.session_factory,
-        photo_policy=PhotoPolicy.required,
+        app.state.session_factory, photo_policy=PhotoPolicy.required, assignee_user_id=child_user.id
     )
     await _login_child(client, child_user)
     await client.post(
@@ -206,8 +204,7 @@ async def test_photo_requires_auth(client: AsyncClient, child_user: User, app) -
 @pytest.mark.asyncio
 async def test_reject_non_image_upload(client: AsyncClient, child_user: User, app) -> None:
     chore = await _create_chore(
-        app.state.session_factory,
-        photo_policy=PhotoPolicy.required,
+        app.state.session_factory, photo_policy=PhotoPolicy.required, assignee_user_id=child_user.id
     )
     await _login_child(client, child_user)
     response = await client.post(

@@ -21,8 +21,12 @@ async def _user_out(db: AsyncSession, user: User) -> UserOut:
     return UserOut(
         id=user.id,
         email=user.email,
+        first_name=user.first_name,
+        last_name=user.last_name,
         display_name=user.display_name,
         role=user.role.value,
+        parent_id=user.parent_id,
+        is_active=user.is_active,
         points_balance=balance,
     )
 

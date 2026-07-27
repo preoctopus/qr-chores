@@ -7,6 +7,12 @@ This surface is **internal**: it is versioned and documented for first-party app
 
 Base path: **`/api/v1`**
 
+### Multi-child & registration
+
+- **Admin bootstrap:** `POST /api/v1/admin/users` with header `X-Admin-Key: <ADMIN_API_KEY>` registers a user (typically a parent) with `email` (username, **no format validation**), `password`, `first_name`, `last_name`.
+- **Parent children:** `GET/POST /api/v1/children`, `GET/PATCH /api/v1/children/{id}`, activate/deactivate. Children are owned by `parent_id`.
+- **Chores are per child:** create/update requires `assignee_user_id` (one of the parent’s children). Completing via QR requires the logged-in child to be that assignee (siblings get `403`).
+
 In non-production (`ENVIRONMENT=development`), interactive OpenAPI is available at `/docs` and `/openapi.json`. Production keeps those disabled.
 
 ---

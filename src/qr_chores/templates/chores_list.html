@@ -28,6 +28,7 @@
         <div>
           <p class="chore-title">{{ chore.title }}</p>
           <p class="muted small">
+            {% if chore.assignee %}{{ chore.assignee.display_name }} · {% endif %}
             Due {{ format_due_time(chore.due_time) }} · {{ schedule_labels(chore.schedule_days) }}
             · {{ chore.base_points }} pts
             {% if not chore.is_active %} · inactive{% endif %}

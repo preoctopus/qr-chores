@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Children{% endblock %}
+{% block content %}
+<section class="stack">
+  <div class="page-header row-between">
+    <div>
+      <h1>Children</h1>
+      <p class="muted">Register kids, then assign chores to each one.</p>
+    </div>
+  </div>
+
+  <div class="btn-row">
+    <a class="btn btn-primary" href="/children/new">Add child</a>
+  </div>
+
+  {% if not children %}
+  {% set empty_title = "No children yet" %}
+  {% set empty_message = "Add a child account so you can assign chores and share QR codes." %}
+  {% set empty_primary_href = "/children/new" %}
+  {% set empty_primary_label = "Add child" %}
+  {% include "empty_state.html" %}
+  {% else %}
+  <ul class="chore-list">
+    {% for child in children %}
+    <li class="chore-card {% if not child.is_active %}is-inactive{% endif %}">
+      <div class="chore-card-main">
+        <div>
+          <p class="chore-title">{{ child.display_name }}</p>
+          <p class="muted small">
+            {{ child.email }}
+            {% if not child.is_active %} · inactive{% endif %}
+          </p>
+        </div>
+      </div>
+      <div class="btn-row compact">
+        <a class="btn btn-ghost btn-sm" href="/children/{{ child.id }}/edit">Edit</a>
+        {% if child.is_active %}
+        <form method="post" action="/children/{{ child.id }}/deactivate">
+          <button type="submit" class="btn btn-ghost btn-sm">Deactivate</button>
+        </form>
+        {% else %}
+        <form method="post" action="/children/{{ child.id }}/activate">
+          <button type="submit" class="btn btn-ghost btn-sm">Activate</button>
+        </form>
+        {% endif %}
+      </div>
+    </li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+</section>
+{% endblock %}

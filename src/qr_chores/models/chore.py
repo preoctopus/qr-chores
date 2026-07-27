@@ -1,7 +1,10 @@
 """Chore and completion models."""
 
+from __future__ import annotations
+
 from datetime import date, datetime, time
 from enum import StrEnum
+from typing import TYPE_CHECKING
 
 from sqlalchemy import (
     Boolean,
@@ -19,6 +22,9 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from qr_chores.db import Base
+
+if TYPE_CHECKING:
+    from qr_chores.models.user import User
 
 
 class PhotoPolicy(StrEnum):
@@ -54,6 +60,12 @@ class Chore(Base):
     )
     base_points: Mapped[int] = mapped_column(Integer, nullable=False, default=10)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    # Child who owns this chore (only they may complete it via QR).
+    assignee_user_id: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),
@@ -66,7 +78,11 @@ class Chore(Base):
         nullable=False,
     )
 
-    completions: Mapped[list["ChoreCompletion"]] = relationship(back_populates="chore")
+    completions: Mapped[list[ChoreCompletion]] = relationship(back_populates="chore")
+    assignee: Mapped[User | None] = relationship(
+        back_populates="assigned_chores",
+        foreign_keys=[assignee_user_id],
+    )
 
 
 class ChoreCompletion(Base):

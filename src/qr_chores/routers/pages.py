@@ -57,7 +57,7 @@ async def parent_today(
     db: AsyncSession = Depends(get_db),
     settings: Settings = Depends(get_settings),
 ) -> HTMLResponse:
-    board = await today_board(db, settings)
+    board = await today_board(db, settings, parent_id=user.id)
     return templates.TemplateResponse(
         request,
         "parent_today.html",

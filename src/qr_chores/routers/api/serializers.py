@@ -14,6 +14,11 @@ from qr_chores.services.chores import ChoreDayStatus
 
 
 def chore_summary(chore: Chore) -> ChoreSummaryOut:
+    # Avoid lazy-loading assignee outside an async greenlet.
+    assignee_name = None
+    state = getattr(chore, "__dict__", {})
+    if "assignee" in state and state["assignee"] is not None:
+        assignee_name = state["assignee"].display_name
     return ChoreSummaryOut(
         id=chore.id,
         title=chore.title,
@@ -24,6 +29,8 @@ def chore_summary(chore: Chore) -> ChoreSummaryOut:
         photo_policy=chore.photo_policy.value,
         base_points=chore.base_points,
         is_active=chore.is_active,
+        assignee_user_id=chore.assignee_user_id,
+        assignee_name=assignee_name,
     )
 
 

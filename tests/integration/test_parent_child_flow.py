@@ -53,6 +53,7 @@ async def test_end_to_end_chore_lifecycle(
             "base_points": "10",
             "photo_policy": "required",
             "schedule_day": ["0", "1", "2", "3", "4", "5", "6"],
+            "assignee_user_id": str(child_user.id),
         },
         follow_redirects=False,
     )

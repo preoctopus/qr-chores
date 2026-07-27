@@ -53,6 +53,7 @@ async def test_api_parent_create_child_complete_parent_history(
             "schedule_days": "0123456",
             "photo_policy": "required",
             "base_points": 10,
+            "assignee_user_id": child_user.id,
         },
     )
     assert created.status_code == 201, created.text

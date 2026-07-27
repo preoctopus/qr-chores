@@ -248,6 +248,7 @@ async def test_html_weekdays_chore_saturday_blocked_monday_ok(
             "photo_policy": "none",
             # Mon–Fri only
             "schedule_day": ["0", "1", "2", "3", "4"],
+            "assignee_user_id": str(child_user.id),
         },
         follow_redirects=False,
     )
@@ -327,6 +328,7 @@ async def test_api_weekdays_schedule_confirm_and_complete(
             "schedule_days": WEEKDAYS,
             "photo_policy": "none",
             "base_points": 7,
+            "assignee_user_id": child_user.id,
         },
     )
     assert created.status_code == 201, created.text

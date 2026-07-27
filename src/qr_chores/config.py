@@ -36,6 +36,8 @@ class Settings(BaseSettings):
     # Seed script defaults (override in env for real use)
     seed_parent_password: str = "parent-pass"
     seed_child_password: str = "child-pass"
+    # Admin registration API (POST /api/v1/admin/users). Empty disables admin routes.
+    admin_api_key: str = ""
 
     @property
     def is_production(self) -> bool:

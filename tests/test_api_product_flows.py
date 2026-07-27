@@ -76,7 +76,9 @@ async def test_api_complete_credits_points_and_unlocks(
         )
         await session.commit()
 
-    chore = await _create_chore(app.state.session_factory, base_points=10, title="Dishes")
+    chore = await _create_chore(
+        app.state.session_factory, base_points=10, title="Dishes", assignee_user_id=child_user.id
+    )
     token = await _api_login(client, child_user.email, "child-pass")
     headers = _auth(token)
 
@@ -141,6 +143,7 @@ async def test_api_optional_photo_complete_without_file(
         app.state.session_factory,
         photo_policy=PhotoPolicy.optional,
         base_points=5,
+        assignee_user_id=child_user.id,
     )
     token = await _api_login(client, child_user.email, "child-pass")
     headers = _auth(token)
@@ -158,8 +161,7 @@ async def test_api_optional_photo_complete_with_file(
     client: AsyncClient, child_user: User, app
 ) -> None:
     chore = await _create_chore(
-        app.state.session_factory,
-        photo_policy=PhotoPolicy.optional,
+        app.state.session_factory, photo_policy=PhotoPolicy.optional, assignee_user_id=child_user.id
     )
     token = await _api_login(client, child_user.email, "child-pass")
     headers = _auth(token)
@@ -178,8 +180,7 @@ async def test_api_none_photo_policy_complete_without_file(
     client: AsyncClient, child_user: User, app
 ) -> None:
     chore = await _create_chore(
-        app.state.session_factory,
-        photo_policy=PhotoPolicy.none,
+        app.state.session_factory, photo_policy=PhotoPolicy.none, assignee_user_id=child_user.id
     )
     token = await _api_login(client, child_user.email, "child-pass")
     complete = await client.post(
@@ -205,6 +206,7 @@ async def test_api_create_optional_chore_complete_without_photo(
             "schedule_days": "0123456",
             "photo_policy": "optional",
             "base_points": 7,
+            "assignee_user_id": child_user.id,
         },
     )
     assert created.status_code == 201, created.text
@@ -244,6 +246,7 @@ async def test_api_create_required_chore_fails_without_photo(
             "schedule_days": "0123456",
             "photo_policy": "required",
             "base_points": 11,
+            "assignee_user_id": child_user.id,
         },
     )
     assert created.status_code == 201, created.text

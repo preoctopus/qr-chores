@@ -127,6 +127,13 @@ async def complete_chore(
     if not chore.is_active:
         raise CompletionError("This chore is no longer active.", "inactive")
 
+    # Chores belong to one child; siblings (or wrong accounts) cannot complete them.
+    if chore.assignee_user_id is not None and chore.assignee_user_id != user.id:
+        raise CompletionError(
+            "This chore is assigned to someone else.",
+            "wrong_assignee",
+        )
+
     # Capture primitives before the write transaction: after IntegrityError +
     # rollback, ORM instances may be expired and unsafe to attribute-load.
     chore_id = chore.id

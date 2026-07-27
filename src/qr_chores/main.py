@@ -13,7 +13,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from qr_chores import __version__
 from qr_chores.config import get_settings
 from qr_chores.db import init_db
-from qr_chores.routers import auth, chores, complete, health, pages, photos, rewards
+from qr_chores.routers import auth, children, chores, complete, health, pages, photos, rewards
 from qr_chores.routers.api import api_router
 from qr_chores.templating import templates
 
@@ -22,8 +22,9 @@ mimetypes.add_type("application/manifest+json", ".webmanifest")
 
 OPENAPI_TAGS = [
     {"name": "api-auth", "description": "Login, logout, and current user (`/api/v1`)."},
+    {"name": "api-admin", "description": "Bootstrap user registration (`X-Admin-Key`)."},
     {"name": "api-child", "description": "Child home, QR confirm/complete, achievements."},
-    {"name": "api-parent", "description": "Parent today board, history, and chore CRUD."},
+    {"name": "api-parent", "description": "Parent today board, history, children, and chore CRUD."},
     {"name": "api-rewards", "description": "Timing bonuses and achievement admin."},
     {"name": "api-photos", "description": "Authenticated completion photo download."},
     {"name": "auth", "description": "HTML session login/logout."},
@@ -122,6 +123,7 @@ def create_app() -> FastAPI:
     app.include_router(health.router)
     app.include_router(auth.router)
     app.include_router(pages.router)
+    app.include_router(children.router)
     app.include_router(chores.router)
     app.include_router(complete.router)
     app.include_router(photos.router)

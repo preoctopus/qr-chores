@@ -15,6 +15,7 @@ class LoginRequest(BaseModel):
         }
     )
 
+    # Username key (historically called email). No format validation.
     email: str = Field(..., min_length=1, max_length=320, examples=["daughter@example.com"])
     password: str = Field(..., min_length=1, max_length=256, examples=["child-pass"])
 
@@ -27,8 +28,12 @@ class UserOut(BaseModel):
                 {
                     "id": 1,
                     "email": "daughter@example.com",
-                    "display_name": "Daughter",
+                    "first_name": "Sam",
+                    "last_name": "Smith",
+                    "display_name": "Sam Smith",
                     "role": "child",
+                    "parent_id": 2,
+                    "is_active": True,
                     "points_balance": 42,
                 }
             ]
@@ -37,8 +42,12 @@ class UserOut(BaseModel):
 
     id: int
     email: str
+    first_name: str
+    last_name: str
     display_name: str
     role: str
+    parent_id: int | None = None
+    is_active: bool = True
     points_balance: int = 0
 
 
@@ -53,8 +62,12 @@ class TokenResponse(BaseModel):
                     "user": {
                         "id": 1,
                         "email": "daughter@example.com",
-                        "display_name": "Daughter",
+                        "first_name": "Sam",
+                        "last_name": "Smith",
+                        "display_name": "Sam Smith",
                         "role": "child",
+                        "parent_id": 2,
+                        "is_active": True,
                         "points_balance": 42,
                     },
                 }
@@ -66,3 +79,33 @@ class TokenResponse(BaseModel):
     token_type: str = "bearer"
     expires_in: int
     user: UserOut
+
+
+class AdminRegisterRequest(BaseModel):
+    """Bootstrap registration via admin API key (typically a parent)."""
+
+    email: str = Field(..., min_length=1, max_length=320)
+    password: str = Field(..., min_length=1, max_length=256)
+    first_name: str = Field(..., min_length=1, max_length=80)
+    last_name: str = Field(..., min_length=1, max_length=80)
+    role: str = Field(default="parent", description="parent or child (child requires parent_id)")
+    parent_id: int | None = None
+
+
+class ChildCreateRequest(BaseModel):
+    email: str = Field(..., min_length=1, max_length=320)
+    password: str = Field(..., min_length=1, max_length=256)
+    first_name: str = Field(..., min_length=1, max_length=80)
+    last_name: str = Field(..., min_length=1, max_length=80)
+
+
+class ChildUpdateRequest(BaseModel):
+    email: str | None = Field(default=None, min_length=1, max_length=320)
+    password: str | None = Field(default=None, max_length=256)
+    first_name: str | None = Field(default=None, min_length=1, max_length=80)
+    last_name: str | None = Field(default=None, min_length=1, max_length=80)
+    is_active: bool | None = None
+
+
+class ChildListResponse(BaseModel):
+    children: list[UserOut]

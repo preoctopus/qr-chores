@@ -17,6 +17,8 @@ class ChoreSummaryOut(BaseModel):
     photo_policy: str
     base_points: int
     is_active: bool
+    assignee_user_id: int | None = None
+    assignee_name: str | None = None
 
 
 class CompletionSummaryOut(BaseModel):
