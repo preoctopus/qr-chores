@@ -120,8 +120,8 @@ Login → points (total balance + points change today) + achievements (awarded a
 
 - **User** — email, display_name, password_hash, role (`parent`|`child`)
 - **Chore** — title, description, **qr_token** (unique, stable), due_time, schedule_days, photo_policy, base_points, is_active
-- **ChoreCompletion** — chore_id, user_id, local_date, completed_at, timing, photo_object_key, points_awarded; **UNIQUE (chore_id, local_date)**
-- **PointLedger** — user_id, delta, reason, ref_type, ref_id
+- **ChoreCompletion** — chore_id, user_id, local_date, completed_at, timing, photo_object_key, points_awarded (base + timing bonus only; not achievement rewards); **UNIQUE (chore_id, local_date)**
+- **PointLedger** — user_id, delta, reason, ref_type, ref_id (sum = balance; “points today” is ledger deltas for the local day)
 - **Achievement** — title, description, icon_key, criteria_type, criteria_json, points_reward, is_active
 - **UserAchievement** — user_id, achievement_id, unlocked_at; unique pair
 - **AppSetting** — key/value (timing bonuses)

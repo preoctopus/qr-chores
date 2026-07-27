@@ -77,6 +77,18 @@ async def test_complete_writes_ledger_and_first_step(
             .all()
         )
         assert len(unlocks) >= 1
+        # Issue #10: points_awarded is chore-only; balance includes achievement ledger
+        completion = (await session.execute(select(ChoreCompletion))).scalar_one()
+        assert completion.points_awarded < balance
+        achievement_pts = await session.scalar(
+            select(func.coalesce(func.sum(PointLedger.delta), 0)).where(
+                PointLedger.user_id == child_user.id,
+                PointLedger.ref_type == "achievement",
+            )
+        )
+        assert int(achievement_pts or 0) >= 10
+        # base+timing column + achievement ledger == true balance (no double-count)
+        assert completion.points_awarded + int(achievement_pts or 0) == balance
 
 
 @pytest.mark.asyncio

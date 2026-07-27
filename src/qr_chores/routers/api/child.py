@@ -34,7 +34,7 @@ from qr_chores.services.completion import (
     complete_chore,
     get_completion_for_today,
 )
-from qr_chores.services.points import points_balance
+from qr_chores.services.points import points_balance, points_earned_today
 from qr_chores.services.timeutil import is_scheduled_on, local_now, local_today
 from qr_chores.services.uploads import read_photo_upload
 
@@ -60,7 +60,7 @@ async def api_home(
     settings: Settings = Depends(get_settings),
 ) -> HomeResponse:
     board = await today_board(db, settings)
-    points_today = sum((row.completion.points_awarded if row.completion else 0) for row in board)
+    points_today = await points_earned_today(db, user.id, settings)
     done_count = sum(1 for row in board if row.done)
     balance = await points_balance(db, user.id)
     result = await db.execute(
