@@ -1,0 +1,189 @@
+"""Synchronous thin wrapper around :class:`QrChoresClient`.
+
+Runs each async method via ``asyncio.run`` (or a shared event loop when nested).
+Prefer the async client for concurrent workloads.
+"""
+
+from __future__ import annotations
+
+import asyncio
+from collections.abc import Coroutine
+from typing import Any
+
+from qr_chores_client.client import QrChoresClient
+from qr_chores_client.models import (
+    AchievementAdmin,
+    AchievementCreate,
+    AchievementsResponse,
+    AchievementUpdate,
+    Chore,
+    ChoreConfirm,
+    ChoreCreate,
+    ChoreDeleteResponse,
+    ChoreListResponse,
+    ChoreUpdate,
+    CompleteResponse,
+    HistoryResponse,
+    HomeResponse,
+    QrInfo,
+    RewardsResponse,
+    TimingBonuses,
+    TodayResponse,
+    TokenResponse,
+    User,
+)
+
+
+def _run[T](coro: Coroutine[Any, Any, T]) -> T:
+    try:
+        asyncio.get_running_loop()
+    except RuntimeError:
+        return asyncio.run(coro)
+    # Already in an event loop — do not nest; close the unused coroutine.
+    coro.close()
+    raise RuntimeError(
+        "SyncQrChoresClient cannot be used from a running event loop; "
+        "use QrChoresClient (async) instead."
+    )
+
+
+class SyncQrChoresClient:
+    """Blocking façade over :class:`QrChoresClient`."""
+
+    def __init__(
+        self,
+        base_url: str,
+        *,
+        access_token: str | None = None,
+        timeout: float = 30.0,
+    ) -> None:
+        self._async = QrChoresClient(
+            base_url,
+            access_token=access_token,
+            timeout=timeout,
+        )
+
+    def __enter__(self) -> SyncQrChoresClient:
+        return self
+
+    def __exit__(self, *args: object) -> None:
+        self.close()
+
+    def close(self) -> None:
+        _run(self._async.aclose())
+
+    @property
+    def access_token(self) -> str | None:
+        return self._async.access_token
+
+    @access_token.setter
+    def access_token(self, value: str | None) -> None:
+        self._async.access_token = value
+
+    def set_access_token(self, token: str | None) -> None:
+        self._async.set_access_token(token)
+
+    def login(self, email: str, password: str) -> TokenResponse:
+        return _run(self._async.login(email, password))
+
+    def logout(self) -> None:
+        return _run(self._async.logout())
+
+    def get_me(self) -> User:
+        return _run(self._async.get_me())
+
+    def get_home(self) -> HomeResponse:
+        return _run(self._async.get_home())
+
+    def get_confirm(self, qr_token: str) -> ChoreConfirm:
+        return _run(self._async.get_confirm(qr_token))
+
+    def complete_chore(
+        self,
+        qr_token: str,
+        *,
+        photo: bytes | None = None,
+        photo_filename: str = "photo.jpg",
+        photo_content_type: str = "image/jpeg",
+    ) -> CompleteResponse:
+        return _run(
+            self._async.complete_chore(
+                qr_token,
+                photo=photo,
+                photo_filename=photo_filename,
+                photo_content_type=photo_content_type,
+            )
+        )
+
+    def get_achievements(self) -> AchievementsResponse:
+        return _run(self._async.get_achievements())
+
+    def get_today(self) -> TodayResponse:
+        return _run(self._async.get_today())
+
+    def get_history(self, *, limit: int = 50) -> HistoryResponse:
+        return _run(self._async.get_history(limit=limit))
+
+    def list_chores(self, *, include_inactive: bool = True) -> ChoreListResponse:
+        return _run(self._async.list_chores(include_inactive=include_inactive))
+
+    def create_chore(self, chore: ChoreCreate | dict[str, Any]) -> Chore:
+        return _run(self._async.create_chore(chore))
+
+    def get_chore(self, chore_id: int) -> Chore:
+        return _run(self._async.get_chore(chore_id))
+
+    def update_chore(self, chore_id: int, update: ChoreUpdate | dict[str, Any]) -> Chore:
+        return _run(self._async.update_chore(chore_id, update))
+
+    def delete_chore(self, chore_id: int) -> ChoreDeleteResponse:
+        return _run(self._async.delete_chore(chore_id))
+
+    def activate_chore(self, chore_id: int) -> Chore:
+        return _run(self._async.activate_chore(chore_id))
+
+    def deactivate_chore(self, chore_id: int) -> Chore:
+        return _run(self._async.deactivate_chore(chore_id))
+
+    def get_qr_info(self, chore_id: int) -> QrInfo:
+        return _run(self._async.get_qr_info(chore_id))
+
+    def get_qr_png(self, chore_id: int) -> bytes:
+        return _run(self._async.get_qr_png(chore_id))
+
+    def get_rewards(self) -> RewardsResponse:
+        return _run(self._async.get_rewards())
+
+    def update_bonuses(
+        self,
+        *,
+        early_bonus_points: int,
+        on_time_bonus_points: int,
+        late_bonus_points: int,
+    ) -> TimingBonuses:
+        return _run(
+            self._async.update_bonuses(
+                early_bonus_points=early_bonus_points,
+                on_time_bonus_points=on_time_bonus_points,
+                late_bonus_points=late_bonus_points,
+            )
+        )
+
+    def create_achievement(
+        self,
+        achievement: AchievementCreate | dict[str, Any],
+    ) -> AchievementAdmin:
+        return _run(self._async.create_achievement(achievement))
+
+    def update_achievement(
+        self,
+        achievement_id: int,
+        update: AchievementUpdate | dict[str, Any],
+    ) -> AchievementAdmin:
+        return _run(self._async.update_achievement(achievement_id, update))
+
+    def toggle_achievement(self, achievement_id: int) -> AchievementAdmin:
+        return _run(self._async.toggle_achievement(achievement_id))
+
+    def get_photo(self, completion_id: int) -> bytes:
+        return _run(self._async.get_photo(completion_id))

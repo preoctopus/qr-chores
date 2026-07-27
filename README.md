@@ -8,6 +8,7 @@ Built as a **Python** app with **uv**, **FastAPI**, and **Docker**, meant to run
 |------|--|
 | **Using QR Chores** (parents & child) | [docs/USER.md](./docs/USER.md) · in-app at `/help` |
 | **Internal JSON API** (native apps / MCP) | [docs/API.md](./docs/API.md) · `/api/v1` |
+| **Client libraries** (Python FastMCP + Kotlin) | [clients/](./clients/) · [CONTRACT](./clients/CONTRACT.md) |
 | Product & coding rules for agents | [AGENTS.md](./AGENTS.md) |
 | Cloud Run + Cloud SQL + GCS deploy | [docs/DEPLOY.md](./docs/DEPLOY.md) |
 
