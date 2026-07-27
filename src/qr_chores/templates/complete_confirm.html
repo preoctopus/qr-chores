@@ -20,7 +20,7 @@
     <p class="stat-label">Already done</p>
     <p class="stat-value">✓</p>
     <p class="muted">
-      Completed {{ completion.timing.value.replace('_', ' ') }} ·
+      Completed {{ timing_status_label(completion.timing) }} ·
       +{{ completion.points_awarded }} pts
     </p>
     {% if completion.photo_object_key %}
@@ -38,6 +38,14 @@
     {% if due_passed %}
     <div class="alert alert-warn">Past due — you can still complete it (will count as late).</div>
     {% endif %}
+    <div class="timing-help" role="note">
+      <p class="timing-help-intro">{{ timing_rules_intro }}</p>
+      <ul class="timing-help-list">
+        {% for line in timing_rules %}
+        <li>{{ line }}</li>
+        {% endfor %}
+      </ul>
+    </div>
     <p>Ready to mark this done?</p>
     <form method="post" action="/c/{{ token }}" class="stack" enctype="multipart/form-data">
       {% if photo_policy.value != "none" %}

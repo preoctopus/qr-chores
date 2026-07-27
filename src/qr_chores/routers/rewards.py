@@ -8,6 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from qr_chores.auth.deps import require_role
+from qr_chores.config import Settings, get_settings
 from qr_chores.db import get_db
 from qr_chores.models.rewards import Achievement, CriteriaType
 from qr_chores.models.user import User, UserRole
@@ -17,6 +18,7 @@ from qr_chores.services.achievements import (
     ensure_default_achievements,
 )
 from qr_chores.services.points import DEFAULT_BONUSES, get_timing_bonuses, set_setting
+from qr_chores.services.timeutil import timing_rules_intro, timing_rules_lines
 from qr_chores.templating import templates
 
 router = APIRouter(tags=["rewards"])
@@ -27,6 +29,7 @@ async def rewards_home(
     request: Request,
     user: User = Depends(require_role(UserRole.parent)),
     db: AsyncSession = Depends(get_db),
+    settings: Settings = Depends(get_settings),
 ):
     await ensure_default_achievements(db)
     await db.commit()
@@ -45,6 +48,10 @@ async def rewards_home(
             "achievements": achievements,
             "criteria_labels": CRITERIA_LABELS,
             "icon_choices": dict(ICON_CHOICES),
+            "timing_rules_intro": timing_rules_intro(),
+            "timing_rules": timing_rules_lines(settings),
+            "early_window_minutes": settings.early_window_minutes,
+            "on_time_grace_minutes": settings.on_time_grace_minutes,
         },
     )
 

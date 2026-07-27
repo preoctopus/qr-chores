@@ -18,7 +18,16 @@ from qr_chores.services.completion import (
     complete_chore,
     get_completion_for_today,
 )
-from qr_chores.services.timeutil import format_due_time, is_scheduled_on, local_now, local_today
+from qr_chores.services.timeutil import (
+    format_due_time,
+    is_scheduled_on,
+    local_now,
+    local_today,
+    timing_bonus_label,
+    timing_rules_intro,
+    timing_rules_lines,
+    timing_status_label,
+)
 from qr_chores.services.uploads import read_photo_upload
 from qr_chores.templating import templates
 
@@ -92,6 +101,9 @@ async def confirm_page(
             "completion": completion,
             "due_passed": due_passed,
             "format_due_time": format_due_time,
+            "timing_status_label": timing_status_label,
+            "timing_rules_intro": timing_rules_intro(due_time=chore.due_time),
+            "timing_rules": timing_rules_lines(settings, due_time=chore.due_time),
             "photo_policy": chore.photo_policy,
             "PhotoPolicy": PhotoPolicy,
         },
@@ -145,6 +157,9 @@ async def complete_submit(
                     "completion": None,
                     "due_passed": False,
                     "format_due_time": format_due_time,
+                    "timing_status_label": timing_status_label,
+                    "timing_rules_intro": timing_rules_intro(due_time=chore.due_time),
+                    "timing_rules": timing_rules_lines(settings, due_time=chore.due_time),
                     "photo_policy": chore.photo_policy,
                     "PhotoPolicy": PhotoPolicy,
                     "error": exc.message,
@@ -175,5 +190,9 @@ async def complete_submit(
             "unlocks": result.unlocks,
             "icon_emoji": ICON_EMOJI,
             "format_due_time": format_due_time,
+            "timing_status_label": timing_status_label,
+            "timing_bonus_label": timing_bonus_label,
+            "timing_rules_intro": timing_rules_intro(due_time=result.chore.due_time),
+            "timing_rules": timing_rules_lines(settings, due_time=result.chore.due_time),
         },
     )

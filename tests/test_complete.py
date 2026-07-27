@@ -69,10 +69,22 @@ async def test_child_completes_chore_once(client: AsyncClient, child_user: User,
     assert confirm.status_code == 200
     assert "Vacuum room" in confirm.text
     assert "I did it" in confirm.text
+    # Issue #5: timing rules with this chore's due time (21:00)
+    assert "Timing for a" in confirm.text
+    assert "Early" in confirm.text
+    assert "9:00 PM" in confirm.text  # due
+    assert "8:00 PM" in confirm.text  # early cutoff (60 min before)
 
     done = await client.post(f"/c/{chore.qr_token}")
     assert done.status_code == 200
     assert "12" in done.text  # base points shown in breakdown
+    assert "Timing for a" in done.text
+    assert (
+        "Early bonus" in done.text
+        or "On-time bonus" in done.text
+        or "Late bonus" in done.text
+        or "Base" in done.text
+    )
 
     async with app.state.session_factory() as session:
         count = await session.scalar(select(func.count()).select_from(ChoreCompletion))

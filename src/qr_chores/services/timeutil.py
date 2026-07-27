@@ -1,10 +1,25 @@
 """Timezone and schedule helpers."""
 
+from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta
 from zoneinfo import ZoneInfo
 
 from qr_chores.config import Settings
 from qr_chores.models.chore import TimingStatus
+
+# Short labels for UI chips and celebration copy
+TIMING_STATUS_LABELS: dict[TimingStatus, str] = {
+    TimingStatus.early: "Early",
+    TimingStatus.on_time: "On time",
+    TimingStatus.late: "Late",
+}
+
+# Points breakdown labels (celebration)
+TIMING_BONUS_LABELS: dict[TimingStatus, str] = {
+    TimingStatus.early: "Early bonus",
+    TimingStatus.on_time: "On-time bonus",
+    TimingStatus.late: "Late bonus",
+}
 
 
 def app_tz(settings: Settings) -> ZoneInfo:
@@ -54,3 +69,87 @@ def format_due_time(due: time) -> str:
     hour = due.hour % 12 or 12
     ampm = "AM" if due.hour < 12 else "PM"
     return f"{hour}:{due.minute:02d} {ampm}"
+
+
+def _shift_time(due: time, *, minutes: int) -> time:
+    """Shift a wall-clock time by minutes (can cross midnight; returns time only)."""
+    base = datetime.combine(date(2000, 1, 1), due)
+    return (base + timedelta(minutes=minutes)).time()
+
+
+@dataclass(frozen=True, slots=True)
+class TimingWindows:
+    """Concrete cutoffs for a chore due time, for plain-language UI."""
+
+    due_time: time
+    early_before: time  # complete strictly before this → early
+    late_after: time  # complete strictly after this → late
+    early_window_minutes: int
+    on_time_grace_minutes: int
+
+    @property
+    def due_label(self) -> str:
+        return format_due_time(self.due_time)
+
+    @property
+    def early_before_label(self) -> str:
+        return format_due_time(self.early_before)
+
+    @property
+    def late_after_label(self) -> str:
+        return format_due_time(self.late_after)
+
+
+def timing_windows_for_due(due_time: time, settings: Settings) -> TimingWindows:
+    """Return Early / On time / Late cutoffs for a due time."""
+    early_mins = max(0, int(settings.early_window_minutes))
+    grace_mins = max(0, int(settings.on_time_grace_minutes))
+    return TimingWindows(
+        due_time=due_time,
+        early_before=_shift_time(due_time, minutes=-early_mins),
+        late_after=_shift_time(due_time, minutes=grace_mins),
+        early_window_minutes=early_mins,
+        on_time_grace_minutes=grace_mins,
+    )
+
+
+def timing_status_label(timing: TimingStatus) -> str:
+    return TIMING_STATUS_LABELS.get(timing, timing.value.replace("_", " ").title())
+
+
+def timing_bonus_label(timing: TimingStatus) -> str:
+    return TIMING_BONUS_LABELS.get(timing, "Timing bonus")
+
+
+def timing_rules_lines(settings: Settings, *, due_time: time | None = None) -> list[str]:
+    """Plain-language rules for Early / On time / Late.
+
+    When ``due_time`` is set, lines include concrete clock times for that chore.
+    Otherwise they describe the windows in minutes (parent Rewards page).
+    """
+    early_mins = max(0, int(settings.early_window_minutes))
+    grace_mins = max(0, int(settings.on_time_grace_minutes))
+
+    if due_time is not None:
+        w = timing_windows_for_due(due_time, settings)
+        return [
+            f"Early — finish before {w.early_before_label} "
+            f"(more than {early_mins} min before due).",
+            f"On time — from {w.early_before_label} through {w.late_after_label} "
+            f"(due {w.due_label}, plus {grace_mins} min grace).",
+            f"Late — after {w.late_after_label}. You can still finish the same day.",
+        ]
+
+    return [
+        f"Early — more than {early_mins} minutes before the chore’s due time.",
+        f"On time — from {early_mins} minutes before due through due time "
+        f"plus {grace_mins} minutes of grace.",
+        "Late — after the grace window. Completing the same day is still allowed.",
+    ]
+
+
+def timing_rules_intro(*, due_time: time | None = None) -> str:
+    """One-line intro above the rules list."""
+    if due_time is not None:
+        return f"Timing for a {format_due_time(due_time)} due time:"
+    return "How timing works for every chore:"
