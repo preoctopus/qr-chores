@@ -222,8 +222,61 @@ Same access rules as HTML `GET /photos/{completion_id}`. Missing / no photo → 
 
 ## Errors
 
-- All `/api/*` responses use JSON error bodies (never HTML login redirects).
-- Prefer standard HTTP status codes: `401`, `403`, `404`, `400`, `422` (validation).
+All `/api/*` responses use **JSON** bodies (never HTML login redirects or error pages).
+
+| Status | When | `detail` shape |
+|--------|------|----------------|
+| **401** | Missing/invalid auth or bad login | string, e.g. `"Not authenticated"` |
+| **403** | Authenticated but wrong role | string, e.g. `"Insufficient permissions"` |
+| **404** | Unknown chore / QR / photo / achievement | string message |
+| **400** | Domain rule on complete (photo required, not scheduled, etc.) | object: `{ "message": "…", "code": "photo_required" }` |
+| **422** | Pydantic/query validation | FastAPI list of field errors |
+
+Common complete `code` values: `photo_required`, `photo_invalid`, `photo_too_large`, `not_scheduled`, and similar domain codes from `services/completion.py`.
+
+Validation errors keep FastAPI’s default structure (array under `detail`). Auth/role/not-found use a plain string `detail` for simplicity.
+
+**Deferred:** login rate limiting (nice-to-have; not implemented).
+
+---
+
+## OpenAPI
+
+| Environment | Interactive docs |
+|-------------|------------------|
+| `development` (default) | `/docs`, `/redoc`, `/openapi.json` |
+| `production` | Disabled |
+
+OpenAPI includes a **BearerAuth** security scheme. Request bodies for login, chore create, bonuses, and achievements include examples.
+
+---
+
+## Endpoint index
+
+| Method | Path | Role |
+|--------|------|------|
+| `POST` | `/api/v1/auth/login` | public |
+| `POST` | `/api/v1/auth/logout` | any |
+| `GET` | `/api/v1/me` | auth |
+| `GET` | `/api/v1/home` | child |
+| `GET` | `/api/v1/c/{qr_token}` | child |
+| `POST` | `/api/v1/c/{qr_token}/complete` | child |
+| `GET` | `/api/v1/achievements` | child |
+| `GET` | `/api/v1/today` | parent |
+| `GET` | `/api/v1/history` | parent |
+| `GET`/`POST` | `/api/v1/chores` | parent |
+| `GET`/`PATCH`/`DELETE` | `/api/v1/chores/{id}` | parent |
+| `POST` | `/api/v1/chores/{id}/activate` | parent |
+| `POST` | `/api/v1/chores/{id}/deactivate` | parent |
+| `GET` | `/api/v1/chores/{id}/qr` | parent |
+| `GET` | `/api/v1/chores/{id}/qr.png` | parent |
+| `GET` | `/api/v1/rewards` | parent |
+| `PUT` | `/api/v1/rewards/bonuses` | parent |
+| `POST` | `/api/v1/rewards/achievements` | parent |
+| `PATCH` | `/api/v1/rewards/achievements/{id}` | parent |
+| `POST` | `/api/v1/rewards/achievements/{id}/toggle` | parent |
+| `GET` | `/api/v1/photos/{completion_id}` | any auth |
+| `GET` | `/healthz` | public (not under `/api/v1`) |
 
 ---
 

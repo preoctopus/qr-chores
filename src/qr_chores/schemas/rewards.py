@@ -2,7 +2,7 @@
 
 from typing import Annotated
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class TimingBonusesOut(BaseModel):
@@ -12,6 +12,18 @@ class TimingBonusesOut(BaseModel):
 
 
 class TimingBonusesUpdate(BaseModel):
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "early_bonus_points": 5,
+                    "on_time_bonus_points": 2,
+                    "late_bonus_points": 0,
+                }
+            ]
+        }
+    )
+
     early_bonus_points: Annotated[int, Field(ge=0, le=1_000_000)]
     on_time_bonus_points: Annotated[int, Field(ge=0, le=1_000_000)]
     late_bonus_points: Annotated[int, Field(ge=0, le=1_000_000)]
@@ -29,6 +41,21 @@ class AchievementAdminOut(BaseModel):
 
 
 class AchievementWrite(BaseModel):
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "title": "Early bird",
+                    "description": "Complete early 5 times",
+                    "icon_key": "bird",
+                    "criteria_type": "complete_early_count",
+                    "threshold": 5,
+                    "points_reward": 25,
+                }
+            ]
+        }
+    )
+
     title: Annotated[str, Field(min_length=1, max_length=120)]
     description: str = ""
     icon_key: str = "star"

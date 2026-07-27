@@ -3,7 +3,7 @@
 from datetime import date, time
 from typing import Annotated
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from qr_chores.schemas.chores import BoardItemOut, ChoreSummaryOut, CompletionSummaryOut
 
@@ -31,6 +31,21 @@ class ChoreListResponse(BaseModel):
 
 class ChoreWrite(BaseModel):
     """Shared create/update fields for chores."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "title": "Unload dishwasher",
+                    "description": "Empty top rack first",
+                    "due_time": "20:00:00",
+                    "schedule_days": "0123456",
+                    "photo_policy": "optional",
+                    "base_points": 10,
+                }
+            ]
+        }
+    )
 
     title: Annotated[str, Field(min_length=1, max_length=200)]
     description: str | None = None
