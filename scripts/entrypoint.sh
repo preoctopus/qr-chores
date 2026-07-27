@@ -40,12 +40,29 @@ if command -v nginx > /dev/null 2>&1 && [ -f /app/docker/nginx.conf.template ]; 
       break
     fi
     sleep 0.2
-    i=$((i+1))
+    i=$((i + 1))
   done
 
   echo "Starting MCP server (${MCP_TRANSPORT}) on ${MCP_HOST}:${MCP_PORT}${MCP_PATH} → API ${APP_INTERNAL}..."
   # Tools default to http://127.0.0.1:8000 when MCP_TRANSPORT is HTTP (see mcp_server).
-  python -m qr_chores_client &
+  # Unbuffered so Cloud Logging shows startup failures immediately.
+  python -u -m qr_chores_client &
+  MCP_PID=$!
+
+  echo "Waiting for MCP server to listen on ${MCP_HOST}:${MCP_PORT}..."
+  i=0
+  while [ $i -lt 75 ]; do
+    if python -c "import socket; s=socket.create_connection(('${MCP_HOST}', int('${MCP_PORT}')), 0.5); s.close()" 2>/dev/null; then
+      echo "MCP server is ready!"
+      break
+    fi
+    if ! kill -0 "$MCP_PID" 2>/dev/null; then
+      echo "ERROR: MCP server process exited before becoming ready (pid=${MCP_PID})" >&2
+      break
+    fi
+    sleep 0.2
+    i=$((i + 1))
+  done
 
   echo "Starting Nginx reverse proxy on 0.0.0.0:${PORT}..."
   exec nginx -g 'daemon off;' -c /tmp/nginx.conf
