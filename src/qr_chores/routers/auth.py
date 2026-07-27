@@ -124,16 +124,7 @@ async def login_submit(
 async def logout(
     settings: Settings = Depends(get_settings),
 ) -> RedirectResponse:
-    response = RedirectResponse("/login", status_code=status.HTTP_303_SEE_OTHER)
-    response.delete_cookie(settings.session_cookie_name, path="/")
-    return response
-
-
-@router.get("/logout")
-async def logout_get(
-    settings: Settings = Depends(get_settings),
-) -> RedirectResponse:
-    """Allow GET logout for simple nav links."""
+    """Clear the session cookie. POST-only so prefetchers cannot force logout."""
     response = RedirectResponse("/login", status_code=status.HTTP_303_SEE_OTHER)
     response.delete_cookie(settings.session_cookie_name, path="/")
     return response
