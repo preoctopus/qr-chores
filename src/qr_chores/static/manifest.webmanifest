@@ -1,9 +1,14 @@
 {
+  "id": "/",
   "name": "ChoreQuest",
   "short_name": "Chores",
   "description": "Family chore tracker with QR codes, points, and achievements",
+  "lang": "en",
+  "dir": "ltr",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "orientation": "any",
   "background_color": "#0f1115",
   "theme_color": "#7c5cff",
   "icons": [

@@ -114,6 +114,8 @@ def test_user_documentation_exists_and_is_linked() -> None:
     assert "Parent guide" in text
     assert "Child guide" in text
     assert "BASE_URL" in text
+    assert "Install as an app" in text
+    assert "Add to Home screen" in text or "Add to Home Screen" in text
     readme_text = readme.read_text(encoding="utf-8")
     assert "docs/USER.md" in readme_text
 
@@ -134,22 +136,35 @@ async def test_favicon_and_web_manifest(client: AsyncClient) -> None:
     assert logo_512.status_code == 200
     assert logo_512.headers["content-type"].startswith("image/png")
 
-    manifest = await client.get("/static/manifest.json")
+    # Old path should not remain (renamed to .webmanifest)
+    assert (await client.get("/static/manifest.json")).status_code == 404
+
+    manifest = await client.get("/static/manifest.webmanifest")
     assert manifest.status_code == 200
+    assert "manifest" in manifest.headers.get("content-type", "")
     data = manifest.json()
     assert data["name"] == "ChoreQuest"
     assert data["short_name"] == "Chores"
     assert data["display"] == "standalone"
+    assert data["start_url"] == "/"
+    assert data["scope"] == "/"
+    assert data["theme_color"] == "#7c5cff"
+    assert data["background_color"] == "#0f1115"
     icon_srcs = {icon["src"] for icon in data["icons"]}
     assert "/static/icons/app-logo-192.png" in icon_srcs
     assert "/static/icons/app-logo-512.png" in icon_srcs
+    assert all(icon.get("purpose") == "any" for icon in data["icons"])
 
-    # Shell pages should wire favicon + manifest in <head>
+    # Shell pages should wire favicon + manifest + install meta in <head>
     login = await client.get("/login")
     assert login.status_code == 200
     assert 'rel="icon" href="/static/favicon.ico"' in login.text
-    assert 'rel="manifest" href="/static/manifest.json"' in login.text
+    assert 'rel="manifest" href="/static/manifest.webmanifest"' in login.text
     assert 'rel="apple-touch-icon" href="/static/icons/app-logo-192.png"' in login.text
+    assert 'name="theme-color" content="#7c5cff"' in login.text
+    assert 'name="apple-mobile-web-app-capable" content="yes"' in login.text
+    assert 'name="mobile-web-app-capable" content="yes"' in login.text
+    assert 'name="apple-mobile-web-app-title" content="Chores"' in login.text
 
 
 @pytest.mark.asyncio
