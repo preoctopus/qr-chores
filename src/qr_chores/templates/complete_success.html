@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Nice!{% endblock %}
 {% block content %}
-<section class="stack celebration-wrap">
+<section class="stack celebration-wrap" id="celebration-wrap" data-timing="{% if completion %}{{ completion.timing }}{% endif %}" data-has-unlocks="{% if unlocks %}true{% else %}false{% endif %}">
   <div class="card highlight celebration" id="celebration-card">
     {% if already_done %}
     <p class="stat-label">Already counted</p>
@@ -55,6 +55,12 @@
     </div>
     {% endfor %}
   </div>
+  {% endif %}
+
+  {% if not already_done %}
+  <button id="btn-replay-sound" class="btn btn-ghost btn-block sound-replay-btn" type="button" aria-label="Replay celebration sound">
+    🔊 Replay Sound Effect
+  </button>
   {% endif %}
 
   <a class="btn btn-primary btn-block" href="/home">Back home</a>

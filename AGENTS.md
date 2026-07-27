@@ -61,7 +61,7 @@ Guidance for AI agents and humans working in this repo. Product decisions from t
 
 ### Celebration UX (child)
 
-- After complete: points breakdown, confetti/motion (respect `prefers-reduced-motion`), achievement unlock cards.
+- After complete: points breakdown, confetti/motion (respect `prefers-reduced-motion`), achievement unlock cards, and synthesized Web Audio sound effects (standard completion chime, triumphant achievement unlock fanfare, and high-energy sparkle flourish for early completion).
 - Mobile-first: large type, thumb-friendly CTA, dark mode via system preference.
 
 ### Photos

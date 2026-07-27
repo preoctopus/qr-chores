@@ -732,3 +732,18 @@ input[type="file"] {
   margin-top: 0.75rem;
   margin-bottom: 0.5rem;
 }
+
+/* Sound controls */
+.sound-replay-btn {
+  margin-top: 0.25rem;
+  font-size: 0.95rem;
+  opacity: 0.85;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.sound-replay-btn:hover,
+.sound-replay-btn:focus-visible {
+  opacity: 1;
+  transform: scale(1.02);
+}
+
