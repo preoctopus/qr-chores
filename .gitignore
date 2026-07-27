@@ -42,4 +42,8 @@ uv.lock.bak
 !**/src/**/build/
 *.iml
 local.properties
+
+
+# plugins
+.tokensave/
 .kotlin/
