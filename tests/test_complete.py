@@ -39,8 +39,8 @@ async def _login_child(client: AsyncClient, child_user: User) -> None:
 
 
 @pytest.mark.asyncio
-async def test_qr_requires_login(client: AsyncClient, app) -> None:
-    chore = await _create_chore(app.state.session_factory)
+async def test_qr_requires_login(client: AsyncClient, app, child_user: User) -> None:
+    chore = await _create_chore(app.state.session_factory, assignee_user_id=child_user.id)
     response = await client.get(f"/c/{chore.qr_token}", follow_redirects=False)
     assert response.status_code == 303
     assert "/login" in response.headers["location"]
@@ -48,8 +48,10 @@ async def test_qr_requires_login(client: AsyncClient, app) -> None:
 
 
 @pytest.mark.asyncio
-async def test_parent_cannot_complete(client: AsyncClient, parent_user: User, app) -> None:
-    chore = await _create_chore(app.state.session_factory)
+async def test_parent_cannot_complete(
+    client: AsyncClient, parent_user: User, app, child_user: User
+) -> None:
+    chore = await _create_chore(app.state.session_factory, assignee_user_id=child_user.id)
     await client.post(
         "/login",
         data={"email": parent_user.email, "password": "parent-pass", "next": ""},
@@ -62,7 +64,9 @@ async def test_parent_cannot_complete(client: AsyncClient, parent_user: User, ap
 
 @pytest.mark.asyncio
 async def test_child_completes_chore_once(client: AsyncClient, child_user: User, app) -> None:
-    chore = await _create_chore(app.state.session_factory, title="Vacuum room")
+    chore = await _create_chore(
+        app.state.session_factory, title="Vacuum room", assignee_user_id=child_user.id
+    )
     await _login_child(client, child_user)
 
     confirm = await client.get(f"/c/{chore.qr_token}")
@@ -107,7 +111,9 @@ async def test_child_completes_chore_once(client: AsyncClient, child_user: User,
 
 @pytest.mark.asyncio
 async def test_inactive_chore_not_completable(client: AsyncClient, child_user: User, app) -> None:
-    chore = await _create_chore(app.state.session_factory, is_active=False)
+    chore = await _create_chore(
+        app.state.session_factory, is_active=False, assignee_user_id=child_user.id
+    )
     await _login_child(client, child_user)
     response = await client.get(f"/c/{chore.qr_token}")
     assert response.status_code == 404
@@ -117,7 +123,9 @@ async def test_inactive_chore_not_completable(client: AsyncClient, child_user: U
 async def test_child_home_shows_points_and_achievements(
     client: AsyncClient, child_user: User, app
 ) -> None:
-    chore = await _create_chore(app.state.session_factory, title="Wipe counters")
+    chore = await _create_chore(
+        app.state.session_factory, title="Wipe counters", assignee_user_id=child_user.id
+    )
     await _login_child(client, child_user)
     home = await client.get("/home")
     assert home.status_code == 200
@@ -132,7 +140,9 @@ async def test_child_home_shows_points_and_achievements(
 async def test_parent_today_shows_status(
     client: AsyncClient, parent_user: User, child_user: User, app
 ) -> None:
-    chore = await _create_chore(app.state.session_factory, title="Laundry")
+    chore = await _create_chore(
+        app.state.session_factory, title="Laundry", assignee_user_id=child_user.id
+    )
     await client.post(
         "/login",
         data={"email": child_user.email, "password": "child-pass", "next": ""},

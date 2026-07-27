@@ -42,7 +42,7 @@ Guidance for AI agents and humans working in this repo. Product decisions from t
 6. **Double-complete same day is blocked.** Show “already done” with timestamp/photo.
 7. **Deactivate** stops a QR without losing history; **delete** permanently removes chore + completions + photo files.
 8. **Notifications (SMS/push) are out of scope for v1.**
-9. **UI assumes one child for v1**; data model may allow more later.
+9. **Multi-child:** parents register children under their account; chores are assigned to one child; siblings cannot complete each other’s QR chores. Admin API (`X-Admin-Key`) bootstraps parent accounts.
 
 ### Timing (v1 defaults)
 
@@ -175,6 +175,7 @@ qr-chores/
 | `PHOTO_MAX_BYTES` | Max upload size (default 5 MB); enforced while reading the upload stream |
 | `PORT` | Cloud Run listens on `8080` |
 | `RUN_MIGRATIONS` / `RUN_SEED` | Docker entrypoint flags |
+| `ADMIN_API_KEY` | Enables `POST /api/v1/admin/users` (bootstrap registration); empty disables |
 | `QR_CHORES_EMAIL` / `QR_CHORES_PASSWORD` | Optional MCP auto-login |
 | `MCP_TRANSPORT` / `MCP_HOST` / `MCP_PORT` / `MCP_PATH` | FastMCP HTTP in Docker (default `http` / `127.0.0.1` / `8001` / `/mcp`) |
 

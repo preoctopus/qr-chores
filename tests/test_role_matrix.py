@@ -244,6 +244,7 @@ async def test_child_forbidden_on_parent_api_mutations(
                 "due_time": "10:00:00",
                 "photo_policy": "none",
                 "base_points": 1,
+                "assignee_user_id": child_user.id,
             },
         )
     ).status_code == 403

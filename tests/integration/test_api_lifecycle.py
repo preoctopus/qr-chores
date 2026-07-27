@@ -62,6 +62,7 @@ async def test_api_rewards_config_multi_complete_unlock(
                 "schedule_days": "0123456",
                 "photo_policy": "none",
                 "base_points": 10,
+                "assignee_user_id": child_user.id,
             },
         )
         assert created.status_code == 201, created.text
@@ -134,6 +135,7 @@ async def test_api_deactivate_reactivate_and_stable_qr(
             "schedule_days": "0123456",
             "photo_policy": "optional",
             "base_points": 9,
+            "assignee_user_id": child_user.id,
         },
     )
     assert created.status_code == 201
@@ -198,6 +200,7 @@ async def test_api_delete_removes_history_keeps_ledger(
             "schedule_days": "0123456",
             "photo_policy": "required",
             "base_points": 14,
+            "assignee_user_id": child_user.id,
         },
     )
     assert created.status_code == 201
@@ -314,6 +317,7 @@ async def test_api_parent_board_reflects_partial_day(
                 "schedule_days": "0123456",
                 "photo_policy": "none",
                 "base_points": 5,
+                "assignee_user_id": child_user.id,
             },
         )
         assert created.status_code == 201
@@ -367,6 +371,7 @@ async def test_api_optional_then_required_create_and_complete(
             "schedule_days": "0123456",
             "photo_policy": "optional",
             "base_points": 7,
+            "assignee_user_id": child_user.id,
         },
     )
     assert optional.status_code == 201
@@ -381,6 +386,7 @@ async def test_api_optional_then_required_create_and_complete(
             "schedule_days": "0123456",
             "photo_policy": "required",
             "base_points": 11,
+            "assignee_user_id": child_user.id,
         },
     )
     assert required.status_code == 201

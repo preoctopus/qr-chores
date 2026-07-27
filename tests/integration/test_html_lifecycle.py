@@ -35,6 +35,7 @@ async def test_qr_scan_login_next_then_complete(
             "base_points": "8",
             "photo_policy": "none",
             "schedule_day": ["0", "1", "2", "3", "4", "5", "6"],
+            "assignee_user_id": str(child_user.id),
         },
         follow_redirects=False,
     )
@@ -107,6 +108,7 @@ async def test_deactivate_blocks_complete_reactivate_allows(
             "base_points": "6",
             "photo_policy": "none",
             "schedule_day": ["0", "1", "2", "3", "4", "5", "6"],
+            "assignee_user_id": str(child_user.id),
         },
         follow_redirects=False,
     )
@@ -187,6 +189,7 @@ async def test_mixed_photo_policies_same_day(
                 "base_points": points,
                 "photo_policy": policy,
                 "schedule_day": ["0", "1", "2", "3", "4", "5", "6"],
+                "assignee_user_id": str(child_user.id),
             },
             follow_redirects=False,
         )
@@ -258,6 +261,7 @@ async def test_edit_preserves_qr_token_and_new_points_apply(
             "base_points": "3",
             "photo_policy": "none",
             "schedule_day": ["0", "1", "2", "3", "4", "5", "6"],
+            "assignee_user_id": str(child_user.id),
         },
         follow_redirects=False,
     )
@@ -279,6 +283,7 @@ async def test_edit_preserves_qr_token_and_new_points_apply(
             "base_points": "25",
             "photo_policy": "optional",
             "schedule_day": ["0", "1", "2", "3", "4", "5", "6"],
+            "assignee_user_id": str(child_user.id),
         },
         follow_redirects=False,
     )
@@ -353,6 +358,7 @@ async def test_multi_complete_custom_achievement_threshold(
                 "base_points": "10",
                 "photo_policy": "none",
                 "schedule_day": ["0", "1", "2", "3", "4", "5", "6"],
+                "assignee_user_id": str(child_user.id),
             },
             follow_redirects=False,
         )
@@ -420,6 +426,7 @@ async def test_deactivate_keeps_points_delete_removes_chore_history(
             "base_points": "15",
             "photo_policy": "required",
             "schedule_day": ["0", "1", "2", "3", "4", "5", "6"],
+            "assignee_user_id": str(child_user.id),
         },
         follow_redirects=False,
     )

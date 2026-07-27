@@ -53,7 +53,7 @@ def auth_header(token: str) -> dict[str, str]:
 
 @pytest.mark.asyncio
 async def test_home_child(client: AsyncClient, child_user: User, app) -> None:
-    await _create_chore(app.state.session_factory)
+    await _create_chore(app.state.session_factory, assignee_user_id=child_user.id)
     token = await api_login(client, child_user.email, "child-pass")
     response = await client.get("/api/v1/home", headers=auth_header(token))
     assert response.status_code == 200
@@ -73,7 +73,7 @@ async def test_home_parent_forbidden(client: AsyncClient, parent_user: User) -> 
 
 @pytest.mark.asyncio
 async def test_confirm_and_complete(client: AsyncClient, child_user: User, app) -> None:
-    chore = await _create_chore(app.state.session_factory)
+    chore = await _create_chore(app.state.session_factory, assignee_user_id=child_user.id)
     token = await api_login(client, child_user.email, "child-pass")
     headers = auth_header(token)
 
@@ -115,8 +115,10 @@ async def test_confirm_and_complete(client: AsyncClient, child_user: User, app) 
 
 
 @pytest.mark.asyncio
-async def test_parent_cannot_complete(client: AsyncClient, parent_user: User, app) -> None:
-    chore = await _create_chore(app.state.session_factory)
+async def test_parent_cannot_complete(
+    client: AsyncClient, parent_user: User, app, child_user: User
+) -> None:
+    chore = await _create_chore(app.state.session_factory, assignee_user_id=child_user.id)
     token = await api_login(client, parent_user.email, "parent-pass")
     response = await client.post(
         f"/api/v1/c/{chore.qr_token}/complete",
@@ -127,7 +129,9 @@ async def test_parent_cannot_complete(client: AsyncClient, parent_user: User, ap
 
 @pytest.mark.asyncio
 async def test_complete_photo_required(client: AsyncClient, child_user: User, app) -> None:
-    chore = await _create_chore(app.state.session_factory, photo_policy=PhotoPolicy.required)
+    chore = await _create_chore(
+        app.state.session_factory, photo_policy=PhotoPolicy.required, assignee_user_id=child_user.id
+    )
     token = await api_login(client, child_user.email, "child-pass")
     headers = auth_header(token)
 

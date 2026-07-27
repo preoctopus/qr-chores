@@ -79,6 +79,17 @@ async def confirm_page(
             },
             status_code=status.HTTP_404_NOT_FOUND,
         )
+    if chore.assignee_user_id is not None and chore.assignee_user_id != user.id:
+        return templates.TemplateResponse(
+            request,
+            "complete_error.html",
+            {
+                "user": user,
+                "title": "Not your chore",
+                "message": "This chore is assigned to someone else in the family.",
+            },
+            status_code=status.HTTP_403_FORBIDDEN,
+        )
 
     today = local_today(settings)
     scheduled = is_scheduled_on(chore.schedule_days, today)
@@ -130,6 +141,17 @@ async def complete_submit(
                 "message": "This QR code doesn’t match an active chore.",
             },
             status_code=status.HTTP_404_NOT_FOUND,
+        )
+    if chore.assignee_user_id is not None and chore.assignee_user_id != user.id:
+        return templates.TemplateResponse(
+            request,
+            "complete_error.html",
+            {
+                "user": user,
+                "title": "Not your chore",
+                "message": "This chore is assigned to someone else in the family.",
+            },
+            status_code=status.HTTP_403_FORBIDDEN,
         )
 
     try:

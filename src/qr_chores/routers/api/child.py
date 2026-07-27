@@ -59,7 +59,7 @@ async def api_home(
     db: AsyncSession = Depends(get_db),
     settings: Settings = Depends(get_settings),
 ) -> HomeResponse:
-    board = await today_board(db, settings)
+    board = await today_board(db, settings, assignee_user_id=user.id)
     points_today = await points_earned_today(db, user.id, settings)
     done_count = sum(1 for row in board if row.done)
     balance = await points_balance(db, user.id)
@@ -89,10 +89,14 @@ async def api_confirm_chore(
     db: AsyncSession = Depends(get_db),
     settings: Settings = Depends(get_settings),
 ) -> ChoreConfirmOut:
-    del user  # role gate only
     chore = await _load_chore_by_token(db, qr_token)
     if chore is None or not chore.is_active:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Chore not found")
+    if chore.assignee_user_id is not None and chore.assignee_user_id != user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="This chore is assigned to someone else.",
+        )
 
     today = local_today(settings)
     scheduled = is_scheduled_on(chore.schedule_days, today)
@@ -126,6 +130,11 @@ async def api_complete_chore(
     chore = await _load_chore_by_token(db, qr_token)
     if chore is None or not chore.is_active:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Chore not found")
+    if chore.assignee_user_id is not None and chore.assignee_user_id != user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="This chore is assigned to someone else.",
+        )
 
     try:
         photo_upload = await read_photo_upload(photo, max_bytes=settings.photo_max_bytes)

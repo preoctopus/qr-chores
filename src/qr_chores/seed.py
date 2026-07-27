@@ -8,28 +8,34 @@ from sqlalchemy import select
 from qr_chores.auth.passwords import hash_password
 from qr_chores.config import get_settings
 from qr_chores.db import SessionLocal, init_db
-from qr_chores.models.user import User, UserRole
+from qr_chores.models.user import User, UserRole, format_display_name
 from qr_chores.services.achievements import ensure_default_achievements
 from qr_chores.services.points import DEFAULT_BONUSES, set_setting
 
 DEFAULT_USERS = (
     {
         "email": "dad@example.com",
-        "display_name": "Dad",
+        "first_name": "Dad",
+        "last_name": "Example",
         "role": UserRole.parent,
         "password_key": "parent",
+        "parent_email": None,
     },
     {
         "email": "mom@example.com",
-        "display_name": "Mom",
+        "first_name": "Mom",
+        "last_name": "Example",
         "role": UserRole.parent,
         "password_key": "parent",
+        "parent_email": None,
     },
     {
         "email": "daughter@example.com",
-        "display_name": "Daughter",
+        "first_name": "Daughter",
+        "last_name": "Example",
         "role": UserRole.child,
         "password_key": "child",
+        "parent_email": "dad@example.com",
     },
 )
 
@@ -54,21 +60,38 @@ async def seed() -> None:
 
     async with SessionLocal() as db:
         created = 0
+        by_email: dict[str, User] = {}
         for spec in DEFAULT_USERS:
             email = spec["email"]
             result = await db.execute(select(User).where(User.email == email))
             existing = result.scalar_one_or_none()
             if existing is not None:
                 print(f"skip  {email} (exists)")
+                by_email[email] = existing
                 continue
+            parent_id = None
+            parent_email = spec.get("parent_email")
+            if parent_email:
+                parent = by_email.get(parent_email)
+                if parent is None:
+                    parent_row = await db.execute(select(User).where(User.email == parent_email))
+                    parent = parent_row.scalar_one_or_none()
+                parent_id = parent.id if parent is not None else None
+            first = spec["first_name"]
+            last = spec["last_name"]
             user = User(
                 email=email,
-                display_name=spec["display_name"],
+                first_name=first,
+                last_name=last,
+                display_name=format_display_name(first, last),
                 role=spec["role"],
                 password_hash=hash_password(passwords[spec["password_key"]]),
+                parent_id=parent_id,
                 is_active=True,
             )
             db.add(user)
+            await db.flush()
+            by_email[email] = user
             created += 1
             print(f"create {email} ({spec['role'].value})")
 

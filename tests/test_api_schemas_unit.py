@@ -57,7 +57,9 @@ def test_user_out_and_token_response() -> None:
     user = UserOut(
         id=1,
         email="dad@example.com",
-        display_name="Dad",
+        first_name="Dad",
+        last_name="Example",
+        display_name="Dad Example",
         role="parent",
         points_balance=0,
     )
@@ -70,49 +72,50 @@ def test_user_out_and_token_response() -> None:
 
 
 def test_chore_create_defaults_and_strip() -> None:
-    body = ChoreCreate(title="  Trash  ", due_time=time(19, 30))
+    body = ChoreCreate(title="  Trash  ", due_time=time(19, 30), assignee_user_id=1)
     assert body.title == "Trash"
     assert body.schedule_days == "0123456"
     assert body.photo_policy == "none"
     assert body.base_points == 10
     assert body.description is None
+    assert body.assignee_user_id == 1
 
 
 def test_chore_create_description_blank_to_none() -> None:
-    body = ChoreCreate(title="X", due_time=time(10, 0), description="   ")
+    body = ChoreCreate(title="X", due_time=time(10, 0), description="   ", assignee_user_id=1)
     assert body.description is None
 
 
 def test_chore_create_schedule_days_normalized() -> None:
-    body = ChoreCreate(title="X", due_time=time(10, 0), schedule_days="4201x9")
+    body = ChoreCreate(title="X", due_time=time(10, 0), schedule_days="4201x9", assignee_user_id=1)
     assert body.schedule_days == "0124"
 
 
 def test_chore_create_schedule_days_empty_defaults() -> None:
-    body = ChoreCreate(title="X", due_time=time(10, 0), schedule_days="zzzz")
+    body = ChoreCreate(title="X", due_time=time(10, 0), schedule_days="zzzz", assignee_user_id=1)
     assert body.schedule_days == "0123456"
 
 
 def test_chore_create_photo_policy_valid() -> None:
     for policy in ("required", "optional", "none"):
-        body = ChoreCreate(title="X", due_time=time(10, 0), photo_policy=policy)
+        body = ChoreCreate(title="X", due_time=time(10, 0), photo_policy=policy, assignee_user_id=1)
         assert body.photo_policy == policy
 
 
 def test_chore_create_photo_policy_invalid() -> None:
     with pytest.raises(ValidationError) as exc:
-        ChoreCreate(title="X", due_time=time(10, 0), photo_policy="maybe")
+        ChoreCreate(title="X", due_time=time(10, 0), photo_policy="maybe", assignee_user_id=1)
     assert "photo_policy" in str(exc.value)
 
 
 def test_chore_create_blank_title_rejected() -> None:
     with pytest.raises(ValidationError):
-        ChoreCreate(title="   ", due_time=time(10, 0))
+        ChoreCreate(title="   ", due_time=time(10, 0), assignee_user_id=1)
 
 
 def test_chore_create_negative_points_rejected() -> None:
     with pytest.raises(ValidationError):
-        ChoreCreate(title="X", due_time=time(10, 0), base_points=-1)
+        ChoreCreate(title="X", due_time=time(10, 0), base_points=-1, assignee_user_id=1)
 
 
 def test_chore_update_partial_and_none_fields() -> None:

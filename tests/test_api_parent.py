@@ -52,8 +52,8 @@ async def _create_chore(session_factory, **kwargs) -> Chore:
 
 
 @pytest.mark.asyncio
-async def test_today_parent(client: AsyncClient, parent_user: User, app) -> None:
-    await _create_chore(app.state.session_factory)
+async def test_today_parent(client: AsyncClient, parent_user: User, child_user: User, app) -> None:
+    await _create_chore(app.state.session_factory, assignee_user_id=child_user.id)
     token = await api_login(client, parent_user.email, "parent-pass")
     response = await client.get("/api/v1/today", headers=auth_header(token))
     assert response.status_code == 200
@@ -72,7 +72,7 @@ async def test_today_child_forbidden(client: AsyncClient, child_user: User) -> N
 
 
 @pytest.mark.asyncio
-async def test_chores_crud(client: AsyncClient, parent_user: User, app) -> None:
+async def test_chores_crud(client: AsyncClient, parent_user: User, child_user: User, app) -> None:
     token = await api_login(client, parent_user.email, "parent-pass")
     headers = auth_header(token)
 
@@ -86,6 +86,7 @@ async def test_chores_crud(client: AsyncClient, parent_user: User, app) -> None:
             "schedule_days": "01234",
             "photo_policy": "optional",
             "base_points": 20,
+            "assignee_user_id": child_user.id,
         },
     )
     assert created.status_code == 201, created.text
@@ -164,7 +165,9 @@ async def test_child_cannot_write_chores(client: AsyncClient, child_user: User) 
 
 
 @pytest.mark.asyncio
-async def test_create_chore_validation(client: AsyncClient, parent_user: User) -> None:
+async def test_create_chore_validation(
+    client: AsyncClient, parent_user: User, child_user: User
+) -> None:
     token = await api_login(client, parent_user.email, "parent-pass")
     response = await client.post(
         "/api/v1/chores",
@@ -173,6 +176,7 @@ async def test_create_chore_validation(client: AsyncClient, parent_user: User) -
             "title": "   ",
             "due_time": "10:00:00",
             "photo_policy": "none",
+            "assignee_user_id": child_user.id,
         },
     )
     assert response.status_code == 422
@@ -182,7 +186,7 @@ async def test_create_chore_validation(client: AsyncClient, parent_user: User) -
 async def test_history_and_photo(
     client: AsyncClient, parent_user: User, child_user: User, app
 ) -> None:
-    chore = await _create_chore(app.state.session_factory)
+    chore = await _create_chore(app.state.session_factory, assignee_user_id=child_user.id)
     settings_obj = get_settings()
     key = f"completions/{chore.id}/2026-07-26/test.png"
     get_photo_storage(settings_obj).save(key, TINY_PNG, "image/png")

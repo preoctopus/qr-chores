@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<section class="stack">
+  <div class="page-header">
+    <h1>{% if child %}Edit child{% else %}Add child{% endif %}</h1>
+    <p class="muted">Username is used for login (no email verification).</p>
+  </div>
+
+  {% if error %}
+  <div class="alert alert-error" role="alert">{{ error }}</div>
+  {% endif %}
+
+  <form method="post"
+        action="{% if child %}/children/{{ child.id }}/edit{% else %}/children{% endif %}"
+        class="stack card">
+    <label class="field">
+      <span>First name</span>
+      <input type="text" name="first_name" required value="{{ form.first_name or '' }}" autocomplete="given-name">
+    </label>
+    <label class="field">
+      <span>Last name</span>
+      <input type="text" name="last_name" required value="{{ form.last_name or '' }}" autocomplete="family-name">
+    </label>
+    <label class="field">
+      <span>Username</span>
+      <input type="text" name="email" required value="{{ form.email or '' }}"
+             autocomplete="username" inputmode="email" placeholder="kid@example.com">
+    </label>
+    <label class="field">
+      <span>{% if child %}New password (optional){% else %}Password{% endif %}</span>
+      <input type="password" name="password" {% if not child %}required{% endif %}
+             value="" autocomplete="{% if child %}new-password{% else %}new-password{% endif %}">
+    </label>
+
+    <button type="submit" class="btn btn-primary btn-block">
+      {% if child %}Save changes{% else %}Create child{% endif %}
+    </button>
+    <a class="btn btn-ghost btn-block" href="/children">Cancel</a>
+  </form>
+</section>
+{% endblock %}
