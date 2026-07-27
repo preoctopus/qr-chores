@@ -22,7 +22,12 @@ class UnlockedAchievement:
     points: int
 
 
-def _criteria_threshold(achievement: Achievement) -> int:
+def criteria_threshold(achievement: Achievement) -> int:
+    """Parse the numeric threshold from achievement criteria_json.
+
+    Streak achievements prefer ``days`` then ``count``; other criteria types
+    prefer ``count`` then ``days``. Invalid or empty JSON defaults to 1.
+    """
     try:
         data = json.loads(achievement.criteria_json or "{}")
     except json.JSONDecodeError:
@@ -106,7 +111,7 @@ async def evaluate_achievements(
         if ach.id in owned_ids:
             continue
         progress = await progress_for(db, user_id, ach, settings)
-        if progress < _criteria_threshold(ach):
+        if progress < criteria_threshold(ach):
             continue
         ua = UserAchievement(user_id=user_id, achievement_id=ach.id)
         db.add(ua)

@@ -1,6 +1,5 @@
 """Role home pages and JSON helpers."""
 
-import json
 from dataclasses import dataclass
 
 from fastapi import APIRouter, Depends, Request, status
@@ -15,7 +14,7 @@ from qr_chores.db import get_db
 from qr_chores.models.chore import ChoreCompletion
 from qr_chores.models.rewards import Achievement, UserAchievement
 from qr_chores.models.user import User, UserRole
-from qr_chores.services.achievements import ICON_CHOICES, progress_for
+from qr_chores.services.achievements import ICON_CHOICES, criteria_threshold, progress_for
 from qr_chores.services.chores import today_board
 from qr_chores.services.points import points_balance
 from qr_chores.services.timeutil import format_due_time
@@ -94,11 +93,7 @@ async def child_home(
     awarded_rows: list[AchievementRow] = []
     not_awarded_rows: list[AchievementRow] = []
     for ach in achievements:
-        try:
-            data = json.loads(ach.criteria_json or "{}")
-        except json.JSONDecodeError:
-            data = {}
-        threshold = int(data.get("count", data.get("days", 1)))
+        threshold = criteria_threshold(ach)
         progress = await progress_for(db, user.id, ach, settings)
         unlocked = ach.id in owned_ids
         row = AchievementRow(
@@ -184,11 +179,7 @@ async def child_achievements(
     owned_ids = set(owned.scalars().all())
     rows: list[AchievementRow] = []
     for ach in achievements:
-        try:
-            data = json.loads(ach.criteria_json or "{}")
-        except json.JSONDecodeError:
-            data = {}
-        threshold = int(data.get("count", data.get("days", 1)))
+        threshold = criteria_threshold(ach)
         progress = await progress_for(db, user.id, ach, settings)
         rows.append(
             AchievementRow(
