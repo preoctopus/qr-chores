@@ -1,0 +1,84 @@
+"""API auth: login, logout, me."""
+
+from fastapi import APIRouter, Depends, HTTPException, Response, status
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from qr_chores.auth.deps import get_current_user
+from qr_chores.auth.passwords import verify_password
+from qr_chores.auth.session import dump_api_token, dump_session
+from qr_chores.config import Settings, get_settings
+from qr_chores.db import get_db
+from qr_chores.models.user import User
+from qr_chores.schemas.auth import LoginRequest, TokenResponse, UserOut
+from qr_chores.services.points import points_balance
+
+router = APIRouter(tags=["api-auth"])
+
+
+async def _user_out(db: AsyncSession, user: User) -> UserOut:
+    balance = await points_balance(db, user.id)
+    return UserOut(
+        id=user.id,
+        email=user.email,
+        display_name=user.display_name,
+        role=user.role.value,
+        points_balance=balance,
+    )
+
+
+def _set_session_cookie(response: Response, settings: Settings, user_id: int) -> None:
+    response.set_cookie(
+        key=settings.session_cookie_name,
+        value=dump_session(settings, user_id),
+        max_age=settings.session_max_age_seconds,
+        httponly=True,
+        samesite="lax",
+        secure=settings.base_url.startswith("https://"),
+        path="/",
+    )
+
+
+@router.post("/auth/login", response_model=TokenResponse)
+async def api_login(
+    body: LoginRequest,
+    response: Response,
+    db: AsyncSession = Depends(get_db),
+    settings: Settings = Depends(get_settings),
+) -> TokenResponse:
+    result = await db.execute(
+        select(User).where(User.email == body.email.strip().lower(), User.is_active.is_(True))
+    )
+    user = result.scalar_one_or_none()
+    if user is None or not verify_password(body.password, user.password_hash):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid email or password.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    access_token = dump_api_token(settings, user.id)
+    _set_session_cookie(response, settings, user.id)
+    return TokenResponse(
+        access_token=access_token,
+        token_type="bearer",
+        expires_in=settings.session_max_age_seconds,
+        user=await _user_out(db, user),
+    )
+
+
+@router.post("/auth/logout", status_code=status.HTTP_204_NO_CONTENT)
+async def api_logout(
+    response: Response,
+    settings: Settings = Depends(get_settings),
+) -> None:
+    """Clear session cookie. Bearer tokens are discarded client-side."""
+    response.delete_cookie(settings.session_cookie_name, path="/")
+
+
+@router.get("/me", response_model=UserOut)
+async def api_me(
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> UserOut:
+    return await _user_out(db, user)
