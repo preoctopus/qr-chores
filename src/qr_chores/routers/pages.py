@@ -80,28 +80,48 @@ async def child_home(
 ) -> HTMLResponse:
     board = await today_board(db, settings)
     points_today = sum((row.completion.points_awarded if row.completion else 0) for row in board)
-    done_count = sum(1 for row in board if row.done)
     balance = await points_balance(db, user.id)
+
     result = await db.execute(
-        select(UserAchievement)
-        .options(selectinload(UserAchievement.achievement))
-        .where(UserAchievement.user_id == user.id)
-        .order_by(UserAchievement.unlocked_at.desc())
-        .limit(3)
+        select(Achievement).where(Achievement.is_active.is_(True)).order_by(Achievement.title)
     )
-    recent_unlocks = list(result.scalars().all())
+    achievements = list(result.scalars().all())
+    owned = await db.execute(
+        select(UserAchievement.achievement_id).where(UserAchievement.user_id == user.id)
+    )
+    owned_ids = set(owned.scalars().all())
+
+    awarded_rows: list[AchievementRow] = []
+    not_awarded_rows: list[AchievementRow] = []
+    for ach in achievements:
+        try:
+            data = json.loads(ach.criteria_json or "{}")
+        except json.JSONDecodeError:
+            data = {}
+        threshold = int(data.get("count", data.get("days", 1)))
+        progress = await progress_for(db, user.id, ach, settings)
+        unlocked = ach.id in owned_ids
+        row = AchievementRow(
+            achievement=ach,
+            unlocked=unlocked,
+            progress=threshold if unlocked else min(progress, threshold),
+            threshold=threshold,
+        )
+        if unlocked:
+            awarded_rows.append(row)
+        else:
+            not_awarded_rows.append(row)
+
     return templates.TemplateResponse(
         request,
         "child_home.html",
         {
             "user": user,
             "title": "Home",
-            "board": board,
             "points_today": points_today,
             "balance": balance,
-            "done_count": done_count,
-            "total_count": len(board),
-            "recent_unlocks": recent_unlocks,
+            "awarded_rows": awarded_rows,
+            "not_awarded_rows": not_awarded_rows,
             "icon_emoji": ICON_EMOJI,
             "format_due_time": format_due_time,
         },

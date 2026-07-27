@@ -83,7 +83,7 @@ Scan QR → `GET /c/{token}` → login if needed (preserve `next`) → confirm (
 
 ### Child (home)
 
-Login → today’s list + total points → tap chore → same confirm path as QR → `/me/achievements` for progress.
+Login → points (total balance + points change today) + achievements (awarded and not yet awarded). Scanning QR code is the only path to chore confirmation/completion.
 
 ## Routes
 

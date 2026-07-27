@@ -4,50 +4,66 @@
 <section class="stack">
   <div class="page-header">
     <h1>Hey {{ user.display_name }}</h1>
-    <p class="muted">{{ done_count }} of {{ total_count }} done today</p>
+    <p class="muted">Scan a QR code to mark a chore done!</p>
   </div>
 
   <div class="card highlight">
     <p class="stat-label">Total points</p>
     <p class="stat-value">{{ balance }}</p>
-    <p class="muted">+{{ points_today }} today ·
-      <a href="/me/achievements" class="photo-link">Achievements</a>
-      ·
-      <a href="/help" class="photo-link">Help</a>
-    </p>
+    <p class="muted">+{{ points_today }} today · <a href="/help" class="photo-link">Help</a></p>
   </div>
 
-  {% if recent_unlocks %}
   <div class="card">
-    <p class="stat-label">Recent unlocks</p>
-    <ul class="unlock-strip">
-      {% for ua in recent_unlocks %}
-      <li>{{ icon_emoji.get(ua.achievement.icon_key, '⭐') }} {{ ua.achievement.title }}</li>
-      {% endfor %}
-    </ul>
-  </div>
-  {% endif %}
-
-  {% if not board %}
-  {% set empty_title = "Nothing on the list" %}
-  {% set empty_message = "No chores scheduled for today. Enjoy the break — or check with a parent if something’s missing." %}
-  {% include "empty_state.html" %}
-  {% else %}
-  <ul class="chore-list">
-    {% for row in board %}
-    <li class="chore-card">
-      <a class="chore-card-link" href="/c/{{ row.chore.qr_token }}">
+    <h2 class="section-title">Awarded Achievements</h2>
+    {% if not awarded_rows %}
+    <p class="muted small">No achievements unlocked yet. Keep scanning QR codes to complete chores and earn badges!</p>
+    {% else %}
+    <ul class="chore-list">
+      {% for row in awarded_rows %}
+      <li class="chore-card">
         <div class="chore-card-main">
           <div>
-            <p class="chore-title">{{ row.chore.title }}</p>
-            <p class="muted small">Due {{ format_due_time(row.chore.due_time) }} · {{ row.chore.base_points }} pts</p>
+            <p class="chore-title">
+              {{ icon_emoji.get(row.achievement.icon_key, '⭐') }}
+              {{ row.achievement.title }}
+            </p>
+            <p class="muted small">{{ row.achievement.description }}</p>
+            <p class="muted small">Unlocked · +{{ row.achievement.points_reward }} pts</p>
           </div>
-          <span class="chip chip-{{ row.status_kind }}">{{ row.status_label }}</span>
+          <span class="chip chip-done">Done</span>
         </div>
-      </a>
-    </li>
-    {% endfor %}
-  </ul>
-  {% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <h2 class="section-title">Not Yet Awarded</h2>
+    {% if not not_awarded_rows %}
+    <p class="muted small">All achievements unlocked! Amazing job!</p>
+    {% else %}
+    <ul class="chore-list">
+      {% for row in not_awarded_rows %}
+      <li class="chore-card is-locked">
+        <div class="chore-card-main">
+          <div>
+            <p class="chore-title">
+              {{ icon_emoji.get(row.achievement.icon_key, '⭐') }}
+              {{ row.achievement.title }}
+            </p>
+            <p class="muted small">{{ row.achievement.description }}</p>
+            <p class="muted small">{{ row.progress }} / {{ row.threshold }} · +{{ row.achievement.points_reward }} pts</p>
+          </div>
+          <span class="chip chip-pending">Locked</span>
+        </div>
+        <div class="progress-bar" aria-hidden="true">
+          <div class="progress-fill" style="width: {{ row.percent }}%"></div>
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+  </div>
 </section>
 {% endblock %}
