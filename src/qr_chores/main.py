@@ -8,6 +8,10 @@ from fastapi.openapi.utils import get_openapi
 from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException as StarletteHTTPException
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request as StarletteRequest
+from starlette.responses import Response
+from starlette.types import ASGIApp
 
 from qr_chores import __version__
 from qr_chores.config import get_settings
@@ -15,6 +19,23 @@ from qr_chores.db import init_db
 from qr_chores.routers import auth, chores, complete, health, pages, photos, rewards
 from qr_chores.routers.api import api_router
 from qr_chores.templating import templates
+
+# App pages use external JS under /static only; templates still use inline styles
+# (and print_qrs has a large <style> block), so style-src allows 'unsafe-inline'.
+_CONTENT_SECURITY_POLICY = (
+    "default-src 'self'; "
+    "script-src 'self'; "
+    "style-src 'self' 'unsafe-inline'; "
+    "img-src 'self' data: blob:; "
+    "font-src 'self'; "
+    "object-src 'none'; "
+    "base-uri 'self'; "
+    "form-action 'self'; "
+    "frame-ancestors 'none'"
+)
+
+# FastAPI Swagger/ReDoc load assets from jsDelivr; skip CSP on those paths only.
+_CSP_SKIP_PREFIXES = ("/docs", "/redoc", "/openapi.json")
 
 OPENAPI_TAGS = [
     {"name": "api-auth", "description": "Login, logout, and current user (`/api/v1`)."},
@@ -51,6 +72,30 @@ async def lifespan(_app: FastAPI):
 def _wants_html(request: Request) -> bool:
     accept = request.headers.get("accept", "")
     return "text/html" in accept
+
+
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    """Set standard browser security headers on every response."""
+
+    def __init__(self, app: ASGIApp, *, enable_hsts: bool) -> None:
+        super().__init__(app)
+        self._enable_hsts = enable_hsts
+
+    async def dispatch(self, request: StarletteRequest, call_next) -> Response:
+        response = await call_next(request)
+        headers = response.headers
+        headers.setdefault("X-Content-Type-Options", "nosniff")
+        headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+        headers.setdefault("X-Frame-Options", "DENY")
+        path = request.url.path
+        if not any(path == p or path.startswith(f"{p}/") for p in _CSP_SKIP_PREFIXES):
+            headers.setdefault("Content-Security-Policy", _CONTENT_SECURITY_POLICY)
+        if self._enable_hsts:
+            headers.setdefault(
+                "Strict-Transport-Security",
+                "max-age=31536000; includeSubDomains",
+            )
+        return response
 
 
 def _install_openapi(app: FastAPI) -> None:
@@ -111,6 +156,11 @@ def create_app() -> FastAPI:
         openapi_tags=OPENAPI_TAGS,
     )
     _install_openapi(app)
+    # HSTS only when canonical BASE_URL is https (matches SECRET_KEY prod guard pattern).
+    app.add_middleware(
+        SecurityHeadersMiddleware,
+        enable_hsts=settings.base_url.startswith("https://"),
+    )
 
     static_dir = Path(__file__).resolve().parent / "static"
     app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")

@@ -189,7 +189,7 @@
     <header class="topbar">
       <a class="brand" href="/chores">← Chores</a>
       {% if items %}
-      <button class="btn btn-primary btn-sm" type="button" onclick="window.print()">Print sheet</button>
+      <button class="btn btn-primary btn-sm" type="button" id="print-sheet-btn">Print sheet</button>
       {% endif %}
     </header>
     <p class="print-hint">
@@ -238,5 +238,6 @@
     <p class="print-footer">Cut on dashed lines · Reuse every day · {{ base_url }}</p>
   </div>
   {% endif %}
+  <script src="/static/js/print-sheet.js"></script>
 </body>
 </html>

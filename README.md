@@ -228,6 +228,7 @@ Full production steps: **[docs/DEPLOY.md](./docs/DEPLOY.md)**.
 - **`ENVIRONMENT=production`:** Disables FastAPI `/docs`, `/redoc`, and `/openapi.json`.
 - **Login `next`:** Only same-origin relative paths are allowed (blocks `//` / `///` open redirects).
 - **Photos:** Magic-byte type check; size capped while streaming the upload; local keys reject path traversal (including prefix-sibling escapes).
+- **Response headers:** `nosniff`, `Referrer-Policy`, `X-Frame-Options`, and a CSP (`script-src 'self'`) on every response; `Strict-Transport-Security` when `BASE_URL` is HTTPS.
 
 ---
 

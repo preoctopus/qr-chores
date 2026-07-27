@@ -185,6 +185,7 @@ Local default port: **8765** (8000 is often taken).
 - Default `SECRET_KEY` (`dev-only-change-me`) is allowed only for local SQLite + non-HTTPS `BASE_URL` + non-production `ENVIRONMENT`.
 - Production (`ENVIRONMENT=production`): OpenAPI docs disabled.
 - Photo storage backends are cached (`get_photo_storage`); tests that change `PHOTO_*` should call `clear_photo_storage_cache()`.
+- Every response gets security headers (`X-Content-Type-Options: nosniff`, `Referrer-Policy`, `X-Frame-Options: DENY`, CSP). HSTS only when `BASE_URL` is `https://`. CSP skips `/docs` / `/redoc` / `/openapi.json` so Swagger CDN assets still load in development.
 
 ## Implementation status
 
@@ -279,6 +280,7 @@ Fix failures before declaring the task complete, opening a PR as ready, or askin
 - Path traversal protection in local photo storage keys (`is_relative_to`, no `..` segments).
 - Open-redirect hardening on login `next` (relative paths only).
 - Strong `SECRET_KEY` required for HTTPS / Postgres / production.
+- Prefer external JS under `/static` (no inline scripts / `onclick`) so CSP can keep `script-src 'self'`.
 
 ## Out of scope (v1)
 
