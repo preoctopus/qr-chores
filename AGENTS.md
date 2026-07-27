@@ -104,6 +104,7 @@ Login → points (total balance + points change today) + achievements (awarded a
 | `/me/achievements` | Child | Achievement collection / progress |
 | `/photos/{completion_id}` | Logged-in | Stream proof photo |
 | `/api/v1/*` | Auth (Bearer / session) | **Internal** JSON API for native apps — full surface in `docs/API.md` (not end-user Help) |
+| `/mcp` | Public (MCP clients) | FastMCP streamable HTTP (proxied by nginx → process on `:8001`); tools call in-container API |
 | `/healthz` | Public | Cloud Run health |
 
 ### Internal API (`/api/v1`) — agent notes
@@ -174,6 +175,8 @@ qr-chores/
 | `PHOTO_MAX_BYTES` | Max upload size (default 5 MB); enforced while reading the upload stream |
 | `PORT` | Cloud Run listens on `8080` |
 | `RUN_MIGRATIONS` / `RUN_SEED` | Docker entrypoint flags |
+| `QR_CHORES_EMAIL` / `QR_CHORES_PASSWORD` | Optional MCP auto-login |
+| `MCP_TRANSPORT` / `MCP_HOST` / `MCP_PORT` / `MCP_PATH` | FastMCP HTTP in Docker (default `http` / `127.0.0.1` / `8001` / `/mcp`) |
 
 Local default port: **8765** (8000 is often taken).
 

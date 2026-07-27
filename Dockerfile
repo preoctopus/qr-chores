@@ -11,7 +11,13 @@ ENV UV_COMPILE_BYTECODE=1 \
 COPY pyproject.toml README.md uv.lock ./
 COPY src ./src
 
+# App venv (frozen lock)
 RUN uv sync --frozen --no-dev
+
+# qrc CLI + FastMCP server (separate package; installs into the same venv)
+COPY clients/python/pyproject.toml clients/python/README.md ./clients/python/
+COPY clients/python/src ./clients/python/src
+RUN uv pip install --python /app/.venv/bin/python /app/clients/python
 
 FROM python:3.12-slim AS runtime
 
@@ -28,19 +34,31 @@ COPY --from=builder /app/README.md /app/README.md
 COPY migrations ./migrations
 COPY alembic.ini ./
 COPY scripts/entrypoint.sh ./scripts/entrypoint.sh
+COPY scripts/qrc-docker.sh ./scripts/qrc-docker.sh
 COPY marketing ./marketing
 COPY docker ./docker
 
-RUN chmod +x /app/scripts/entrypoint.sh \
+# qrc → fixed in-container API origin (uvicorn loopback)
+RUN chmod +x /app/scripts/entrypoint.sh /app/scripts/qrc-docker.sh \
+    && mv /app/.venv/bin/qrc /app/.venv/bin/qrc.real \
+    && cp /app/scripts/qrc-docker.sh /app/.venv/bin/qrc \
+    && chmod +x /app/.venv/bin/qrc \
     && mkdir -p /var/log/nginx /var/lib/nginx /tmp \
-    && chown -R appuser:appuser /app /var/log/nginx /var/lib/nginx /tmp
+    && chown -R appuser:appuser /app /var/log/nginx /var/lib/nginx /tmp \
+    && chown -R appuser:appuser /home/appuser
 
 ENV PATH="/app/.venv/bin:$PATH" \
     PYTHONPATH="/app/src" \
     PYTHONUNBUFFERED=1 \
     PORT=8080 \
     RUN_MIGRATIONS=0 \
-    RUN_SEED=0
+    RUN_SEED=0 \
+    # FastMCP HTTP (proxied by nginx at /mcp)
+    MCP_TRANSPORT=http \
+    MCP_HOST=127.0.0.1 \
+    MCP_PORT=8001 \
+    MCP_PATH=/mcp \
+    MCP_STATELESS_HTTP=1
 
 USER appuser
 EXPOSE 8080

@@ -174,6 +174,31 @@ docker run --rm -p 8080:8080 \
 |-----|--------|
 | `RUN_MIGRATIONS=1` | Entrypoint runs `alembic upgrade head` |
 | `RUN_SEED=1` | Seeds users + default achievements |
+| `QR_CHORES_EMAIL` / `QR_CHORES_PASSWORD` | Optional MCP auto-login credentials |
+| `MCP_TRANSPORT` / `MCP_PORT` / `MCP_PATH` | FastMCP HTTP bind (default `http` on `8001` at `/mcp`) |
+
+Nginx reverse-proxies:
+
+| Path | Backend |
+|------|---------|
+| `/api/…` | FastAPI app (`127.0.0.1:8000`) |
+| `/mcp` | FastMCP streamable HTTP (`127.0.0.1:8001`) |
+| `/c/…`, `/healthz`, app UI | FastAPI |
+| `/`, `/assets/` | Marketing static |
+
+In-container **`qrc`** and **MCP tools** always call the app at **`http://127.0.0.1:8000`** (hardcoded; not configurable).
+
+### `qrc` inside the container
+
+```bash
+docker exec -it <container> qrc auth login -e dad@example.com -p parent-pass
+docker exec -it <container> qrc todays-chores
+docker exec -it <container> qrc --help
+```
+
+### External MCP clients
+
+Connect to **`https://<host>/mcp`** (streamable HTTP). Tools call uvicorn on loopback inside the container.
 
 Health: `GET /healthz`
 

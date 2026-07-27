@@ -224,6 +224,36 @@ docker run --rm -p 8080:8080 \
   qr-chores:local
 ```
 
+Verify health, API, and MCP proxy:
+
+```bash
+curl -sS http://127.0.0.1:8080/healthz
+# MCP streamable-HTTP endpoint should respond (not 404)
+curl -sS -o /dev/null -w "%{http_code}\n" -X POST http://127.0.0.1:8080/mcp \
+  -H "Content-Type: application/json" -d '{}'
+```
+
+`qrc` CLI (installed in the image; always uses `http://127.0.0.1:8000`):
+
+```bash
+CID=$(docker ps -q --filter ancestor=qr-chores:local | head -1)
+docker exec -it "$CID" qrc auth login -e dad@example.com -p parent-pass
+docker exec -it "$CID" qrc todays-chores
+```
+
+Optional MCP auto-login (tools use these on first use / lifespan):
+
+```bash
+-e QR_CHORES_EMAIL=dad@example.com \
+-e QR_CHORES_PASSWORD=parent-pass
+```
+
+| In-container process | Bind | Notes |
+|----------------------|------|--------|
+| FastAPI (uvicorn) | `127.0.0.1:8000` | Source of truth for `/api/v1` |
+| FastMCP | `127.0.0.1:8001` path `/mcp` | Tools always call `http://127.0.0.1:8000` |
+| Nginx | `0.0.0.0:$PORT` | Proxies `/api` → app, `/mcp` → MCP |
+
 ## Operational checklist
 
 - [ ] Strong `SECRET_KEY` in Secret Manager (not the dev default)  

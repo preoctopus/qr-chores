@@ -82,6 +82,16 @@ def test_client_holder_ensure_reuses_same_url():
     assert c3 is not c1
 
 
+def test_default_api_base_url_http_vs_stdio(monkeypatch):
+    from qr_chores_client.mcp_server import _default_api_base_url
+
+    monkeypatch.delenv("QR_CHORES_BASE_URL", raising=False)
+    monkeypatch.setenv("MCP_TRANSPORT", "http")
+    assert _default_api_base_url() == "http://127.0.0.1:8000"
+    monkeypatch.setenv("MCP_TRANSPORT", "stdio")
+    assert _default_api_base_url() == "http://127.0.0.1:8765"
+
+
 @pytest.mark.asyncio
 async def test_client_holder_ensure_logged_in_with_env(monkeypatch):
     holder = ClientHolder()
@@ -277,10 +287,40 @@ def test_main_entry():
         run_mock.assert_called_once()
 
 
-def test_run_calls_mcp_run():
+def test_run_calls_mcp_run_stdio(monkeypatch):
+    monkeypatch.delenv("MCP_TRANSPORT", raising=False)
     with patch.object(mcp_server.mcp, "run") as run_mock:
         mcp_server.run()
-        run_mock.assert_called_once()
+        run_mock.assert_called_once_with()
+
+
+def test_run_http_transport_from_env(monkeypatch):
+    monkeypatch.setenv("MCP_TRANSPORT", "http")
+    monkeypatch.setenv("MCP_HOST", "127.0.0.1")
+    monkeypatch.setenv("MCP_PORT", "8001")
+    monkeypatch.setenv("MCP_PATH", "/mcp")
+    monkeypatch.setenv("MCP_STATELESS_HTTP", "1")
+    with patch.object(mcp_server.mcp, "run") as run_mock:
+        mcp_server.run()
+        run_mock.assert_called_once_with(
+            transport="http",
+            host="127.0.0.1",
+            port=8001,
+            path="/mcp",
+            show_banner=False,
+            stateless_http=True,
+            host_origin_protection=False,
+        )
+
+
+def test_run_http_stateless_off(monkeypatch):
+    monkeypatch.setenv("MCP_TRANSPORT", "streamable-http")
+    monkeypatch.setenv("MCP_STATELESS_HTTP", "0")
+    with patch.object(mcp_server.mcp, "run") as run_mock:
+        mcp_server.run()
+        kwargs = run_mock.call_args.kwargs
+        assert kwargs["transport"] == "streamable-http"
+        assert kwargs["stateless_http"] is False
 
 
 def test_env_helper():

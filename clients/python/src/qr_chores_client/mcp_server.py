@@ -47,6 +47,18 @@ def _env(name: str, default: str | None = None) -> str | None:
     return val
 
 
+def _default_api_base_url() -> str:
+    """API origin when no base_url / QR_CHORES_BASE_URL is set.
+
+    HTTP MCP (Docker: co-located uvicorn on :8000) defaults to loopback :8000.
+    Stdio / local CLI-style runs default to the local app port :8765.
+    """
+    transport = (_env("MCP_TRANSPORT", "stdio") or "stdio").strip().lower()
+    if transport in {"http", "streamable-http", "sse"}:
+        return "http://127.0.0.1:8000"
+    return "http://127.0.0.1:8765"
+
+
 class ClientHolder:
     """Holds a shared async client for MCP tool calls."""
 
@@ -62,7 +74,7 @@ class ClientHolder:
         # Keep an already-injected client unless the caller overrides base_url.
         if self.client is not None and base_url is None:
             return self.client
-        url = (base_url or _env("QR_CHORES_BASE_URL") or "http://127.0.0.1:8765").rstrip("/")
+        url = (base_url or _env("QR_CHORES_BASE_URL") or _default_api_base_url()).rstrip("/")
         if self.client is None or self.client.base_url != url:
             self.client = QrChoresClient(url)
         return self.client
@@ -408,5 +420,41 @@ def list_tool_names() -> list[str]:
 
 
 def run() -> None:
-    """Run the MCP server (stdio by default)."""
+    """Run the MCP server.
+
+    Defaults to **stdio** (local IDE / Claude Desktop). In Docker, set
+    ``MCP_TRANSPORT=http`` (or ``streamable-http`` / ``sse``) to serve HTTP
+    behind nginx at ``MCP_PATH`` (default ``/mcp``).
+
+    Environment
+    -----------
+    MCP_TRANSPORT
+        ``stdio`` (default), ``http``, ``streamable-http``, or ``sse``.
+    MCP_HOST / MCP_PORT / MCP_PATH
+        Bind address for HTTP transports (defaults ``127.0.0.1``, ``8001``, ``/mcp``).
+    MCP_STATELESS_HTTP
+        ``1`` (default when HTTP) enables stateless streamable HTTP — better behind
+        reverse proxies / Cloud Run.
+    QR_CHORES_EMAIL / QR_CHORES_PASSWORD
+        Optional auto-login for tools (local / Docker secrets).
+    """
+    transport = (_env("MCP_TRANSPORT", "stdio") or "stdio").strip().lower()
+    if transport in {"http", "streamable-http", "sse"}:
+        host = _env("MCP_HOST", "127.0.0.1") or "127.0.0.1"
+        port = int(_env("MCP_PORT", "8001") or "8001")
+        path = _env("MCP_PATH", "/mcp") or "/mcp"
+        # Default stateless for HTTP so reverse proxies / multi-instance work.
+        stateless_raw = _env("MCP_STATELESS_HTTP", "1") or "1"
+        stateless = stateless_raw.strip().lower() in {"1", "true", "yes", "on"}
+        mcp.run(
+            transport=transport,  # type: ignore[arg-type]
+            host=host,
+            port=port,
+            path=path,
+            show_banner=False,
+            stateless_http=stateless,
+            # Nginx forwards the public Host header; do not reject it.
+            host_origin_protection=False,
+        )
+        return
     mcp.run()

@@ -15,9 +15,19 @@ fi
 
 PORT="${PORT:-8080}"
 
+# In-container FastAPI bind (nginx proxies here; qrc + MCP always use this).
+APP_INTERNAL=http://127.0.0.1:8000
+
+export MCP_TRANSPORT="${MCP_TRANSPORT:-http}"
+export MCP_HOST="${MCP_HOST:-127.0.0.1}"
+export MCP_PORT="${MCP_PORT:-8001}"
+export MCP_PATH="${MCP_PATH:-/mcp}"
+export MCP_STATELESS_HTTP="${MCP_STATELESS_HTTP:-1}"
+
 if command -v nginx > /dev/null 2>&1 && [ -f /app/docker/nginx.conf.template ]; then
-  echo "Generating Nginx config for PORT=${PORT}..."
-  envsubst '${PORT}' < /app/docker/nginx.conf.template > /tmp/nginx.conf
+  echo "Generating Nginx config for PORT=${PORT} MCP=${MCP_HOST}:${MCP_PORT}${MCP_PATH}..."
+  export MCP_PORT
+  envsubst '${PORT} ${MCP_PORT}' < /app/docker/nginx.conf.template > /tmp/nginx.conf
 
   echo "Starting FastAPI app on 127.0.0.1:8000..."
   uvicorn qr_chores.main:app --host 127.0.0.1 --port 8000 &
@@ -32,6 +42,10 @@ if command -v nginx > /dev/null 2>&1 && [ -f /app/docker/nginx.conf.template ]; 
     sleep 0.2
     i=$((i+1))
   done
+
+  echo "Starting MCP server (${MCP_TRANSPORT}) on ${MCP_HOST}:${MCP_PORT}${MCP_PATH} → API ${APP_INTERNAL}..."
+  # Tools default to http://127.0.0.1:8000 when MCP_TRANSPORT is HTTP (see mcp_server).
+  python -m qr_chores_client &
 
   echo "Starting Nginx reverse proxy on 0.0.0.0:${PORT}..."
   exec nginx -g 'daemon off;' -c /tmp/nginx.conf

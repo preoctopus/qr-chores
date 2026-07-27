@@ -187,7 +187,7 @@ except DomainError as e:
 
 ## FastMCP server
 
-Run over stdio:
+### Stdio (local IDE / Claude Desktop)
 
 ```bash
 export QR_CHORES_BASE_URL=http://127.0.0.1:8765
@@ -199,13 +199,31 @@ python -m qr_chores_client
 # or: uv run python -m qr_chores_client
 ```
 
+### HTTP (Docker / nginx at `/mcp`)
+
+The production image runs FastMCP with streamable HTTP, reverse-proxied by nginx.
+The entrypoint points tools at **`http://127.0.0.1:8000`** (in-container uvicorn; not configurable).
+
+```bash
+export MCP_TRANSPORT=http
+export MCP_HOST=127.0.0.1
+export MCP_PORT=8001
+export MCP_PATH=/mcp
+
+python -m qr_chores_client
+# External clients: https://<host>/mcp
+```
+
 ### Environment variables
 
 | Variable | Purpose |
 |----------|---------|
-| `QR_CHORES_BASE_URL` | API origin (default `http://127.0.0.1:8765`) |
+| `QR_CHORES_BASE_URL` | Optional API origin override. Defaults: stdio → `http://127.0.0.1:8765`; HTTP MCP → `http://127.0.0.1:8000`. |
 | `QR_CHORES_EMAIL` | Auto-login email on server start / tool use |
 | `QR_CHORES_PASSWORD` | Auto-login password |
+| `MCP_TRANSPORT` | `stdio` (default), `http`, `streamable-http`, or `sse` |
+| `MCP_HOST` / `MCP_PORT` / `MCP_PATH` | HTTP bind (defaults `127.0.0.1`, `8001`, `/mcp`) |
+| `MCP_STATELESS_HTTP` | `1` (default for HTTP) — stateless streamable HTTP behind proxies |
 
 You can also call the `login` tool with explicit credentials.
 
