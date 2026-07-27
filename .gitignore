@@ -35,3 +35,11 @@ data/
 
 # uv
 uv.lock.bak
+
+# Kotlin / Gradle (clients/kotlin)
+**/.gradle/
+**/build/
+!**/src/**/build/
+*.iml
+local.properties
+.kotlin/
