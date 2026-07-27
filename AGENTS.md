@@ -139,7 +139,7 @@ qr-chores/
   clients/                   # First-party API clients (isolated from app)
     CONTRACT.md              # Shared method/error/fixture contract
     mock-api/                # Deterministic /api/v1 mock for client tests
-    python/                  # HTTP client + FastMCP (qr-chores-client)
+    python/                  # HTTP client + qrc CLI + FastMCP (qr-chores-client)
     kotlin/                  # Android-compatible Kotlin client (JDK 21)
   src/qr_chores/
     main.py
@@ -197,7 +197,7 @@ Local default port: **8765** (8000 is often taken).
 6. Lint, coverage (≥ 75%), unit + integration tests ✅  
 7. Security hardening (redirects, photo paths, upload caps, prod guards) ✅  
 8. Internal `/api/v1` (auth, child, parent, rewards, photos) ✅ — see `docs/API.md`
-9. Client libraries (`clients/python` FastMCP + `clients/kotlin`) + shared mock-api ✅ — see `clients/`
+9. Client libraries (`clients/python` FastMCP + **`qrc` CLI** + `clients/kotlin`) + shared mock-api ✅ — see `clients/`
 
 ## Quality gates (required)
 
@@ -231,7 +231,7 @@ Any change that adds or changes product behavior must update **all** of the foll
 | Layer | What to update |
 |-------|----------------|
 | **App / API** | HTML routes and/or `/api/v1` (routers, schemas, services); Alembic if schema changes |
-| **Client libraries** | `clients/python` (HTTP client + FastMCP tools) and `clients/kotlin` — same method/DTO coverage; update `clients/CONTRACT.md` |
+| **Client libraries** | `clients/python` (HTTP client + `qrc` CLI + FastMCP tools) and `clients/kotlin` — same method/DTO coverage; update `clients/CONTRACT.md` |
 | **Mocks & tests** | App tests under `tests/`; shared mock under `clients/mock-api`; unit + integration tests for each client library |
 | **Developer docs** | `docs/API.md`, `AGENTS.md`, package READMEs under `clients/`, deploy notes if needed |
 | **User docs** | `docs/USER.md` and in-app Help (`/help`) when family-facing behavior changes |

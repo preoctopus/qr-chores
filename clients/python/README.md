@@ -1,6 +1,6 @@
 # qr-chores-client
 
-Typed Python HTTP client and **FastMCP** server for the QR Chores internal JSON API (`/api/v1`).
+Typed Python HTTP client, **`qrc` CLI**, and **FastMCP** server for the QR Chores internal JSON API (`/api/v1`).
 
 See [../CONTRACT.md](../CONTRACT.md) and [../../docs/API.md](../../docs/API.md).
 
@@ -13,6 +13,8 @@ cd clients/python
 uv sync --extra dev
 ```
 
+This installs the console scripts **`qrc`** (CLI) and **`qr-chores-client`** (FastMCP).
+
 As a dependency elsewhere:
 
 ```bash
@@ -21,6 +23,54 @@ uv add --editable path/to/qr-chores/clients/python
 ```
 
 Requires **Python 3.12+**.
+
+## CLI (`qrc`)
+
+Terminal front-end over `SyncQrChoresClient` (no separate HTTP stack). Default API origin: **`https://chores.indecline.ca`** (paths under `/api/v1`).
+
+```bash
+uv run qrc --help
+uv run qrc auth --help
+uv run qrc chores --help
+
+# Parent
+uv run qrc auth login -e dad@example.com -p parent-pass
+uv run qrc todays-chores
+uv run qrc chores list
+uv run qrc history --limit 20
+
+# Child
+uv run qrc auth login -e daughter@example.com -p child-pass
+uv run qrc home
+uv run qrc complete <qr_token> --photo proof.jpg
+```
+
+### Global options
+
+| Flag / env | Purpose |
+|------------|---------|
+| `--base-url` / `QRC_BASE_URL` / `QR_CHORES_BASE_URL` | API **origin** (not including `/api/v1`) |
+| `--token` / `QRC_TOKEN` | Bearer override |
+| `--json` | Machine-readable JSON (no color) |
+| `--no-color` | Disable ANSI color (`NO_COLOR` also respected) |
+| `-v` / `--verbose` | Extra error detail |
+
+Credentials are stored under the platform config dir (`qrc config-path`). Override the directory with `QRC_CONFIG_DIR`.
+
+### Command map
+
+| Command | API |
+|---------|-----|
+| `auth login` / `logout` / `status` | `/auth/*`, `/me` |
+| `me` | `GET /me` |
+| `todays-chores` / `today` | `GET /today` (parent) |
+| `home` | `GET /home` (child) |
+| `history` | `GET /history` |
+| `chores list\|get\|create\|update\|delete\|activate\|deactivate\|qr\|qr-png` | `/chores/*` |
+| `confirm` / `complete` | `/c/{token}` |
+| `achievements` | `GET /achievements` |
+| `rewards show\|bonuses\|achievement *` | `/rewards/*` |
+| `photo get` | `GET /photos/{id}` |
 
 ## Async client
 
@@ -231,6 +281,18 @@ uv run pytest -q
 
 Coverage fail-under is **90%** on `qr_chores_client`.
 
+CLI tests:
+
+| Suite | What |
+|-------|------|
+| `tests/unit/test_cli.py`, `test_cli_extra.py` | Help, config, respx-shaped responses, exit codes |
+| `tests/integration/test_cli_mock_api.py` | Full `qrc` flows against **mock-api** (ASGI, no network) |
+
+```bash
+uv run pytest tests/integration/test_cli_mock_api.py -q
+# or all integration: uv run pytest -m integration -q
+```
+
 ## Package layout
 
 ```text
@@ -241,8 +303,9 @@ clients/python/
     models.py       # pydantic v2 models
     errors.py
     mcp_server.py
-    __main__.py
+    cli/            # qrc terminal CLI (Typer + Rich)
+    __main__.py     # FastMCP entry (qr-chores-client)
   tests/
-    unit/           # respx
+    unit/           # respx + CLI
     integration/    # mock-api ASGI
 ```
