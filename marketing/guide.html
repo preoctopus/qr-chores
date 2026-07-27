@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>User Guide & Documentation - QR Chores</title>
+  <meta name="description" content="Complete user guide for parents and kids using QR Chores. Learn how to manage chores, print permanent QR stickers, configure timing bonuses, and track achievements.">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="assets/large-favicon.png">
+
+  <!-- Fonts & Stylesheet -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- Ambient Background Glow Effects -->
+  <div class="ambient-blur-1"></div>
+  <div class="ambient-blur-2"></div>
+
+  <!-- Header / Navigation -->
+  <header class="header">
+    <div class="container nav-container">
+      <a href="index.html" class="brand-logo" id="brand-logo-link">
+        <img src="assets/logo-dark-wide.jpg" alt="QR Chores Logo" id="nav-brand-logo">
+      </a>
+
+      <ul class="nav-links" id="nav-links">
+        <li><a href="index.html#features" id="nav-link-features">Features</a></li>
+        <li><a href="index.html#simulator" id="nav-link-simulator">Live Demo</a></li>
+        <li><a href="index.html#how-it-works" id="nav-link-how-it-works">How It Works</a></li>
+        <li><a href="guide.html" class="active" id="nav-link-guide">User Guide</a></li>
+        <li><a href="index.html#pricing" id="nav-link-pricing">Pricing</a></li>
+        <li><a href="index.html#faq" id="nav-link-faq">FAQ</a></li>
+      </ul>
+
+      <div class="nav-actions">
+        <button class="btn btn-secondary open-signup-modal" id="nav-login-btn">Log In</button>
+        <button class="btn btn-primary btn-glow open-signup-modal" id="nav-cta-btn">Start Free Trial</button>
+        <button class="mobile-toggle" id="mobile-toggle" aria-label="Toggle Navigation Menu">☰</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- Guide Hero Section -->
+    <section class="guide-hero">
+      <div class="container">
+        <div class="badge-pill">📖 Documentation & Knowledge Base</div>
+        <h1>QR Chores User Guide</h1>
+        <p style="color:var(--text-muted); font-size:1.1rem; max-width:600px; margin:12px auto 0;">
+          Everything you need to know about setting up chores, printing permanent QR stickers, setting timing rules, and tracking rewards.
+        </p>
+
+        <div class="guide-search-box">
+          <span class="search-icon-inside">🔍</span>
+          <input type="text" id="guide-search" class="guide-search-input" placeholder="Search guides (e.g. photo proof, QR codes, timing bonuses, troubleshooting)...">
+        </div>
+      </div>
+    </section>
+
+    <!-- Main Guide Container -->
+    <div class="container guide-container">
+      <!-- Sidebar Navigation -->
+      <aside class="guide-sidebar">
+        <h4>Guide Topics</h4>
+        <ul class="guide-nav-list" id="guide-sidebar-nav">
+          <li><a href="#getting-started" class="active">🔑 Getting Started & Roles</a></li>
+          <li><a href="#parent-guide">👨‍👩‍👧 Parent Guide</a></li>
+          <li><a href="#child-guide">👧 Child Guide</a></li>
+          <li><a href="#timing-rules">⏱️ Timing & Grace Periods</a></li>
+          <li><a href="#photo-policy">📸 Photos & Privacy</a></li>
+          <li><a href="#points-ledger">🏆 Points & Achievements</a></li>
+          <li><a href="#qr-stickers">📌 QR Code Stickers Tips</a></li>
+          <li><a href="#troubleshooting">🔧 Troubleshooting</a></li>
+        </ul>
+      </aside>
+
+      <!-- Main Content Area -->
+      <div class="guide-content" id="guide-content-area">
+
+        <!-- 1. Getting Started -->
+        <article class="guide-article" id="getting-started">
+          <h2>🔑 Getting Started & Role Accounts</h2>
+          <p>
+            QR Chores uses secure email and password authentication with role-based permissions tailored for families.
+          </p>
+
+          <table class="table-styled">
+            <thead>
+              <tr>
+                <th>Role</th>
+                <th>Who</th>
+                <th>Permissions & Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Parent</strong></td>
+                <td>Mom and Dad (Separate accounts)</td>
+                <td>Create/edit/delete chores, print QR code stickers, configure timing bonuses & achievements, review today board and photo completion history.</td>
+              </tr>
+              <tr>
+                <td><strong>Child</strong></td>
+                <td>Daughter</td>
+                <td>View scheduled chores on home board, scan QR code stickers to confirm completions, upload proof photos, earn points, and unlock achievements.</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="callout callout-note">
+            <div>💡</div>
+            <div>
+              <strong>Logging In:</strong> Parents land directly on the live <strong>Today Board</strong>, while the child lands on her personalized <strong>Home Screen</strong> showing daily tasks and point streaks. Use the <strong>Log out</strong> button in the top navigation bar when sharing a phone.
+            </div>
+          </div>
+        </article>
+
+        <!-- 2. Parent Guide -->
+        <article class="guide-article" id="parent-guide">
+          <h2>👨‍👩‍👧 Parent Guide</h2>
+
+          <h3>1. Today Board Statuses</h3>
+          <p>The <strong>Today Board</strong> provides a real-time snapshot of scheduled chores for the current local calendar day:</p>
+          <ul style="margin-left:24px; color:var(--text-muted); line-height:1.8;">
+            <li><strong style="color:var(--text-bright);">Pending:</strong> Chore is scheduled for today but has not yet been completed.</li>
+            <li><strong style="color:#34d399;">Done:</strong> Completed on-time or early.</li>
+            <li><strong style="color:#f87171;">Late:</strong> Past due time + grace period (or completed after the grace period expired).</li>
+          </ul>
+
+          <h3>2. Creating and Managing Chores</h3>
+          <p>Navigate to <strong>Chores → Add Chore</strong> to configure new household tasks:</p>
+          <table class="table-styled">
+            <thead>
+              <tr>
+                <th>Field</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Title & Description</strong></td>
+                <td>Clear task description (e.g. "Clean Kitchen Counter", "Feed Dog").</td>
+              </tr>
+              <tr>
+                <td><strong>Due Time</strong></td>
+                <td>Local wall-clock time in your family's timezone (e.g. 6:00 PM).</td>
+              </tr>
+              <tr>
+                <td><strong>Schedule Days</strong></td>
+                <td>Which days of the week this chore repeats (e.g. Mon, Wed, Fri or Daily).</td>
+              </tr>
+              <tr>
+                <td><strong>Base Points</strong></td>
+                <td>Base point reward awarded once per day upon completion.</td>
+              </tr>
+              <tr>
+                <td><strong>Photo Policy</strong></td>
+                <td>Set to <code>Required</code>, <code>Optional</code>, or <code>None</code>.</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="callout callout-important">
+            <div>📌</div>
+            <div>
+              <strong>Deactivate vs. Delete:</strong><br>
+              • <strong>Deactivate:</strong> Pauses the chore from appearing on today's list while keeping historical records.<br>
+              • <strong>Delete:</strong> Permanently removes the chore, all completion logs, and associated proof photos from the system.
+            </div>
+          </div>
+
+          <h3>3. Configuring Rewards & Achievements</h3>
+          <p>Under <strong>Rewards</strong>, parents control point multipliers and custom achievement badges:</p>
+          <ul style="margin-left:24px; color:var(--text-muted); line-height:1.8;">
+            <li><strong>Timing Bonuses:</strong> Set extra points for completing chores Early, On-Time, or Late. These stack directly on top of base chore points.</li>
+            <li><strong>Achievement Criteria:</strong> Create badges triggered by 7-day streaks, total completions, photo uploads, or on-time milestones.</li>
+          </ul>
+        </article>
+
+        <!-- 3. Child Guide -->
+        <article class="guide-article" id="child-guide">
+          <h2>👧 Child Guide</h2>
+
+          <h3>Home & Daily List</h3>
+          <p>When logged in as a child, your home screen shows your current point balance, active streaks, unlocked badges, and today's scheduled chores.</p>
+
+          <h3>Completing a Chore</h3>
+          <div style="display:flex; flex-direction:column; gap:12px; margin:20px 0;">
+            <div style="display:flex; align-items:center; gap:14px; background:rgba(255,255,255,0.03); padding:14px; border-radius:10px; border:1px solid var(--border-color);">
+              <span style="font-size:1.4rem; background:rgba(139,92,246,0.2); padding:6px 12px; border-radius:8px; font-weight:800; color:var(--accent-purple);">1</span>
+              <span><strong>Scan QR Sticker:</strong> Scan the QR code sticker placed near the chore (or tap the chore card on Home).</span>
+            </div>
+
+            <div style="display:flex; align-items:center; gap:14px; background:rgba(255,255,255,0.03); padding:14px; border-radius:10px; border:1px solid var(--border-color);">
+              <span style="font-size:1.4rem; background:rgba(6,182,212,0.2); padding:6px 12px; border-radius:8px; font-weight:800; color:var(--accent-cyan);">2</span>
+              <span><strong>Check Photo Rules:</strong> If a photo is required, tap to snap or upload proof from your phone camera.</span>
+            </div>
+
+            <div style="display:flex; align-items:center; gap:14px; background:rgba(255,255,255,0.03); padding:14px; border-radius:10px; border:1px solid var(--border-color);">
+              <span style="font-size:1.4rem; background:rgba(16,185,129,0.2); padding:6px 12px; border-radius:8px; font-weight:800; color:var(--accent-green);">3</span>
+              <span><strong>Tap "I Did It!":</strong> Instantly trigger the celebration animation, collect your points, and check for new achievement badges!</span>
+            </div>
+          </div>
+
+          <div class="callout callout-tip">
+            <div>🎉</div>
+            <div>
+              <strong>Double Completion Rule:</strong> Each chore can only be completed <strong>once per calendar day</strong>. Scanning a second time will display an "Already Done" confirmation with your earlier completion timestamp.
+            </div>
+          </div>
+        </article>
+
+        <!-- 4. Timing Rules -->
+        <article class="guide-article" id="timing-rules">
+          <h2>⏱️ Timing Windows: Early, On-Time, & Late</h2>
+          <p>Timing status is calculated based on the chore's <strong>due time</strong> and your family's local timezone settings.</p>
+
+          <table class="table-styled">
+            <thead>
+              <tr>
+                <th>Status</th>
+                <th>Default Time Window</th>
+                <th>Example (Chore Due at 6:00 PM)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong style="color:var(--accent-cyan);">Early</strong></td>
+                <td>More than 60 minutes before due time</td>
+                <td>Completed before <strong>5:00 PM</strong></td>
+              </tr>
+              <tr>
+                <td><strong style="color:#34d399;">On Time</strong></td>
+                <td>From 60 mins before due through due time + 15 min grace period</td>
+                <td>Completed between <strong>5:00 PM and 6:15 PM</strong></td>
+              </tr>
+              <tr>
+                <td><strong style="color:#f87171;">Late</strong></td>
+                <td>After due time + 15 minutes grace period</td>
+                <td>Completed after <strong>6:15 PM</strong> (Same calendar day)</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <p style="font-size:0.95rem; color:var(--text-muted);">
+            *Note: Completing a chore late on the same day is still allowed and awards the base chore points plus any parent-configured late bonus!
+          </p>
+        </article>
+
+        <!-- 5. Photos & Privacy -->
+        <article class="guide-article" id="photo-policy">
+          <h2>📸 Photos & Security Protocol</h2>
+          <p>QR Chores implements strict file inspection and secure streaming to keep your household photos safe:</p>
+
+          <ul style="margin-left:24px; color:var(--text-muted); line-height:1.8;">
+            <li><strong>Magic-Byte Verification:</strong> All uploaded photos are inspected at the binary header level to confirm valid JPEG, PNG, or WebP formats.</li>
+            <li><strong>Encrypted Off-DB Storage:</strong> Image bytes live outside the database in local disk storage (dev) or Cloud Storage (prod). The database only stores reference keys.</li>
+            <li><strong>Authenticated Access Only:</strong> Proof photos can only be streamed via authenticated endpoints (<code>/photos/...</code>) by logged-in family members. Public direct access is blocked.</li>
+          </ul>
+        </article>
+
+        <!-- 6. Points Ledger -->
+        <article class="guide-article" id="points-ledger">
+          <h2>🏆 Server-Side Points Ledger System</h2>
+          <p>
+            Point balances in QR Chores are stored in an append-only <code>PointLedger</code> table on the server. Point balances cannot be altered or spoofed by client requests.
+          </p>
+
+          <table class="table-styled">
+            <thead>
+              <tr>
+                <th>Point Source</th>
+                <th>Calculation Rule</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Chore Base Points</strong></td>
+                <td>Awarded once per day when chore is completed.</td>
+              </tr>
+              <tr>
+                <td><strong>Timing Bonus</strong></td>
+                <td>Extra points added for Early, On-Time, or Late completion as defined in Parent Rewards.</td>
+              </tr>
+              <tr>
+                <td><strong>Achievement Reward</strong></td>
+                <td>Bonus points credited instantly when milestone achievements unlock.</td>
+              </tr>
+            </tbody>
+          </table>
+        </article>
+
+        <!-- 7. QR Stickers -->
+        <article class="guide-article" id="qr-stickers">
+          <h2>📌 Permanent QR Stickers Printing Guide</h2>
+          <p>One of QR Chores' core design highlights is permanent sticker codes:</p>
+
+          <div class="callout callout-note">
+            <div>🖨️</div>
+            <div>
+              <strong>Sticker Printing Best Practices:</strong><br>
+              1. In the Parent menu, click <strong>Print Sticker Sheet</strong>.<br>
+              2. Print on standard Avery or sticker label paper.<br>
+              3. Affix stickers directly to physical chore locations (e.g. Dishwasher, Dog Food Bin, Trash Can, Desk).<br>
+              4. <strong>Crucial invariant:</strong> Keep your public application domain (<code>BASE_URL</code>) stable after printing so printed stickers remain valid indefinitely.
+            </div>
+          </div>
+        </article>
+
+        <!-- 8. Troubleshooting -->
+        <article class="guide-article" id="troubleshooting">
+          <h2>🔧 Troubleshooting & FAQ</h2>
+
+          <table class="table-styled">
+            <thead>
+              <tr>
+                <th>Issue / Symptom</th>
+                <th>Recommended Resolution</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>QR code opens wrong page or fails</strong></td>
+                <td>Verify that your application's <code>BASE_URL</code> environment setting matches your current web domain. Re-print sticker sheet if server address was modified.</td>
+              </tr>
+              <tr>
+                <td><strong>"Wrong Account" error upon scanning</strong></td>
+                <td>Ensure the phone is logged in as the <strong>Child</strong> role before scanning the sticker code.</td>
+              </tr>
+              <tr>
+                <td><strong>Cannot complete chore without photo</strong></td>
+                <td>Check if the parent set the chore's photo policy to <code>Required</code>. Ensure camera permissions are enabled for your mobile browser.</td>
+              </tr>
+              <tr>
+                <td><strong>"Already Completed Today" message</strong></td>
+                <td>Each chore can only be completed once per calendar day. Check the history tab for earlier completion logs.</td>
+              </tr>
+              <tr>
+                <td><strong>Logged out unexpectedly</strong></td>
+                <td>QR Chores uses HTTP-only secure cookie sessions. If the server secret key changes, users must re-authenticate.</td>
+              </tr>
+            </tbody>
+          </table>
+        </article>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-col">
+          <div class="brand-logo" style="margin-bottom:16px;">
+            <img src="assets/logo-light-wide.jpg" alt="QR Chores" style="height:36px; border-radius:6px;">
+          </div>
+          <p>The mobile-first family chore system with permanent QR codes, photo proof verification, and achievement rewards.</p>
+        </div>
+
+        <div class="footer-col">
+          <h4>Product</h4>
+          <ul class="footer-links">
+            <li><a href="index.html#features">Features</a></li>
+            <li><a href="index.html#simulator">Live Demo</a></li>
+            <li><a href="index.html#pricing">Pricing</a></li>
+            <li><a href="index.html#faq">FAQ</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4>Docs & Resources</h4>
+          <ul class="footer-links">
+            <li><a href="guide.html">User Guide</a></li>
+            <li><a href="index.html#faq">FAQ</a></li>
+            <li><a href="index.html#how-it-works">How It Works</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4>Account</h4>
+          <ul class="footer-links">
+            <li><a href="#" class="open-signup-modal">Parent Login</a></li>
+            <li><a href="#" class="open-signup-modal">Child Login</a></li>
+            <li><a href="#" class="open-signup-modal">Start Free Trial</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <div>© 2026 QR Chores. All rights reserved.</div>
+        <div style="display:flex; gap:20px;">
+          <a href="#" style="color:var(--text-muted); text-decoration:none;">Privacy Policy</a>
+          <a href="#" style="color:var(--text-muted); text-decoration:none;">Terms of Service</a>
+          <a href="#" style="color:var(--text-muted); text-decoration:none;">Security</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Modal Signup Dialog -->
+  <div class="modal-overlay" id="signup-modal">
+    <div class="modal-card">
+      <button class="modal-close" id="modal-close-btn">&times;</button>
+      <div style="text-align:center; margin-bottom:24px;">
+        <img src="assets/appicon-new-light.jpg" alt="App Icon" style="width:56px; height:56px; border-radius:12px; margin-bottom:12px;">
+        <h3 style="font-size:1.5rem; color:var(--text-bright);">Start 14-Day Free Trial</h3>
+        <p style="color:var(--text-muted); font-size:0.9rem;">No credit card required. Full access to QR sticker generator.</p>
+      </div>
+
+      <form id="signup-form">
+        <div class="form-group">
+          <label for="parent-email">Parent Email Address</label>
+          <input type="email" id="parent-email" class="form-input" placeholder="dad@example.com" required>
+        </div>
+
+        <div class="form-group">
+          <label for="family-name">Family / Household Name</label>
+          <input type="text" id="family-name" class="form-input" placeholder="The Smith Family" required>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-glow" style="width:100%; margin-top:10px;">
+          <span>Activate Free Trial & Print Stickers</span>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="script.js"></script>
+  <script>
+    // Search filter logic for documentation articles
+    document.addEventListener('DOMContentLoaded', () => {
+      const searchInput = document.getElementById('guide-search');
+      const articles = document.querySelectorAll('.guide-article');
+
+      if (!searchInput) return;
+
+      searchInput.addEventListener('input', (e) => {
+        const query = e.target.value.toLowerCase().trim();
+
+        articles.forEach(article => {
+          const text = article.textContent.toLowerCase();
+          if (query === '' || text.includes(query)) {
+            article.style.display = 'block';
+          } else {
+            article.style.display = 'none';
+          }
+        });
+      });
+    });
+  </script>
+</body>
+</html>

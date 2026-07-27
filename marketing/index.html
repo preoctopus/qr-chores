@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QR Chores - Permanent QR Code Chore App & Gamified Family Rewards</title>
+  <meta name="description" content="Transform household chores into a fun, nag-free routine with permanent QR code stickers, photo proof verification, and streak rewards for kids & teens.">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="assets/large-favicon.png">
+
+  <!-- Fonts & Stylesheet -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- Ambient Background Glow Effects -->
+  <div class="ambient-blur-1"></div>
+  <div class="ambient-blur-2"></div>
+
+  <!-- Header / Navigation -->
+  <header class="header">
+    <div class="container nav-container">
+      <a href="#" class="brand-logo" id="brand-logo-link">
+        <img src="assets/logo-dark-wide.jpg" alt="QR Chores Logo" id="nav-brand-logo">
+      </a>
+
+      <ul class="nav-links" id="nav-links">
+        <li><a href="#features" id="nav-link-features">Features</a></li>
+        <li><a href="#simulator" id="nav-link-simulator">Live Demo</a></li>
+        <li><a href="#how-it-works" id="nav-link-how-it-works">How It Works</a></li>
+        <li><a href="guide.html" id="nav-link-guide">User Guide</a></li>
+        <li><a href="#pricing" id="nav-link-pricing">Pricing</a></li>
+        <li><a href="#faq" id="nav-link-faq">FAQ</a></li>
+      </ul>
+
+      <div class="nav-actions">
+        <button class="btn btn-secondary open-signup-modal" id="nav-login-btn">Log In</button>
+        <button class="btn btn-primary btn-glow open-signup-modal" id="nav-cta-btn">Start Free Trial</button>
+        <button class="mobile-toggle" id="mobile-toggle" aria-label="Toggle Navigation Menu">☰</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- Hero Section -->
+    <section class="hero" id="hero-section">
+      <div class="container hero-grid">
+        <div class="hero-content">
+          <div class="badge-pill" id="hero-badge">
+            <span>✨ Permanent QR Technology for Families</span>
+          </div>
+          <h1>Make Chores <span class="text-gradient">Frictionless & Fun</span> with Permanent QR Codes</h1>
+          <p>
+            The mobile-first chore system teens actually use. Stick reusable QR codes around your home. Kids scan to confirm chores with photo proof, earn points, and unlock achievements—no nagging required.
+          </p>
+
+          <div class="hero-ctas">
+            <button class="btn btn-primary btn-glow open-signup-modal" id="hero-primary-cta">
+              <span>🚀 Start 14-Day Free Trial</span>
+            </button>
+            <a href="#simulator" class="btn btn-secondary" id="hero-secondary-cta">
+              <span>📱 Try Interactive Demo</span>
+            </a>
+          </div>
+
+          <div class="hero-guarantee" id="hero-guarantee-text">
+            <span>⚡ Instant Setup (Print Stickers Once)</span>
+            <span>•</span>
+            <span>🔒 Photo Verified Proof</span>
+            <span>•</span>
+            <span>💳 No Credit Card Needed</span>
+          </div>
+        </div>
+
+        <div class="hero-visual" id="hero-visual-card">
+          <div class="mockup-container">
+            <div class="mockup-header">
+              <div class="mockup-dots">
+                <div class="dot dot-red"></div>
+                <div class="dot dot-yellow"></div>
+                <div class="dot dot-green"></div>
+              </div>
+              <span style="font-size:0.85rem; color:var(--text-muted); font-weight:600;">QR Chores Today Board</span>
+            </div>
+
+            <div class="mockup-body">
+              <div class="chore-card-demo">
+                <div class="chore-info">
+                  <div class="chore-qr-icon">🏁</div>
+                  <div>
+                    <div class="chore-title">Clean Kitchen Counter</div>
+                    <div class="chore-meta">Due 6:00 PM • Photo Required</div>
+                  </div>
+                </div>
+                <span class="status-tag on-time">+150 Pts</span>
+              </div>
+
+              <div class="chore-card-demo">
+                <div class="chore-info">
+                  <div class="chore-qr-icon">🐕</div>
+                  <div>
+                    <div class="chore-title">Feed & Water Dog</div>
+                    <div class="chore-meta">Due 7:30 AM • 5 Day Streak 🔥</div>
+                  </div>
+                </div>
+                <span class="status-tag on-time">+100 Pts</span>
+              </div>
+
+              <div class="chore-card-demo">
+                <div class="chore-info">
+                  <div class="chore-qr-icon">🧺</div>
+                  <div>
+                    <div class="chore-title">Fold & Put Away Laundry</div>
+                    <div class="chore-meta">Due 8:00 PM • Photo Optional</div>
+                  </div>
+                </div>
+                <span class="status-tag on-time">+200 Pts</span>
+              </div>
+            </div>
+
+            <!-- Floating Achievement Badges -->
+            <div class="floating-badge floating-badge-1">
+              <img src="assets/appicon-new-dark.jpg" alt="Achievement Icon" style="width:36px; height:36px; border-radius:8px;">
+              <div>
+                <div style="font-weight:700; font-size:0.85rem; color:white;">🔥 7-Day Streak Master</div>
+                <div style="font-size:0.75rem; color:var(--accent-cyan);">+500 Bonus Points Unlocked!</div>
+              </div>
+            </div>
+
+            <div class="floating-badge floating-badge-2">
+              <div style="font-size:1.5rem;">📸</div>
+              <div>
+                <div style="font-weight:700; font-size:0.85rem; color:white;">Photo Verified!</div>
+                <div style="font-size:0.75rem; color:#34d399;">Magic byte proof confirmed</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Novel Feature Showcase Section -->
+    <section class="section" id="features">
+      <div class="container">
+        <div class="section-header">
+          <div class="badge-pill">Novel Architecture</div>
+          <h2>Built for Real Teenagers & Busy Parents</h2>
+          <p>Unlike generic chore apps, QR Chores is engineered around physical location habits, verifiable proof, and anti-nagging automation.</p>
+        </div>
+
+        <div class="features-grid">
+          <!-- Feature 1 -->
+          <article class="feature-card" id="feature-card-qr">
+            <div class="feature-icon">📌</div>
+            <h3>Stable Permanent QR Codes</h3>
+            <p>
+              Print chore sticker codes <strong>once</strong> and stick them on the dishwasher, trash bin, or dog bowl. The token never expires daily, so your kids just scan the physical spot to complete the job.
+            </p>
+          </article>
+
+          <!-- Feature 2 -->
+          <article class="feature-card" id="feature-card-photo">
+            <div class="feature-icon">📸</div>
+            <h3>Smart Photo Proof Policy</h3>
+            <p>
+              Require photo evidence for tricky tasks (like a clean room or vacuumed rug) or leave it optional. Photos are validated with magic-byte checks and streamed securely only to parents.
+            </p>
+          </article>
+
+          <!-- Feature 3 -->
+          <article class="feature-card" id="feature-card-gamification">
+            <div class="feature-icon">🏆</div>
+            <h3>Gamified Streaks & Rewards</h3>
+            <p>
+              Turn daily routines into point streaks, early completion bonuses, and unlockable achievement cards. Designed with clean, bold visuals that feel hype for a 16-year-old.
+            </p>
+          </article>
+
+          <!-- Feature 4 -->
+          <article class="feature-card" id="feature-card-dashboard">
+            <div class="feature-icon">📊</div>
+            <h3>Live Parent Status Board</h3>
+            <p>
+              Monitor chore completion status in real-time across local timezones. Set custom due times and grace periods without needing manual daily resets.
+            </p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- Video Showcase Banner -->
+    <section class="section" style="padding-top:0;" id="video-showcase-section">
+      <div class="container">
+        <div class="cta-banner" style="background: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(6, 182, 212, 0.15) 100%);">
+          <div style="max-width:700px; margin:0 auto;">
+            <h2 style="font-size:2.2rem; margin-bottom:16px;">See QR Chores in Action</h2>
+            <p style="color:var(--text-muted); margin-bottom:30px;">Watch how effortless chore completion becomes when physical QR stickers meet automated points calculation.</p>
+
+            <div style="border-radius:16px; overflow:hidden; border:1px solid var(--border-glow); box-shadow:var(--shadow-lg);">
+              <video autoplay loop muted playsinline style="width:100%; height:auto; display:block;" id="brand-video">
+                <source src="assets/chorequest_logo_intro.mp4" type="video/mp4">
+                Your browser does not support the video tag.
+              </video>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Interactive Live Simulator Section -->
+    <section class="section" id="simulator">
+      <div class="container">
+        <div class="section-header">
+          <div class="badge-pill">Try It Live</div>
+          <h2>Experience the Chore Completion Flow</h2>
+          <p>Test out how quick and rewarding scanning a QR code and submitting proof feels right now.</p>
+        </div>
+
+        <div class="simulator-wrapper" id="simulator-widget">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px; margin-bottom:24px;">
+            <div class="sim-step-indicator" id="sim-step-indicator">
+              STEP 1: SELECT CHORE & TAP TO SIMULATE SCAN
+            </div>
+
+            <div style="display:flex; items-center; gap:12px;">
+              <label for="sim-chore-select" style="font-size:0.875rem; font-weight:600; color:var(--text-muted); align-self:center;">Select Chore:</label>
+              <select id="sim-chore-select" class="form-input" style="padding:6px 12px; font-size:0.875rem; width:auto; background:var(--bg-surface);">
+                <option value="dish">🍽️ Dishwasher Duty (+150 pts)</option>
+                <option value="dog">🐕 Feed & Walk Dog (+100 pts)</option>
+                <option value="room">🧹 Clean & Vacuum Room (+200 pts)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="sim-display">
+            <!-- Simulated Phone Display -->
+            <div class="sim-box" id="sim-box-content">
+              <div style="font-size:3rem; margin-bottom:10px;">📱</div>
+              <p style="color:var(--text-muted); font-size:0.95rem;">Ready to scan permanent sticker code</p>
+            </div>
+
+            <img src="" alt="Chore Photo Proof" class="sim-photo-preview" id="sim-photo-img">
+
+            <!-- Celebration Screen -->
+            <div class="sim-reward-pop" id="sim-reward-display">
+              <div style="font-size:3.5rem;">🎉</div>
+              <h3 class="text-gold" style="font-size:1.8rem;">Chore Completed!</h3>
+              <div style="font-size:2.2rem; font-weight:800; color:var(--accent-green);" id="sim-points-val">+200 PTS!</div>
+              <p style="color:var(--text-muted); font-size:0.9rem;">Points logged in PointLedger • 3-Day Streak Maintained 🔥</p>
+            </div>
+
+            <!-- Controls -->
+            <div class="sim-controls">
+              <button class="btn btn-primary btn-glow" id="sim-scan-btn">
+                <span>📷 Scan Chore QR Code</span>
+              </button>
+
+              <button class="btn btn-secondary" id="sim-photo-btn" style="display:none;">
+                <span>📸 Attach Photo Proof</span>
+              </button>
+
+              <button class="btn btn-primary" id="sim-submit-btn" style="display:none; background:linear-gradient(135deg, #10b981 0%, #059669 100%);">
+                <span>✅ Complete & Earn Points</span>
+              </button>
+
+              <button class="btn btn-secondary" id="sim-reset-btn" style="display:none;">
+                <span>🔄 Try Another Chore</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- How It Works Section -->
+    <section class="section" id="how-it-works">
+      <div class="container">
+        <div class="section-header">
+          <div class="badge-pill">Simple 3-Step Setup</div>
+          <h2>From Sticker to Celebration in Seconds</h2>
+          <p>Get your entire home configured in under 5 minutes.</p>
+        </div>
+
+        <div class="features-grid">
+          <div class="feature-card" style="text-align:center;">
+            <div style="font-size:2.5rem; color:var(--accent-purple); font-weight:800; margin-bottom:12px;">01</div>
+            <h3>Parents Create & Print</h3>
+            <p>Add chores with custom due times, photo policies, and base points. Print durable QR stickers once on standard label paper.</p>
+          </div>
+
+          <div class="feature-card" style="text-align:center;">
+            <div style="font-size:2.5rem; color:var(--accent-cyan); font-weight:800; margin-bottom:12px;">02</div>
+            <h3>Kids Scan & Snap</h3>
+            <p>Daughter scans the QR code directly on her phone, attaches optional or required photo proof, and submits with one tap.</p>
+          </div>
+
+          <div class="feature-card" style="text-align:center;">
+            <div style="font-size:2.5rem; color:var(--accent-pink); font-weight:800; margin-bottom:12px;">03</div>
+            <h3>Instant Rewards & Tracking</h3>
+            <p>Points, timing bonuses (early vs on-time), and achievement unlocks compute automatically in the background ledger.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section class="section" id="pricing">
+      <div class="container">
+        <div class="section-header">
+          <div class="badge-pill">Flexible Plans</div>
+          <h2>Simple, Family-Friendly Pricing</h2>
+          <p>Start with a 14-day full feature free trial. No credit card required.</p>
+        </div>
+
+        <div class="pricing-toggle-wrapper" id="pricing-toggle-wrapper">
+          <span style="font-weight:600; font-size:0.95rem;">Monthly Billing</span>
+          <div class="toggle-switch" id="pricing-toggle">
+            <div class="toggle-knob"></div>
+          </div>
+          <span style="font-weight:600; font-size:0.95rem;">Annual Billing <span style="color:var(--accent-green); font-size:0.85rem;">(Save 20%)</span></span>
+        </div>
+
+        <div class="pricing-grid">
+          <!-- Card 1 -->
+          <div class="pricing-card" id="pricing-starter">
+            <h3>Starter Family</h3>
+            <p style="color:var(--text-muted); font-size:0.9rem;">Perfect for smaller households with basic chore tracking.</p>
+            <div class="pricing-amount" id="price-starter">$0 <span>/ forever</span></div>
+            <ul class="pricing-features">
+              <li><svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> Up to 5 Active Chores</li>
+              <li><svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> Permanent QR Sticker Generator</li>
+              <li><svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> Base Points & Streaks</li>
+              <li><svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> Local Storage Proof</li>
+            </ul>
+            <button class="btn btn-secondary open-signup-modal">Get Started Free</button>
+          </div>
+
+          <!-- Card 2 (Popular) -->
+          <div class="pricing-card popular" id="pricing-pro">
+            <div class="popular-badge">Most Popular</div>
+            <h3>Family Pro</h3>
+            <p style="color:var(--text-muted); font-size:0.9rem;">Full gamification engine, photo proof security, & Cloud storage.</p>
+            <div class="pricing-amount" id="price-pro">$6.99 <span>/ month</span></div>
+            <ul class="pricing-features">
+              <li><svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> Unlimited Active Chores</li>
+              <li><svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> Magic-Byte Photo Proof Verification</li>
+              <li><svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> Custom Achievement Unlocks</li>
+              <li><svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> Early & On-Time Bonus Rules</li>
+              <li><svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> High-Resolution Sticker Sheet Export</li>
+            </ul>
+            <button class="btn btn-primary btn-glow open-signup-modal">Start 14-Day Free Trial</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <section class="section" id="faq">
+      <div class="container">
+        <div class="section-header">
+          <div class="badge-pill">Got Questions?</div>
+          <h2>Frequently Asked Questions</h2>
+          <p>Everything you need to know about QR Chores tokens, security, and setup.</p>
+        </div>
+
+        <div class="faq-list">
+          <div class="faq-item">
+            <button class="faq-question">
+              <span>Do I need to print new QR codes every day or week?</span>
+              <span class="faq-icon">▼</span>
+            </button>
+            <div class="faq-answer">
+              <p>No! QR Chores uses permanent, stable token technology. Each chore gets one QR code that remains active indefinitely. You print stickers once, stick them in your home, and reuse them daily.</p>
+            </div>
+          </div>
+
+          <div class="faq-item">
+            <button class="faq-question">
+              <span>Can my child complete the same chore twice in one day?</span>
+              <span class="faq-icon">▼</span>
+            </button>
+            <div class="faq-answer">
+              <p>No. The system enforces strict one-completion-per-calendar-day logic based on your local timezone. If scanned again, the child will see an "Already Done" screen with a timestamp and photo proof.</p>
+            </div>
+          </div>
+
+          <div class="faq-item">
+            <button class="faq-question">
+              <span>How does photo proof validation work?</span>
+              <span class="faq-icon">▼</span>
+            </button>
+            <div class="faq-answer">
+              <p>Parents can mark any chore as requiring a photo, optional, or none. When uploaded, photos pass server-side magic byte validation to prevent fake file uploads and are streamed only to authenticated parents.</p>
+            </div>
+          </div>
+
+          <div class="faq-item">
+            <button class="faq-question">
+              <span>Does my teenager need to install an app store app?</span>
+              <span class="faq-icon">▼</span>
+            </button>
+            <div class="faq-answer">
+              <p>No native app installation is required! QR Chores is a mobile-first web app. Kids simply open their mobile browser or scan the QR code using their phone's built-in camera app.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Bottom CTA Banner -->
+    <section class="section" style="padding-bottom:120px;">
+      <div class="container">
+        <div class="cta-banner" id="bottom-cta-banner">
+          <div class="badge-pill" style="margin-bottom:16px;">Get Started Today</div>
+          <h2 style="font-size:2.8rem; margin-bottom:16px;">Ready to Turn Chore Nagging into Daily Streaks?</h2>
+          <p style="color:var(--text-muted); font-size:1.15rem; max-width:600px; margin:0 auto 36px;">
+            Join modern families using permanent QR stickers to make home routines rewarding and hassle-free.
+          </p>
+          <button class="btn btn-primary btn-glow open-signup-modal" style="font-size:1.15rem; padding:16px 36px;">
+            <span>🚀 Start Your 14-Day Free Trial</span>
+          </button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-col">
+          <div class="brand-logo" style="margin-bottom:16px;">
+            <img src="assets/logo-light-wide.jpg" alt="QR Chores" style="height:36px; border-radius:6px;">
+          </div>
+          <p>The mobile-first family chore system with permanent QR codes, photo proof verification, and achievement rewards.</p>
+        </div>
+
+        <div class="footer-col">
+          <h4>Product</h4>
+          <ul class="footer-links">
+            <li><a href="#features">Features</a></li>
+            <li><a href="#simulator">Live Demo</a></li>
+            <li><a href="#pricing">Pricing</a></li>
+            <li><a href="#faq">FAQ</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4>Docs & Resources</h4>
+          <ul class="footer-links">
+            <li><a href="guide.html" id="footer-link-guide">User Guide</a></li>
+            <li><a href="index.html#faq">FAQ</a></li>
+            <li><a href="index.html#how-it-works">How It Works</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4>Account</h4>
+          <ul class="footer-links">
+            <li><a href="#" class="open-signup-modal">Parent Login</a></li>
+            <li><a href="#" class="open-signup-modal">Child Login</a></li>
+            <li><a href="#" class="open-signup-modal">Start Free Trial</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <div>© 2026 QR Chores. All rights reserved.</div>
+        <div style="display:flex; gap:20px;">
+          <a href="#" style="color:var(--text-muted); text-decoration:none;">Privacy Policy</a>
+          <a href="#" style="color:var(--text-muted); text-decoration:none;">Terms of Service</a>
+          <a href="#" style="color:var(--text-muted); text-decoration:none;">Security</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Modal Signup Dialog -->
+  <div class="modal-overlay" id="signup-modal">
+    <div class="modal-card">
+      <button class="modal-close" id="modal-close-btn">&times;</button>
+      <div style="text-align:center; margin-bottom:24px;">
+        <img src="assets/appicon-new-light.jpg" alt="App Icon" style="width:56px; height:56px; border-radius:12px; margin-bottom:12px;">
+        <h3 style="font-size:1.5rem; color:var(--text-bright);">Start 14-Day Free Trial</h3>
+        <p style="color:var(--text-muted); font-size:0.9rem;">No credit card required. Full access to QR sticker generator.</p>
+      </div>
+
+      <form id="signup-form">
+        <div class="form-group">
+          <label for="parent-email">Parent Email Address</label>
+          <input type="email" id="parent-email" class="form-input" placeholder="dad@example.com" required>
+        </div>
+
+        <div class="form-group">
+          <label for="family-name">Family / Household Name</label>
+          <input type="text" id="family-name" class="form-input" placeholder="The Smith Family" required>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-glow" style="width:100%; margin-top:10px;">
+          <span>Activate Free Trial & Print Stickers</span>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="script.js"></script>
+</body>
+</html>
