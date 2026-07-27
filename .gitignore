@@ -20,8 +20,7 @@ htmlcov/
 venv/
 
 # Local data / secrets
-.env
-.env.*
+.env*
 !.env.example
 data/
 *.db
