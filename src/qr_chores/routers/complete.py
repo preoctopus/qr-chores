@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from qr_chores.auth.deps import get_current_user_optional, require_role
 from qr_chores.config import Settings, get_settings
 from qr_chores.db import get_db
+from qr_chores.logging_setup import log_user_action
 from qr_chores.models.chore import Chore, PhotoPolicy
 from qr_chores.models.user import User, UserRole
 from qr_chores.services.achievements import ICON_CHOICES
@@ -154,6 +155,10 @@ async def complete_submit(
             status_code=status.HTTP_403_FORBIDDEN,
         )
 
+    # Capture ids before complete_chore: IntegrityError + rollback expires ORM
+    # instances in this session (user/chore become unsafe to attribute-load).
+    user_id = user.id
+    chore_id = chore.id
     try:
         photo_upload = await read_photo_upload(photo, max_bytes=settings.photo_max_bytes)
         result = await complete_chore(
@@ -162,6 +167,15 @@ async def complete_submit(
             user=user,
             settings=settings,
             photo=photo_upload,
+        )
+        timing = result.completion.timing
+        log_user_action(
+            "chore_complete",
+            user_id=user_id,
+            detail="html",
+            chore_id=chore_id,
+            timing=getattr(timing, "value", timing),
+            points=result.completion.points_awarded,
         )
     except CompletionError as exc:
         # Re-show confirm page with error for photo validation issues

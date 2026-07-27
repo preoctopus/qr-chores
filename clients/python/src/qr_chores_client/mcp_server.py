@@ -4,7 +4,10 @@ from __future__ import annotations
 
 import base64
 import json
+import logging
+import logging.handlers
 import os
+import sys
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from typing import Any
@@ -18,6 +21,8 @@ from qr_chores_client.models import (
     ChoreCreate,
     ChoreUpdate,
 )
+
+logger = logging.getLogger("qr_chores_mcp")
 
 try:
     from fastmcp import FastMCP
@@ -419,6 +424,66 @@ def list_tool_names() -> list[str]:
     )
 
 
+def _parse_syslog_address(server: str) -> tuple[str, int] | None:
+    raw = (server or "").strip()
+    if not raw:
+        return None
+    for prefix in ("udp://", "tcp://", "syslog://"):
+        if raw.lower().startswith(prefix):
+            raw = raw[len(prefix) :]
+            break
+    if not raw:
+        return None
+    if raw.count(":") == 1:
+        host, _, port_s = raw.partition(":")
+        if not host or not port_s.isdigit():
+            return None
+        return host, int(port_s)
+    return raw, 514
+
+
+def configure_mcp_logging() -> None:
+    """Console always; dual-write to SYSLOG_SERVER when set (same env as app/nginx)."""
+    level_name = (_env("LOG_LEVEL", "INFO") or "INFO").upper()
+    level = getattr(logging, level_name, logging.INFO)
+
+    root = logging.getLogger()
+    # Avoid stacking handlers if run() is invoked more than once in tests.
+    if not any(getattr(h, "_qr_chores_mcp", False) for h in root.handlers):
+        root.setLevel(level)
+        console = logging.StreamHandler(sys.stderr)
+        console.setLevel(level)
+        console.setFormatter(logging.Formatter("%(asctime)s %(levelname)s [%(name)s] %(message)s"))
+        console._qr_chores_mcp = True  # type: ignore[attr-defined]
+        root.addHandler(console)
+
+        addr = _parse_syslog_address(_env("SYSLOG_SERVER", "") or "")
+        if addr is not None:
+            host, port = addr
+            try:
+                syslog = logging.handlers.SysLogHandler(
+                    address=(host, port),
+                    facility=logging.handlers.SysLogHandler.LOG_LOCAL0,
+                )
+                syslog.setLevel(level)
+                syslog.setFormatter(
+                    logging.Formatter(
+                        "qr-chores-mcp[%(process)d]: %(levelname)s [%(name)s] %(message)s"
+                    )
+                )
+                syslog._qr_chores_mcp = True  # type: ignore[attr-defined]
+                root.addHandler(syslog)
+                logger.info("Syslog handler enabled → %s:%s", host, port)
+            except OSError as exc:
+                logger.warning("Failed to attach SysLogHandler %s:%s: %s", host, port, exc)
+
+    logger.info(
+        "MCP logging configured level=%s syslog=%s",
+        level_name,
+        _env("SYSLOG_SERVER", "") or "off",
+    )
+
+
 def run() -> None:
     """Run the MCP server.
 
@@ -437,7 +502,11 @@ def run() -> None:
         reverse proxies / Cloud Run.
     QR_CHORES_EMAIL / QR_CHORES_PASSWORD
         Optional auto-login for tools (local / Docker secrets).
+    LOG_LEVEL / SYSLOG_SERVER
+        Shared with the app and nginx. ``SYSLOG_SERVER=host[:port]`` dual-writes
+        MCP logs to rsyslog (UDP 514 default) in addition to stderr.
     """
+    configure_mcp_logging()
     transport = (_env("MCP_TRANSPORT", "stdio") or "stdio").strip().lower()
     if transport in {"http", "streamable-http", "sse"}:
         host = _env("MCP_HOST", "127.0.0.1") or "127.0.0.1"
@@ -446,6 +515,13 @@ def run() -> None:
         # Default stateless for HTTP so reverse proxies / multi-instance work.
         stateless_raw = _env("MCP_STATELESS_HTTP", "1") or "1"
         stateless = stateless_raw.strip().lower() in {"1", "true", "yes", "on"}
+        logger.info(
+            "Starting MCP transport=%s bind=%s:%s path=%s",
+            transport,
+            host,
+            port,
+            path,
+        )
         mcp.run(
             transport=transport,  # type: ignore[arg-type]
             host=host,
@@ -457,4 +533,5 @@ def run() -> None:
             host_origin_protection=False,
         )
         return
+    logger.info("Starting MCP transport=stdio")
     mcp.run()

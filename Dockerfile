@@ -58,7 +58,9 @@ ENV PATH="/app/.venv/bin:$PATH" \
     MCP_HOST=127.0.0.1 \
     MCP_PORT=8001 \
     MCP_PATH=/mcp \
-    MCP_STATELESS_HTTP=1
+    MCP_STATELESS_HTTP=1 \
+    # Logging: LOG_LEVEL always; set SYSLOG_SERVER=host[:port] to dual-write to rsyslog
+    LOG_LEVEL=INFO
 
 USER appuser
 EXPOSE 8080

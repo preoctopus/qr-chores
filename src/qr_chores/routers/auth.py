@@ -12,6 +12,7 @@ from qr_chores.auth.passwords import verify_password
 from qr_chores.auth.session import dump_session
 from qr_chores.config import Settings, get_settings
 from qr_chores.db import get_db
+from qr_chores.logging_setup import log_user_action
 from qr_chores.models.user import User, UserRole
 from qr_chores.templating import templates
 
@@ -85,6 +86,7 @@ async def login_submit(
     )
     user = result.scalar_one_or_none()
     if user is None or not verify_password(password, user.password_hash):
+        log_user_action("login_failed", detail="html", email=email.strip().lower())
         # Re-render form with error (use 401 body via template)
         return templates.TemplateResponse(
             request,
@@ -117,13 +119,16 @@ async def login_submit(
         secure=is_https,
         path="/",
     )
+    log_user_action("login", user_id=user.id, detail="html", role=user.role.value)
     return response
 
 
 @router.post("/logout")
 async def logout(
+    user: User | None = Depends(get_current_user_optional),
     settings: Settings = Depends(get_settings),
 ) -> RedirectResponse:
+    log_user_action("logout", user_id=user.id if user else None, detail="html")
     response = RedirectResponse("/login", status_code=status.HTTP_303_SEE_OTHER)
     response.delete_cookie(settings.session_cookie_name, path="/")
     return response
@@ -131,9 +136,11 @@ async def logout(
 
 @router.get("/logout")
 async def logout_get(
+    user: User | None = Depends(get_current_user_optional),
     settings: Settings = Depends(get_settings),
 ) -> RedirectResponse:
     """Allow GET logout for simple nav links."""
+    log_user_action("logout", user_id=user.id if user else None, detail="html")
     response = RedirectResponse("/login", status_code=status.HTTP_303_SEE_OTHER)
     response.delete_cookie(settings.session_cookie_name, path="/")
     return response

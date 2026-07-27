@@ -167,6 +167,8 @@ qr-chores/
 
 ## Config (env)
 
+**Document every config env var in `.env.example`.** When you add or change a setting in `config.py`, `scripts/entrypoint.sh`, Docker/nginx, MCP, or client tooling that is controlled by the environment, update `.env.example` in the same change (name, purpose, type/default, and a commented example). Keep this table and `.env.example` in sync; `.env.example` is the annotated source of truth for operators.
+
 | Variable | Purpose |
 |----------|---------|
 | `DATABASE_URL` | SQLite (dev) / Postgres (prod) |
@@ -183,6 +185,8 @@ qr-chores/
 | `ADMIN_API_KEY` | Optional internal registration API key (not family-facing UX) |
 | `QR_CHORES_EMAIL` / `QR_CHORES_PASSWORD` | Optional MCP auto-login |
 | `MCP_TRANSPORT` / `MCP_HOST` / `MCP_PORT` / `MCP_PATH` | FastMCP HTTP in Docker (default `http` / `127.0.0.1` / `8001` / `/mcp`) |
+| `LOG_LEVEL` | App + MCP log level (default `INFO`) |
+| `SYSLOG_SERVER` | Optional `host` or `host:port` (UDP, default 514). When set, **nginx**, **FastAPI**, and **MCP** dual-write logs to that rsyslog/syslogd in addition to stdout/stderr |
 
 Local default port: **8765** (8000 is often taken).
 

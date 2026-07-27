@@ -323,6 +323,25 @@ def test_run_http_stateless_off(monkeypatch):
         assert kwargs["stateless_http"] is False
 
 
+def test_parse_syslog_address():
+    from qr_chores_client.mcp_server import _parse_syslog_address
+
+    assert _parse_syslog_address("") is None
+    assert _parse_syslog_address("logs.example") == ("logs.example", 514)
+    assert _parse_syslog_address("logs.example:1514") == ("logs.example", 1514)
+    assert _parse_syslog_address("udp://logs.example:514") == ("logs.example", 514)
+
+
+def test_configure_mcp_logging_console(monkeypatch):
+    from qr_chores_client.mcp_server import configure_mcp_logging
+
+    monkeypatch.delenv("SYSLOG_SERVER", raising=False)
+    monkeypatch.setenv("LOG_LEVEL", "INFO")
+    configure_mcp_logging()
+    # idempotent second call
+    configure_mcp_logging()
+
+
 def test_env_helper():
     from qr_chores_client.mcp_server import _env
 

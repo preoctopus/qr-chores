@@ -1,9 +1,21 @@
+# QR Chores nginx reverse proxy
+# Generated from this template by scripts/entrypoint.sh (envsubst).
+#
+# Performance notes:
+# - Static marketing + /static/ are served from NGINX_*_ROOT (tmpfs/RAM when available)
+# - open_file_cache keeps open FDs + metadata hot (effective RAM-backed static serving)
+# - gzip for text assets; sendfile/tcp_nopush for efficient disk/tmpfs I/O
+# - keepalive to FastAPI and MCP upstreams
+
 worker_processes auto;
-error_log /var/log/nginx/error.log warn;
+worker_rlimit_nofile 4096;
+error_log ${NGINX_ERROR_LOG_PRIMARY};
+${NGINX_ERROR_LOG_SECONDARY}
 pid /tmp/nginx.pid;
 
 events {
     worker_connections 1024;
+    multi_accept on;
 }
 
 http {
@@ -12,15 +24,55 @@ http {
 
     log_format main '$remote_addr - $remote_user [$time_local] "$request" '
                     '$status $body_bytes_sent "$http_referer" '
-                    '"$http_user_agent" "$http_x_forwarded_for"';
+                    '"$http_user_agent" "$http_x_forwarded_for" '
+                    'rt=$request_time urt=$upstream_response_time';
 
-    access_log /var/log/nginx/access.log main;
+    access_log ${NGINX_ACCESS_LOG_PRIMARY};
+    ${NGINX_ACCESS_LOG_SECONDARY}
 
     sendfile on;
+    tcp_nopush on;
+    tcp_nodelay on;
     keepalive_timeout 65;
+    keepalive_requests 1000;
+    types_hash_max_size 2048;
+    server_tokens off;
     client_max_body_size 10M;
+    client_body_timeout 30s;
+    client_header_timeout 15s;
+    send_timeout 30s;
 
-    # Upstream for FastMCP streamable HTTP (long-lived SSE streams).
+    # Keep frequently-served static files open in the worker (FD + metadata cache).
+    # Combined with tmpfs roots this approximates in-memory static serving.
+    open_file_cache max=2000 inactive=120s;
+    open_file_cache_valid 60s;
+    open_file_cache_min_uses 1;
+    open_file_cache_errors on;
+
+    # Compression (skip already-compressed images/video)
+    gzip on;
+    gzip_comp_level 5;
+    gzip_min_length 256;
+    gzip_proxied any;
+    gzip_vary on;
+    gzip_types
+        text/plain
+        text/css
+        text/javascript
+        application/javascript
+        application/json
+        application/manifest+json
+        application/xml
+        image/svg+xml
+        font/woff2;
+
+    # FastAPI application
+    upstream app_upstream {
+        server 127.0.0.1:8000;
+        keepalive 32;
+    }
+
+    # FastMCP streamable HTTP (long-lived SSE streams)
     upstream mcp_upstream {
         server 127.0.0.1:${MCP_PORT};
         keepalive 8;
@@ -30,40 +82,81 @@ http {
         listen ${PORT};
         server_name _;
 
-        root /app/marketing;
+        root ${NGINX_MARKETING_ROOT};
         index index.html;
 
-        # Static marketing website files (index.html, guide.html, styles.css, script.js)
+        # ---- Static marketing site (RAM/tmpfs when available) ----
         location / {
             try_files $uri $uri/ @fastapi;
         }
 
-        # Static marketing assets (images, logos, video)
-        location /assets/ {
-            alias /app/marketing/assets/;
+        location = /index.html {
+            expires 1h;
+            add_header Cache-Control "public";
+        }
+
+        location = /guide.html {
+            expires 1h;
+            add_header Cache-Control "public";
+        }
+
+        location = /styles.css {
             expires 7d;
-            add_header Cache-Control "public, no-transform";
+            add_header Cache-Control "public";
+            access_log off;
         }
 
-        # QR code scan links (/c/{token})
+        location = /script.js {
+            expires 7d;
+            add_header Cache-Control "public";
+            access_log off;
+        }
+
+        location /assets/ {
+            alias ${NGINX_MARKETING_ROOT}/assets/;
+            expires 30d;
+            add_header Cache-Control "public, immutable";
+            access_log off;
+        }
+
+        # ---- App static (CSS/JS/icons) — bypass FastAPI ----
+        location /static/ {
+            alias ${NGINX_APP_STATIC_ROOT}/;
+            expires 7d;
+            add_header Cache-Control "public";
+            access_log off;
+        }
+
+        # ---- QR scan links ----
         location /c/ {
-            proxy_pass http://127.0.0.1:8000;
+            proxy_pass http://app_upstream;
+            proxy_http_version 1.1;
+            proxy_set_header Connection "";
             proxy_set_header Host $http_host;
             proxy_set_header X-Real-IP $remote_addr;
             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
             proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_connect_timeout 5s;
+            proxy_read_timeout 60s;
+            proxy_send_timeout 60s;
         }
 
-        # Internal JSON API (/api/v1/...)
+        # ---- Internal JSON API ----
         location /api/ {
-            proxy_pass http://127.0.0.1:8000;
+            proxy_pass http://app_upstream;
+            proxy_http_version 1.1;
+            proxy_set_header Connection "";
             proxy_set_header Host $http_host;
             proxy_set_header X-Real-IP $remote_addr;
             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
             proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_connect_timeout 5s;
+            proxy_read_timeout 60s;
+            proxy_send_timeout 60s;
+            client_max_body_size 10M;
         }
 
-        # FastMCP streamable HTTP (tools for agents) — path matches MCP_PATH=/mcp
+        # ---- FastMCP streamable HTTP ----
         location /mcp {
             proxy_pass http://mcp_upstream;
             proxy_http_version 1.1;
@@ -80,22 +173,29 @@ http {
             chunked_transfer_encoding on;
         }
 
-        # Health check
-        location /healthz {
-            proxy_pass http://127.0.0.1:8000;
+        # ---- Health (prefer fast path; no access log noise) ----
+        location = /healthz {
+            proxy_pass http://app_upstream;
+            proxy_http_version 1.1;
+            proxy_set_header Connection "";
             proxy_set_header Host $http_host;
-            proxy_set_header X-Real-IP $remote_addr;
-            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_connect_timeout 2s;
+            proxy_read_timeout 5s;
+            access_log off;
         }
 
-        # FastAPI application fallback
+        # ---- FastAPI fallback (HTML app routes) ----
         location @fastapi {
-            proxy_pass http://127.0.0.1:8000;
+            proxy_pass http://app_upstream;
+            proxy_http_version 1.1;
+            proxy_set_header Connection "";
             proxy_set_header Host $http_host;
             proxy_set_header X-Real-IP $remote_addr;
             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
             proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_connect_timeout 5s;
+            proxy_read_timeout 60s;
+            proxy_send_timeout 60s;
         }
     }
 }

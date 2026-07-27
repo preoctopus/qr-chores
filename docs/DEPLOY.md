@@ -145,6 +145,39 @@ Notes:
 | `RUN_SEED=1` | Creates dad/mom/daughter + default achievements (idempotent) |
 | `PHOTO_STORAGE=gcs` | Store proof photos in GCS |
 | `BASE_URL` | Must match the URL users (and QR codes) use (HTTPS) |
+| `LOG_LEVEL` | App + MCP Python log level (default `INFO`) |
+| `SYSLOG_SERVER` | Optional rsyslog host (`host` or `host:port`, UDP 514). Dual-writes nginx + app + MCP logs while keeping stdout/stderr for Cloud Logging |
+
+### Logging & syslog
+
+By default every process logs to **stdout/stderr** (Cloud Logging on Cloud Run).
+
+Set `SYSLOG_SERVER` to an rsyslog/syslogd address to **also** ship:
+
+| Source | Syslog tag / program | Notes |
+|--------|----------------------|--------|
+| nginx access | `qr-chores-nginx-access` | facility `local0` |
+| nginx error | `qr-chores-nginx` | facility `local0` |
+| FastAPI app | `qr-chores` | user actions (`qr_chores.actions`), errors (`qr_chores.errors`) |
+| MCP server | `qr-chores-mcp` | same `SYSLOG_SERVER` / `LOG_LEVEL` |
+
+App action logging covers mutations (POST/PUT/PATCH/DELETE), authenticated requests, login/logout, chore completions, and unhandled exceptions. No secrets/passwords are logged.
+
+Example:
+
+```bash
+-e SYSLOG_SERVER=rsyslog.internal.example:514 \
+-e LOG_LEVEL=INFO
+```
+
+### Nginx performance (Docker image)
+
+The container reverse-proxy:
+
+- Serves marketing + `/static/` **directly** (bypasses uvicorn)
+- Stages those trees into **tmpfs** (`/dev/shm`) when free space allows
+- Uses `open_file_cache`, `sendfile`, keepalive to app/MCP upstreams, and gzip
+- Starts FastAPI and MCP **in parallel** for faster cold start
 
 After first successful deploy, set `RUN_SEED=0` (and optionally run migrations as a one-off job instead of every instance start) to avoid multi-instance race noise:
 

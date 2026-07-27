@@ -4,11 +4,12 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from qr_chores.auth.deps import get_current_user
+from qr_chores.auth.deps import get_current_user, get_current_user_optional
 from qr_chores.auth.passwords import verify_password
 from qr_chores.auth.session import dump_api_token, dump_session
 from qr_chores.config import Settings, get_settings
 from qr_chores.db import get_db
+from qr_chores.logging_setup import log_user_action
 from qr_chores.models.user import User
 from qr_chores.schemas.auth import LoginRequest, TokenResponse, UserOut
 from qr_chores.services.points import points_balance
@@ -62,6 +63,7 @@ async def api_login(
     )
     user = result.scalar_one_or_none()
     if user is None or not verify_password(body.password, user.password_hash):
+        log_user_action("login_failed", detail="api", email=body.email.strip().lower())
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password.",
@@ -70,6 +72,7 @@ async def api_login(
 
     access_token = dump_api_token(settings, user.id)
     _set_session_cookie(response, settings, user.id, request=request)
+    log_user_action("login", user_id=user.id, detail="api", role=user.role.value)
     return TokenResponse(
         access_token=access_token,
         token_type="bearer",
@@ -81,9 +84,11 @@ async def api_login(
 @router.post("/auth/logout", status_code=status.HTTP_204_NO_CONTENT)
 async def api_logout(
     response: Response,
+    user: User | None = Depends(get_current_user_optional),
     settings: Settings = Depends(get_settings),
 ) -> None:
     """Clear session cookie. Bearer tokens are discarded client-side."""
+    log_user_action("logout", user_id=user.id if user else None, detail="api")
     response.delete_cookie(settings.session_cookie_name, path="/")
 
 

@@ -8,6 +8,7 @@ from sqlalchemy.orm import selectinload
 from qr_chores.auth.deps import require_role
 from qr_chores.config import Settings, get_settings
 from qr_chores.db import get_db
+from qr_chores.logging_setup import log_user_action
 from qr_chores.models.chore import Chore
 from qr_chores.models.rewards import Achievement, UserAchievement
 from qr_chores.models.user import User, UserRole
@@ -136,6 +137,10 @@ async def api_complete_chore(
             detail="This chore is assigned to someone else.",
         )
 
+    # Capture ids before complete_chore: IntegrityError + rollback expires ORM
+    # instances in this session (user/chore become unsafe to attribute-load).
+    user_id = user.id
+    chore_id = chore.id
     try:
         photo_upload = await read_photo_upload(photo, max_bytes=settings.photo_max_bytes)
         result = await complete_chore(
@@ -147,6 +152,17 @@ async def api_complete_chore(
         )
     except CompletionError as exc:
         raise _completion_http_error(exc) from exc
+
+    timing = result.completion.timing
+    log_user_action(
+        "chore_complete",
+        user_id=user_id,
+        detail="api",
+        chore_id=chore_id,
+        timing=getattr(timing, "value", timing),
+        points=result.completion.points_awarded,
+        already_done=result.already_done,
+    )
 
     points = PointsBreakdownOut(
         base=result.points.base,

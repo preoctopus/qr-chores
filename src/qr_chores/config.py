@@ -38,6 +38,10 @@ class Settings(BaseSettings):
     seed_child_password: str = "child-pass"
     # Admin registration API (POST /api/v1/admin/users). Empty disables admin routes.
     admin_api_key: str = ""
+    # Logging: console always; optional dual-write to rsyslog when SYSLOG_SERVER is set.
+    # SYSLOG_SERVER format: host or host:port (UDP, default 514). Empty = console only.
+    log_level: str = "INFO"
+    syslog_server: str = ""
 
     @property
     def is_production(self) -> bool:

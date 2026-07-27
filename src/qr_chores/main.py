@@ -13,6 +13,11 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from qr_chores import __version__
 from qr_chores.config import get_settings
 from qr_chores.db import init_db
+from qr_chores.logging_setup import (
+    ERROR_LOGGER,
+    RequestLoggingMiddleware,
+    configure_logging,
+)
 from qr_chores.routers import auth, children, chores, complete, health, pages, photos, rewards
 from qr_chores.routers.api import api_router
 from qr_chores.templating import templates
@@ -48,6 +53,8 @@ Production (`ENVIRONMENT=production`) disables interactive OpenAPI.
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
+    # Configure logging early (console + optional SYSLOG_SERVER).
+    configure_logging(get_settings())
     # Dev convenience: ensure tables exist. Production should use Alembic.
     await init_db()
     yield
@@ -117,6 +124,12 @@ def create_app() -> FastAPI:
     )
     _install_openapi(app)
 
+    # Request/action logging (mutations + authenticated traffic + HTTP errors).
+    # Logging is also configured here so handlers work even before lifespan
+    # (e.g. TestClient without full lifespan in some paths).
+    configure_logging(settings)
+    app.add_middleware(RequestLoggingMiddleware, settings=settings)
+
     static_dir = Path(__file__).resolve().parent / "static"
     app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
 
@@ -130,8 +143,62 @@ def create_app() -> FastAPI:
     app.include_router(rewards.router)
     app.include_router(api_router)
 
+    @app.exception_handler(Exception)
+    async def unhandled_exception_handler(request: Request, exc: Exception):
+        """Catch-all: log unexpected exceptions, return safe error response.
+
+        StarletteHTTPException is handled by the dedicated handler below (more
+        specific type match); this only runs for true unexpected errors.
+        """
+        ERROR_LOGGER.exception(
+            "unhandled path=%s method=%s: %s",
+            request.url.path,
+            request.method,
+            exc,
+        )
+        if request.url.path == "/healthz" or request.url.path.startswith("/api/"):
+            return JSONResponse(
+                {"detail": "Internal server error"},
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+        if not _wants_html(request):
+            return JSONResponse(
+                {"detail": "Internal server error"},
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+        return templates.TemplateResponse(
+            request,
+            "error.html",
+            {
+                "title": "Something went wrong",
+                "message": "Please try again.",
+                "status_code": 500,
+                "primary_href": "/",
+                "primary_label": "Go home",
+                "user": None,
+            },
+            status_code=500,
+        )
+
     @app.exception_handler(StarletteHTTPException)
     async def http_exception_handler(request: Request, exc: StarletteHTTPException):
+        if exc.status_code >= 500:
+            ERROR_LOGGER.error(
+                "http_exception path=%s method=%s status=%s detail=%s",
+                request.url.path,
+                request.method,
+                exc.status_code,
+                exc.detail,
+            )
+        elif exc.status_code >= 400 and exc.status_code not in (401, 404):
+            # 401/404 are routine; still visible via request middleware for mutations
+            ERROR_LOGGER.warning(
+                "http_exception path=%s method=%s status=%s detail=%s",
+                request.url.path,
+                request.method,
+                exc.status_code,
+                exc.detail,
+            )
         # Internal JSON API and healthz always return JSON (never HTML redirects).
         if request.url.path == "/healthz" or request.url.path.startswith("/api/"):
             return JSONResponse({"detail": exc.detail}, status_code=exc.status_code)
