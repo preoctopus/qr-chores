@@ -183,8 +183,9 @@ async def complete_chore(
         unlocks = await evaluate_achievements(db, user_id=user.id, settings=settings)
         achievement_points = sum(u.points for u in unlocks)
 
-        # Reflect achievement points on this completion display total
-        completion.points_awarded = points_awarded + achievement_points
+        # Keep points_awarded as base + timing only. Achievement rewards live in
+        # PointLedger (and CompletionResult.points / celebration UI) so summing
+        # completions never double-counts ledger achievement entries (#10).
 
         await db.commit()
     except IntegrityError as exc:

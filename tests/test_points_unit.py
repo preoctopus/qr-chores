@@ -1,15 +1,21 @@
 """Unit tests for points helpers."""
 
+from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
+
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
+from qr_chores.config import Settings
 from qr_chores.db import Base
+from qr_chores.models.rewards import PointLedger
 from qr_chores.services.points import (
     DEFAULT_BONUSES,
     add_ledger_entry,
     get_setting,
     get_timing_bonuses,
     points_balance,
+    points_earned_today,
     set_setting,
 )
 
@@ -73,3 +79,55 @@ async def test_ledger_balance(session: AsyncSession) -> None:
     add_ledger_entry(session, user_id=user.id, delta=5, reason="bonus")
     await session.commit()
     assert await points_balance(session, user.id) == 15
+
+
+@pytest.mark.asyncio
+async def test_points_earned_today_uses_local_day(session: AsyncSession) -> None:
+    from qr_chores.auth.passwords import hash_password
+    from qr_chores.models.user import User, UserRole
+
+    settings = Settings(app_timezone="America/Chicago")
+    user = User(
+        email="today@example.com",
+        display_name="Today",
+        password_hash=hash_password("x"),
+        role=UserRole.child,
+        is_active=True,
+    )
+    session.add(user)
+    await session.commit()
+    await session.refresh(user)
+
+    tz = ZoneInfo("America/Chicago")
+    now = datetime.now(tz=tz)
+    yesterday = now - timedelta(days=1)
+
+    session.add(
+        PointLedger(
+            user_id=user.id,
+            delta=3,
+            reason="yesterday",
+            created_at=yesterday,
+        )
+    )
+    session.add(
+        PointLedger(
+            user_id=user.id,
+            delta=7,
+            reason="today-base",
+            created_at=now,
+        )
+    )
+    session.add(
+        PointLedger(
+            user_id=user.id,
+            delta=10,
+            reason="today-achievement",
+            ref_type="achievement",
+            created_at=now,
+        )
+    )
+    await session.commit()
+
+    assert await points_balance(session, user.id) == 20
+    assert await points_earned_today(session, user.id, settings) == 17

@@ -16,7 +16,7 @@ from qr_chores.models.rewards import Achievement, UserAchievement
 from qr_chores.models.user import User, UserRole
 from qr_chores.services.achievements import ICON_CHOICES, criteria_threshold, progress_for
 from qr_chores.services.chores import today_board
-from qr_chores.services.points import points_balance
+from qr_chores.services.points import points_balance, points_earned_today
 from qr_chores.services.timeutil import format_due_time
 from qr_chores.templating import templates
 
@@ -77,8 +77,7 @@ async def child_home(
     db: AsyncSession = Depends(get_db),
     settings: Settings = Depends(get_settings),
 ) -> HTMLResponse:
-    board = await today_board(db, settings)
-    points_today = sum((row.completion.points_awarded if row.completion else 0) for row in board)
+    points_today = await points_earned_today(db, user.id, settings)
     balance = await points_balance(db, user.id)
 
     result = await db.execute(

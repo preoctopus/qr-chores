@@ -3,18 +3,21 @@
 from datetime import time
 
 import pytest
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from qr_chores.auth.passwords import hash_password
 from qr_chores.config import Settings
 from qr_chores.db import Base
 from qr_chores.models.chore import Chore, PhotoPolicy, TimingStatus
+from qr_chores.models.rewards import Achievement, CriteriaType, PointLedger
 from qr_chores.models.user import User, UserRole
 from qr_chores.services.completion import (
     CompletionError,
     PhotoUpload,
     complete_chore,
 )
+from qr_chores.services.points import points_balance, points_earned_today
 from qr_chores.services.qr import new_qr_token
 
 
@@ -117,3 +120,52 @@ async def test_required_photo_and_success(ctx) -> None:
 
     again = await complete_chore(session, chore=chore, user=child, settings=settings)
     assert again.already_done is True
+
+
+@pytest.mark.asyncio
+async def test_points_awarded_excludes_achievement_ledger_points(ctx) -> None:
+    """Issue #10: completion.points_awarded is base+timing only; balance is ledger sum."""
+    session, child, settings = ctx
+    session.add(
+        Achievement(
+            title="First Step",
+            description="Complete your first chore.",
+            icon_key="spark",
+            criteria_type=CriteriaType.total_completions,
+            criteria_json='{"count": 1}',
+            points_reward=10,
+            is_active=True,
+        )
+    )
+    await session.commit()
+
+    chore = await _chore(session, base_points=6, due_time=time(23, 59))
+    result = await complete_chore(session, chore=chore, user=child, settings=settings)
+
+    assert result.already_done is False
+    assert result.points.base == 6
+    assert result.points.achievement_points == 10
+    assert result.points.total == 6 + result.points.timing_bonus + 10
+    # Column stores chore-only points (not achievement rewards)
+    assert result.completion.points_awarded == 6 + result.points.timing_bonus
+    assert result.completion.points_awarded == result.points.base + result.points.timing_bonus
+
+    balance = await points_balance(session, child.id)
+    earned_today = await points_earned_today(session, child.id, settings)
+    assert balance == result.points.total
+    assert earned_today == balance
+    # Summing the completion column + achievement ledger would match balance only once
+    achievement_ledger = (
+        (
+            await session.execute(
+                select(PointLedger.delta).where(
+                    PointLedger.user_id == child.id,
+                    PointLedger.ref_type == "achievement",
+                )
+            )
+        )
+        .scalars()
+        .all()
+    )
+    assert sum(achievement_ledger) == 10
+    assert result.completion.points_awarded + sum(achievement_ledger) == balance
