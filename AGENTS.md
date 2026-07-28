@@ -293,6 +293,7 @@ Fix failures before declaring the task complete, opening a PR as ready, or askin
 - Path traversal protection in local photo storage keys (`is_relative_to`, no `..` segments).
 - Open-redirect hardening on login `next` (relative paths only).
 - Strong `SECRET_KEY` required for HTTPS / Postgres / production.
+- Every response gets `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, and a `script-src 'self'` CSP (`security_headers.py`); `Strict-Transport-Security` is added only when `BASE_URL` is `https://`.
 
 ## Out of scope (v1)
 
