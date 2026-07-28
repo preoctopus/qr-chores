@@ -24,7 +24,9 @@
       <div class="topbar-meta">
         <span class="user-chip">{{ user.display_name }}</span>
         <a class="btn btn-ghost btn-sm" href="/help"{% if request.url.path == '/help' %} aria-current="page"{% endif %}>Help</a>
-        <a class="btn btn-ghost btn-sm" href="/logout">Log out</a>
+        <form method="post" action="/logout">
+          <button type="submit" class="btn btn-ghost btn-sm">Log out</button>
+        </form>
       </div>
       {% else %}
       <div class="topbar-meta">
