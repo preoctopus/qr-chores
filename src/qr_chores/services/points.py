@@ -1,6 +1,6 @@
 """Point ledger helpers."""
 
-from datetime import datetime, time, timedelta
+from datetime import UTC, datetime, time, timedelta
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -58,7 +58,7 @@ async def points_earned_today(db: AsyncSession, user_id: int, settings: Settings
     """
     tz = app_tz(settings)
     today = local_today(settings)
-    start = datetime.combine(today, time.min, tzinfo=tz)
+    start = datetime.combine(today, time.min, tzinfo=tz).astimezone(UTC)
     end = start + timedelta(days=1)
     total = await db.scalar(
         select(func.coalesce(func.sum(PointLedger.delta), 0)).where(
