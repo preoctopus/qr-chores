@@ -149,7 +149,7 @@ if command -v nginx > /dev/null 2>&1 && [ -f /app/docker/nginx.conf.template ]; 
   echo "Waiting for FastAPI app to start..."
   i=0
   while [ $i -lt 50 ]; do
-    if python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz')" > /dev/null 2>&1; then
+    if python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')" > /dev/null 2>&1; then
       echo "FastAPI app is ready!"
       break
     fi

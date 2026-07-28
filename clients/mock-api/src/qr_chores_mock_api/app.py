@@ -158,6 +158,9 @@ def _board_item(chore: dict[str, Any]) -> dict[str, Any]:
 
 
 @app.get("/healthz")
+@app.get("/healthz/")
+@app.get("/health")
+@app.get("/health/")
 def healthz() -> dict[str, str]:
     return {"status": "ok"}
 
