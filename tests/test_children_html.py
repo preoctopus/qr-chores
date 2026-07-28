@@ -135,7 +135,7 @@ async def test_children_edit_with_password_and_validation_error(
     assert ok.status_code == 303
 
     # login as child with new credentials
-    await client.get("/logout", follow_redirects=False)
+    await client.post("/logout", follow_redirects=False)
     login = await client.post(
         "/login",
         data={"email": "renamed-email@example.com", "password": "brand-new-pass", "next": ""},

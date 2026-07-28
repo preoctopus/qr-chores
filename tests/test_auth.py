@@ -26,7 +26,7 @@ async def test_root_redirects_logged_in_parent_and_child(
     assert parent_root.status_code == 303
     assert parent_root.headers["location"] == "/today"
 
-    await client.get("/logout", follow_redirects=False)
+    await client.post("/logout", follow_redirects=False)
     await client.post(
         "/login",
         data={"email": child_user.email, "password": "child-pass", "next": ""},
@@ -149,10 +149,21 @@ async def test_logout_clears_session(client: AsyncClient, parent_user: User) -> 
         data={"email": parent_user.email, "password": "parent-pass", "next": ""},
     )
     assert (await client.get("/me")).status_code == 200
-    response = await client.get("/logout", follow_redirects=False)
+    response = await client.post("/logout", follow_redirects=False)
     assert response.status_code == 303
     assert response.headers["location"] == "/login"
     assert (await client.get("/me")).status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_logout_rejects_get(client: AsyncClient, parent_user: User) -> None:
+    await client.post(
+        "/login",
+        data={"email": parent_user.email, "password": "parent-pass", "next": ""},
+    )
+    response = await client.get("/logout", follow_redirects=False)
+    assert response.status_code == 405
+    assert (await client.get("/me")).status_code == 200
 
 
 @pytest.mark.asyncio

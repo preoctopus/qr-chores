@@ -132,15 +132,3 @@ async def logout(
     response = RedirectResponse("/login", status_code=status.HTTP_303_SEE_OTHER)
     response.delete_cookie(settings.session_cookie_name, path="/")
     return response
-
-
-@router.get("/logout")
-async def logout_get(
-    user: User | None = Depends(get_current_user_optional),
-    settings: Settings = Depends(get_settings),
-) -> RedirectResponse:
-    """Allow GET logout for simple nav links."""
-    log_user_action("logout", user_id=user.id if user else None, detail="html")
-    response = RedirectResponse("/login", status_code=status.HTTP_303_SEE_OTHER)
-    response.delete_cookie(settings.session_cookie_name, path="/")
-    return response
