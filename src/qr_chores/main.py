@@ -20,6 +20,7 @@ from qr_chores.logging_setup import (
 )
 from qr_chores.routers import auth, children, chores, complete, health, pages, photos, rewards
 from qr_chores.routers.api import api_router
+from qr_chores.security_headers import SecurityHeadersMiddleware
 from qr_chores.templating import templates
 
 # StaticFiles uses mimetypes; ensure web app manifests get the correct type.
@@ -129,6 +130,7 @@ def create_app() -> FastAPI:
     # (e.g. TestClient without full lifespan in some paths).
     configure_logging(settings)
     app.add_middleware(RequestLoggingMiddleware, settings=settings)
+    app.add_middleware(SecurityHeadersMiddleware, settings=settings)
 
     static_dir = Path(__file__).resolve().parent / "static"
     app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
