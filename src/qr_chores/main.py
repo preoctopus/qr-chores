@@ -53,10 +53,15 @@ Production (`ENVIRONMENT=production`) disables interactive OpenAPI.
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
+    settings = get_settings()
     # Configure logging early (console + optional SYSLOG_SERVER).
-    configure_logging(get_settings())
-    # Dev convenience: ensure tables exist. Production should use Alembic.
-    await init_db()
+    configure_logging(settings)
+    # Dev/test convenience: ensure tables exist. Production relies on
+    # Alembic (RUN_MIGRATIONS in the Docker entrypoint) as the source of
+    # truth for schema, so create_all must never run there — it would
+    # create tables behind Alembic's back and leave alembic_version empty.
+    if not settings.is_production:
+        await init_db()
     yield
 
 

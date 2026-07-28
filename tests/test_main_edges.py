@@ -124,3 +124,23 @@ async def test_lifespan_runs_init(monkeypatch: pytest.MonkeyPatch, test_settings
     assert "init_db" in called
     assert "configure_logging" in called
     get_settings.cache_clear()
+
+
+@pytest.mark.asyncio
+async def test_lifespan_skips_init_db_in_production(
+    monkeypatch: pytest.MonkeyPatch, test_settings
+) -> None:
+    """Production must rely on Alembic, never create_all, even on fresh boot."""
+    called: list[str] = []
+
+    async def fake_init_db() -> None:
+        called.append("init_db")
+
+    monkeypatch.setattr("qr_chores.main.init_db", fake_init_db)
+    monkeypatch.setenv("ENVIRONMENT", "production")
+    get_settings.cache_clear()
+    application = create_app()
+    async with lifespan(application):
+        pass
+    assert "init_db" not in called
+    get_settings.cache_clear()
