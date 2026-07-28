@@ -91,6 +91,44 @@ async def test_seed_creates_sqlite_parent_dir(
     get_settings.cache_clear()
 
 
+@pytest.mark.asyncio
+async def test_seed_skips_parent_dir_for_non_sqlite_url(
+    test_settings: Settings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from qr_chores import db as db_module
+
+    monkeypatch.setenv("DATABASE_URL", "postgresql+asyncpg://user:pass@localhost/qrchores")
+    get_settings.cache_clear()
+
+    engine = create_async_engine(
+        "sqlite+aiosqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    session_factory = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+    async def _noop_init() -> None:
+        return None
+
+    monkeypatch.setattr(db_module, "engine", engine)
+    monkeypatch.setattr(db_module, "SessionLocal", session_factory)
+    monkeypatch.setattr("qr_chores.seed.init_db", _noop_init)
+    monkeypatch.setattr("qr_chores.seed.SessionLocal", session_factory)
+
+    # Should not attempt filesystem path creation for a non-sqlite URL.
+    await seed()
+
+    async with session_factory() as session:
+        count = await session.scalar(select(func.count()).select_from(User))
+        assert count == 3
+
+    await engine.dispose()
+    get_settings.cache_clear()
+
+
 def test_seed_main_failure(monkeypatch: pytest.MonkeyPatch) -> None:
     async def _boom() -> None:
         raise RuntimeError("seed explode")

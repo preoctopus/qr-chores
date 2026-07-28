@@ -1,11 +1,11 @@
 """Additional /api/v1 parent edge-case HTTP tests (404s, filters, roles)."""
 
-from datetime import time
+from datetime import UTC, datetime, time
 
 import pytest
 from httpx import AsyncClient
 
-from qr_chores.models.chore import Chore, PhotoPolicy
+from qr_chores.models.chore import Chore, ChoreCompletion, PhotoPolicy, TimingStatus
 from qr_chores.models.user import User
 from qr_chores.services.qr import new_qr_token
 
@@ -281,3 +281,34 @@ async def test_patch_all_fields(
     assert body["schedule_days"] == "01234"
     assert body["photo_policy"] == "required"
     assert body["base_points"] == 99
+
+
+@pytest.mark.asyncio
+async def test_api_photo_missing_on_disk_returns_404(
+    client: AsyncClient, parent_user: User, child_user: User, app
+) -> None:
+    chore = await _create_chore(
+        app.state.session_factory,
+        photo_policy=PhotoPolicy.required,
+        assignee_user_id=child_user.id,
+    )
+    async with app.state.session_factory() as session:
+        completion = ChoreCompletion(
+            chore_id=chore.id,
+            user_id=child_user.id,
+            local_date=datetime.now(UTC).date(),
+            completed_at=datetime.now(UTC),
+            timing=TimingStatus.on_time,
+            photo_object_key="missing/does-not-exist.png",
+            points_awarded=10,
+        )
+        session.add(completion)
+        await session.commit()
+        completion_id = completion.id
+
+    token = await api_login(client, parent_user.email, "parent-pass")
+    response = await client.get(
+        f"/api/v1/photos/{completion_id}",
+        headers=auth_header(token),
+    )
+    assert response.status_code == 404
