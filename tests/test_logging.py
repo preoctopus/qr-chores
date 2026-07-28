@@ -135,7 +135,9 @@ async def test_healthz_not_action_logged(
     client: AsyncClient, caplog: pytest.LogCaptureFixture
 ) -> None:
     with caplog.at_level(logging.DEBUG, logger="qr_chores"):
-        r = await client.get("/healthz")
-        assert r.status_code == 200
+        r1 = await client.get("/healthz")
+        r2 = await client.get("/health")
+        assert r1.status_code == 200
+        assert r2.status_code == 200
     action_msgs = [r.message for r in caplog.records if r.name == "qr_chores.actions"]
-    assert not any("/healthz" in m for m in action_msgs)
+    assert not any("/health" in m for m in action_msgs)

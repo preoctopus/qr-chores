@@ -78,4 +78,4 @@ uv sync
 uv run uvicorn qr_chores_mock_api.app:app --host 127.0.0.1 --port 18080
 ```
 
-`GET /healthz` → `{"status":"ok"}`.
+`GET /health` or `GET /healthz` → `{"status":"ok"}`.

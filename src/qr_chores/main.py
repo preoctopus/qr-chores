@@ -156,7 +156,9 @@ def create_app() -> FastAPI:
             request.method,
             exc,
         )
-        if request.url.path == "/healthz" or request.url.path.startswith("/api/"):
+        if request.url.path in ("/healthz", "/health") or request.url.path.startswith(
+            ("/healthz/", "/health/", "/api/")
+        ):
             return JSONResponse(
                 {"detail": "Internal server error"},
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -199,8 +201,10 @@ def create_app() -> FastAPI:
                 exc.status_code,
                 exc.detail,
             )
-        # Internal JSON API and healthz always return JSON (never HTML redirects).
-        if request.url.path == "/healthz" or request.url.path.startswith("/api/"):
+        # Internal JSON API and health check routes always return JSON (never HTML redirects).
+        if request.url.path in ("/healthz", "/health") or request.url.path.startswith(
+            ("/healthz/", "/health/", "/api/")
+        ):
             return JSONResponse({"detail": exc.detail}, status_code=exc.status_code)
 
         if exc.status_code == status.HTTP_401_UNAUTHORIZED:

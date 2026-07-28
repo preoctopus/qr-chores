@@ -30,7 +30,7 @@ ERROR_LOGGER = logging.getLogger("qr_chores.errors")
 _CONFIGURED = False
 
 # Paths that are noise for action / access-style logs
-_SKIP_PREFIXES = ("/static/", "/healthz", "/favicon.ico")
+_SKIP_PREFIXES = ("/static/", "/healthz", "/health", "/favicon.ico")
 _MUTATING = frozenset({"POST", "PUT", "PATCH", "DELETE"})
 
 _LOG_FORMAT = "%(asctime)s %(levelname)s [%(name)s] %(message)s"
@@ -142,7 +142,7 @@ def _user_id_from_request(request: Request, settings: Settings) -> int | None:
 
 
 def _should_skip(path: str) -> bool:
-    if path == "/healthz":
+    if path in ("/healthz", "/health") or path.startswith(("/healthz/", "/health/")):
         return True
     return any(path.startswith(prefix) for prefix in _SKIP_PREFIXES)
 

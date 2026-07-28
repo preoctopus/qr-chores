@@ -285,7 +285,7 @@ OpenAPI includes a **BearerAuth** security scheme. Request bodies for login, cho
 | `PATCH` | `/api/v1/rewards/achievements/{id}` | parent |
 | `POST` | `/api/v1/rewards/achievements/{id}/toggle` | parent |
 | `GET` | `/api/v1/photos/{completion_id}` | any auth |
-| `GET` | `/healthz` | public (not under `/api/v1`) |
+| `GET` | `/health`, `/healthz` | public (not under `/api/v1`) |
 
 ---
 

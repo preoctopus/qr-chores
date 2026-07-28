@@ -110,7 +110,7 @@ Login → points (total balance + points change today) + achievements (awarded a
 | `/photos/{completion_id}` | Logged-in | Stream proof photo |
 | `/api/v1/*` | Auth (Bearer / session) | **Internal** JSON API for native apps — full surface in `docs/API.md` (not end-user Help) |
 | `/mcp` | Public (MCP clients) | FastMCP streamable HTTP (proxied by nginx → process on `:8001`); tools call in-container API |
-| `/healthz` | Public | Cloud Run health |
+| `/health`, `/healthz` | Public | Cloud Run liveness health check |
 
 ### Internal API (`/api/v1`) — agent notes
 

@@ -191,7 +191,7 @@ Nginx reverse-proxies:
 |------|---------|
 | `/api/…` | FastAPI app (`127.0.0.1:8000`) |
 | `/mcp` | FastMCP streamable HTTP (`127.0.0.1:8001`) |
-| `/c/…`, `/healthz`, app UI | FastAPI |
+| `/c/…`, `/health`, `/healthz`, app UI | FastAPI |
 | `/`, `/assets/` | Marketing static |
 
 In-container **`qrc`** and **MCP tools** always call the app at **`http://127.0.0.1:8000`** (hardcoded; not configurable).
@@ -208,7 +208,7 @@ docker exec -it <container> qrc --help
 
 Connect to **`https://<host>/mcp`** (streamable HTTP). Tools call uvicorn on loopback inside the container.
 
-Health: `GET /healthz`
+Health: `GET /health` (or `GET /healthz`)
 
 Full production steps: **[docs/DEPLOY.md](./docs/DEPLOY.md)**.
 

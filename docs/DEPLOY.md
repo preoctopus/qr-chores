@@ -232,7 +232,7 @@ gcloud secrets add-iam-policy-binding qr-chores-secret-key \
 
 ```bash
 export URL=$(gcloud run services describe ${SERVICE} --region=${REGION} --project=${PROJECT_ID} --format='value(status.url)')
-curl -sS "${URL}/healthz"
+curl -sS "${URL}/health"
 # → {"status":"ok"}
 ```
 
@@ -260,7 +260,7 @@ docker run --rm -p 8080:8080 \
 Verify health, API, and MCP proxy:
 
 ```bash
-curl -sS http://127.0.0.1:8080/healthz
+curl -sS http://127.0.0.1:8080/health
 # MCP streamable-HTTP endpoint should respond (not 404)
 curl -sS -o /dev/null -w "%{http_code}\n" -X POST http://127.0.0.1:8080/mcp \
   -H "Content-Type: application/json" -d '{}'
