@@ -202,6 +202,47 @@ async def test_photo_requires_auth(client: AsyncClient, child_user: User, app) -
 
 
 @pytest.mark.asyncio
+async def test_photo_storage_error_maps_to_400(
+    client: AsyncClient, child_user: User, parent_user: User, app
+) -> None:
+    from qr_chores.services.storage import StorageError
+
+    chore = await _create_chore(
+        app.state.session_factory,
+        photo_policy=PhotoPolicy.required,
+        title="Water plants",
+        assignee_user_id=child_user.id,
+    )
+    await _login_child(client, child_user)
+    await client.post(
+        f"/c/{chore.qr_token}",
+        files={"photo": ("proof.png", BytesIO(TINY_PNG), "image/png")},
+    )
+    async with app.state.session_factory() as session:
+        completion = (await session.execute(select(ChoreCompletion))).scalar_one()
+        completion_id = completion.id
+
+    def _boom(self, key: str):
+        raise StorageError("Corrupt photo key.", "bad_key")
+
+    from qr_chores.services.storage import LocalPhotoStorage
+
+    original_open = LocalPhotoStorage.open
+    LocalPhotoStorage.open = _boom
+    try:
+        await _login_parent(client, parent_user)
+        html_resp = await client.get(f"/photos/{completion_id}")
+        assert html_resp.status_code == 400
+        assert "Corrupt photo key." in html_resp.text
+
+        api_resp = await client.get(f"/api/v1/photos/{completion_id}")
+        assert api_resp.status_code == 400
+        assert api_resp.json()["detail"] == "Corrupt photo key."
+    finally:
+        LocalPhotoStorage.open = original_open
+
+
+@pytest.mark.asyncio
 async def test_reject_non_image_upload(client: AsyncClient, child_user: User, app) -> None:
     chore = await _create_chore(
         app.state.session_factory, photo_policy=PhotoPolicy.required, assignee_user_id=child_user.id

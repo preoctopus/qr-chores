@@ -55,3 +55,17 @@ async def test_hsts_when_base_url_is_https(
         assert resp.headers["strict-transport-security"] == "max-age=63072000; includeSubDomains"
 
     get_settings.cache_clear()
+
+
+@pytest.mark.asyncio
+async def test_non_http_scope_passes_through_untouched() -> None:
+    from qr_chores.security_headers import SecurityHeadersMiddleware
+
+    calls = []
+
+    async def inner_app(scope, receive, send) -> None:
+        calls.append(scope["type"])
+
+    middleware = SecurityHeadersMiddleware(inner_app)
+    await middleware({"type": "websocket"}, None, None)
+    assert calls == ["websocket"]

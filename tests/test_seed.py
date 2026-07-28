@@ -91,6 +91,76 @@ async def test_seed_creates_sqlite_parent_dir(
     get_settings.cache_clear()
 
 
+@pytest.mark.asyncio
+async def test_seed_looks_up_existing_parent_not_in_cache(
+    test_settings: Settings, monkeypatch
+) -> None:
+    """Re-running seed with only a child spec should find its parent via a DB
+    lookup, not just the in-memory by_email cache built up during this run."""
+    from qr_chores import db as db_module
+    from qr_chores.auth.passwords import hash_password
+    from qr_chores.models.user import format_display_name
+
+    engine = create_async_engine(
+        "sqlite+aiosqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    session_factory = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+    monkeypatch.setattr(db_module, "engine", engine)
+    monkeypatch.setattr(db_module, "SessionLocal", session_factory)
+
+    async def _noop_init() -> None:
+        return None
+
+    monkeypatch.setattr(db_module, "init_db", _noop_init)
+    monkeypatch.setattr("qr_chores.seed.init_db", _noop_init)
+    monkeypatch.setattr("qr_chores.seed.SessionLocal", session_factory)
+
+    # Pre-create the parent directly, outside of any seed() call, so this
+    # run's by_email cache never gets populated for it.
+    async with session_factory() as session:
+        parent = User(
+            email="dad@example.com",
+            first_name="Dad",
+            last_name="Example",
+            display_name=format_display_name("Dad", "Example"),
+            role=UserRole.parent,
+            password_hash=hash_password("whatever"),
+            is_active=True,
+        )
+        session.add(parent)
+        await session.commit()
+        await session.refresh(parent)
+        parent_id = parent.id
+
+    only_child = (
+        {
+            "email": "daughter@example.com",
+            "first_name": "Daughter",
+            "last_name": "Example",
+            "role": UserRole.child,
+            "password_key": "child",
+            "parent_email": "dad@example.com",
+        },
+    )
+    monkeypatch.setattr("qr_chores.seed.DEFAULT_USERS", only_child)
+
+    await seed()
+
+    async with session_factory() as session:
+        child = (
+            await session.execute(select(User).where(User.email == "daughter@example.com"))
+        ).scalar_one()
+        assert child.parent_id == parent_id
+
+    await engine.dispose()
+
+
 def test_seed_main_failure(monkeypatch: pytest.MonkeyPatch) -> None:
     async def _boom() -> None:
         raise RuntimeError("seed explode")

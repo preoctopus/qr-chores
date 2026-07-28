@@ -6,8 +6,9 @@ import pytest
 from httpx import AsyncClient
 from sqlalchemy import select
 
+from conftest import create_user
 from qr_chores.models.chore import Chore, ChoreCompletion, PhotoPolicy, TimingStatus
-from qr_chores.models.user import User
+from qr_chores.models.user import User, UserRole
 from qr_chores.services.qr import new_qr_token
 
 
@@ -258,3 +259,124 @@ async def test_parent_activate_and_edit_form(
         },
     )
     assert bad.status_code == 400
+
+
+@pytest.mark.asyncio
+async def test_other_parents_chore_is_invisible(
+    client: AsyncClient, parent_user: User, app, child_user: User
+) -> None:
+    """A chore assigned to another parent's child is treated as not found."""
+    other_parent = await create_user(
+        app.state.session_factory,
+        email="other-parent@example.com",
+        first_name="Other",
+        last_name="Parent",
+        password="parent-pass",
+        role=UserRole.parent,
+    )
+    other_child = await create_user(
+        app.state.session_factory,
+        email="other-kid@example.com",
+        first_name="Other",
+        last_name="Kid",
+        password="child-pass",
+        role=UserRole.child,
+        parent_id=other_parent.id,
+    )
+    chore = await _create_chore(
+        app.state.session_factory, title="Not yours", assignee_user_id=other_child.id
+    )
+
+    await _login_parent(client, parent_user)
+
+    edit_form = await client.get(f"/chores/{chore.id}/edit", follow_redirects=False)
+    assert edit_form.status_code == 303
+    assert edit_form.headers["location"] == "/chores"
+
+    edit_post = await client.post(
+        f"/chores/{chore.id}/edit",
+        data={
+            "title": "Hijacked",
+            "description": "",
+            "due_time": "10:00",
+            "base_points": "1",
+            "photo_policy": "none",
+            "schedule_day": ["0"],
+            "assignee_user_id": str(child_user.id),
+        },
+        follow_redirects=False,
+    )
+    assert edit_post.status_code == 303
+    assert edit_post.headers["location"] == "/chores"
+
+    async with app.state.session_factory() as session:
+        untouched = await session.get(Chore, chore.id)
+        assert untouched is not None
+        assert untouched.title == "Not yours"
+
+
+@pytest.mark.asyncio
+async def test_parent_creates_chore_with_invalid_base_points_and_assignee(
+    client: AsyncClient, parent_user: User, app, child_user: User
+) -> None:
+    await _login_parent(client, parent_user)
+
+    bad_points = await client.post(
+        "/chores",
+        data={
+            "title": "Sweep porch",
+            "description": "",
+            "due_time": "10:00",
+            "base_points": "not-a-number",
+            "photo_policy": "none",
+            "schedule_day": ["0"],
+            "assignee_user_id": str(child_user.id),
+        },
+        follow_redirects=False,
+    )
+    assert bad_points.status_code == 303
+    async with app.state.session_factory() as session:
+        chore = (
+            await session.execute(select(Chore).where(Chore.title == "Sweep porch"))
+        ).scalar_one()
+        assert chore.base_points == 10
+
+    bad_assignee = await client.post(
+        "/chores",
+        data={
+            "title": "Orphan chore",
+            "description": "",
+            "due_time": "10:00",
+            "base_points": "5",
+            "photo_policy": "none",
+            "schedule_day": ["0"],
+            "assignee_user_id": "999999",
+        },
+    )
+    assert bad_assignee.status_code == 400
+    assert "active children" in bad_assignee.text.lower()
+
+
+@pytest.mark.asyncio
+async def test_parent_edits_chore_with_invalid_assignee(
+    client: AsyncClient, parent_user: User, app, child_user: User
+) -> None:
+    await _login_parent(client, parent_user)
+    chore = await _create_chore(
+        app.state.session_factory, title="Fold laundry", assignee_user_id=child_user.id
+    )
+
+    response = await client.post(
+        f"/chores/{chore.id}/edit",
+        data={
+            "title": "Fold laundry",
+            "description": "",
+            "due_time": "10:00",
+            "base_points": "5",
+            "photo_policy": "none",
+            "schedule_day": ["0"],
+            "assignee_user_id": "999999",
+        },
+    )
+    assert response.status_code == 400
+    assert "active children" in response.text.lower()
