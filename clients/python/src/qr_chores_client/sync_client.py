@@ -145,8 +145,28 @@ class SyncQrChoresClient:
     def get_today(self) -> TodayResponse:
         return self._run(self._async.get_today())
 
-    def get_history(self, *, limit: int = 50) -> HistoryResponse:
-        return self._run(self._async.get_history(limit=limit))
+    def get_history(
+        self,
+        *,
+        child_id: int | None = None,
+        chore_id: int | None = None,
+        start_date: str | None = None,
+        end_date: str | None = None,
+        timing: str | None = None,
+        page: int = 1,
+        limit: int = 50,
+    ) -> HistoryResponse:
+        return self._run(
+            self._async.get_history(
+                child_id=child_id,
+                chore_id=chore_id,
+                start_date=start_date,
+                end_date=end_date,
+                timing=timing,
+                page=page,
+                limit=limit,
+            )
+        )
 
     def list_chores(self, *, include_inactive: bool = True) -> ChoreListResponse:
         return self._run(self._async.list_chores(include_inactive=include_inactive))

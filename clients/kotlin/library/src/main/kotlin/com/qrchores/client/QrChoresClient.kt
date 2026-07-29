@@ -191,10 +191,25 @@ class QrChoresClient(
     suspend fun getToday(): TodayResponse =
         get("/api/v1/today")
 
-    suspend fun getHistory(limit: Int = 50): HistoryResponse =
+    suspend fun getHistory(
+        childId: Int? = null,
+        choreId: Int? = null,
+        startDate: String? = null,
+        endDate: String? = null,
+        timing: String? = null,
+        page: Int = 1,
+        limit: Int = 50,
+    ): HistoryResponse =
         get("/api/v1/history") {
             parameter("limit", limit)
+            parameter("page", page)
+            if (childId != null) parameter("child_id", childId)
+            if (choreId != null) parameter("chore_id", choreId)
+            if (startDate != null) parameter("start_date", startDate)
+            if (endDate != null) parameter("end_date", endDate)
+            if (timing != null) parameter("timing", timing)
         }
+
 
     // --- Chores ---
 

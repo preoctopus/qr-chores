@@ -557,10 +557,29 @@ def create_mcp_server() -> Any:
         return _to_jsonable(await client.get_today())
 
     @mcp.tool
-    async def get_history(limit: int = 50, ctx: Any = None) -> dict[str, Any]:
-        """Parent completion history."""
+    async def get_history(
+        child_id: int | None = None,
+        chore_id: int | None = None,
+        start_date: str | None = None,
+        end_date: str | None = None,
+        timing: str | None = None,
+        page: int = 1,
+        limit: int = 50,
+        ctx: Any = None,
+    ) -> dict[str, Any]:
+        """Parent completion history with optional filters (child_id, chore_id, start_date, end_date, timing), pagination, and stats."""
         client = await _holder.get_client_for_request(ctx)
-        return _to_jsonable(await client.get_history(limit=limit))
+        return _to_jsonable(
+            await client.get_history(
+                child_id=child_id,
+                chore_id=chore_id,
+                start_date=start_date,
+                end_date=end_date,
+                timing=timing,
+                page=page,
+                limit=limit,
+            )
+        )
 
     @mcp.tool
     async def list_chores(include_inactive: bool = True, ctx: Any = None) -> dict[str, Any]:

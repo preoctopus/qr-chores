@@ -156,11 +156,35 @@ class HistoryItem(BaseModel):
     user_id: int
 
 
+class HistoryStats(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    total_completions: int
+    completions_this_week: int
+    on_time_count: int
+    on_time_rate: float
+    total_points: int
+    current_streak: int
+
+
+class HistoryPagination(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    page: int
+    limit: int
+    total_count: int
+    total_pages: int
+    has_next: bool
+    has_prev: bool
+
+
 class HistoryResponse(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
     items: list[HistoryItem]
     limit: int
+    stats: HistoryStats | None = None
+    pagination: HistoryPagination | None = None
 
 
 class ChoreListResponse(BaseModel):

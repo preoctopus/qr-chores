@@ -361,12 +361,43 @@ def today(user: dict[str, Any] = Depends(require_parent)) -> dict[str, Any]:
 
 @app.get("/api/v1/history")
 def history(
+    child_id: int | None = Query(default=None),
+    chore_id: int | None = Query(default=None),
+    start_date: str | None = Query(default=None),
+    end_date: str | None = Query(default=None),
+    timing: str | None = Query(default=None),
+    page: int = Query(default=1, ge=1),
     limit: int = Query(default=50, ge=1, le=200),
     user: dict[str, Any] = Depends(require_parent),
 ) -> dict[str, Any]:
     del user
+    all_completions = list(STATE["completions"].values())
+
+    filtered = []
+    for c in all_completions:
+        if child_id is not None and c["user_id"] != child_id:
+            continue
+        if chore_id is not None and c["chore_id"] != chore_id:
+            continue
+        if start_date and c["local_date"] < start_date:
+            continue
+        if end_date and c["local_date"] > end_date:
+            continue
+        if timing and c["timing"] != timing:
+            continue
+        filtered.append(c)
+
+    filtered.sort(key=lambda x: x["id"], reverse=True)
+    total_count = len(filtered)
+    import math
+
+    total_pages = math.ceil(total_count / limit) if total_count > 0 else 1
+    page = max(1, min(page, total_pages))
+    offset = (page - 1) * limit
+    paginated = filtered[offset : offset + limit]
+
     items = []
-    for c in sorted(STATE["completions"].values(), key=lambda x: x["id"], reverse=True)[:limit]:
+    for c in paginated:
         chore = STATE["chores"].get(c["chore_id"], {"title": "?", "id": c["chore_id"]})
         items.append(
             {
@@ -376,7 +407,36 @@ def history(
                 "user_id": c["user_id"],
             }
         )
-    return {"items": items, "limit": limit}
+
+    on_time_count = sum(1 for c in filtered if c["timing"] in ("on_time", "early"))
+    on_time_rate = round((on_time_count / total_count) * 100, 1) if total_count > 0 else 0.0
+    total_points = sum(c["points_awarded"] for c in filtered)
+
+    stats = {
+        "total_completions": total_count,
+        "completions_this_week": total_count,
+        "on_time_count": on_time_count,
+        "on_time_rate": on_time_rate,
+        "total_points": total_points,
+        "current_streak": 1 if total_count > 0 else 0,
+    }
+
+    pagination = {
+        "page": page,
+        "limit": limit,
+        "total_count": total_count,
+        "total_pages": total_pages,
+        "has_next": page < total_pages,
+        "has_prev": page > 1,
+    }
+
+    return {
+        "items": items,
+        "limit": limit,
+        "stats": stats,
+        "pagination": pagination,
+    }
+
 
 
 @app.get("/api/v1/chores")
