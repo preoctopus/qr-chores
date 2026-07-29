@@ -24,7 +24,7 @@ def upgrade() -> None:
             "early_bonus_enabled",
             sa.Boolean(),
             nullable=False,
-            server_default=sa.text("1"),
+            server_default=sa.true(),
         ),
     )
 
