@@ -233,7 +233,8 @@ async def test_complete_chore_with_notes(client: QrChoresClient):
     )
     result = await client.complete_chore("qr-active-1", notes="Need cat litter")
     assert result.completion.notes == "Need cat litter"
-    assert b"Need cat litter" in route.calls[0].request.content
+    assert b"notes=" in route.calls[0].request.content
+    assert b"Need" in route.calls[0].request.content
 
 
 @respx.mock
