@@ -129,6 +129,7 @@ class SyncQrChoresClient:
         photo: bytes | None = None,
         photo_filename: str = "photo.jpg",
         photo_content_type: str = "image/jpeg",
+        notes: str | None = None,
     ) -> CompleteResponse:
         return self._run(
             self._async.complete_chore(
@@ -136,6 +137,7 @@ class SyncQrChoresClient:
                 photo=photo,
                 photo_filename=photo_filename,
                 photo_content_type=photo_content_type,
+                notes=notes,
             )
         )
 

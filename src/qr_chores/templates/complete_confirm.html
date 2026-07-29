@@ -23,6 +23,9 @@
       Completed {{ timing_status_label(completion.timing) }} ·
       +{{ completion.points_awarded }} pts
     </p>
+    {% if completion.notes %}
+    <p class="muted small"><strong>Note:</strong> {{ completion.notes }}</p>
+    {% endif %}
     {% if completion.photo_object_key %}
     <a href="/photos/{{ completion.id }}" class="photo-thumb-link">
       <img class="photo-thumb" src="/photos/{{ completion.id }}" alt="Proof photo">
@@ -68,6 +71,10 @@
         <span class="muted small">JPEG, PNG, or WebP · max 5&nbsp;MB</span>
       </label>
       {% endif %}
+      <label class="field">
+        <span>Note for parent <em class="opt">optional</em></span>
+        <textarea name="notes" rows="2" placeholder="e.g. We're running low on cat litter" class="form-input"></textarea>
+      </label>
       <button type="submit" class="btn btn-primary btn-block btn-lg">I did it</button>
     </form>
     <a class="btn btn-ghost btn-block" href="/home">Not yet</a>

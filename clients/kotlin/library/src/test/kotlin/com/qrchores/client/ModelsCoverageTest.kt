@@ -64,6 +64,7 @@ class ModelsCoverageTest {
             timing = "on_time",
             pointsAwarded = 12,
             hasPhoto = true,
+            notes = "Need cat litter",
         )
 
     @Test

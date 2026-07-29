@@ -118,7 +118,9 @@ Authorization: Bearer <child_token>
 Content-Type: multipart/form-data
 ```
 
-Optional form field: **`photo`** (JPEG / PNG / WebP; size capped by `PHOTO_MAX_BYTES`).
+Optional form fields:
+- **`photo`** (JPEG / PNG / WebP; size capped by `PHOTO_MAX_BYTES`).
+- **`notes`** (string note for parents; sends email alert if configured).
 
 **Success `200`:** includes `already_done`, `chore`, `completion`, `points` breakdown, `unlocks`.
 

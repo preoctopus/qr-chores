@@ -23,6 +23,9 @@
         <div>
           <p class="chore-title">{{ row.chore.title }}</p>
           <p class="muted small">Due {{ format_due_time(row.chore.due_time) }} · {{ row.chore.base_points }} pts</p>
+          {% if row.completion and row.completion.notes %}
+          <p class="chore-note muted small"><strong>Note:</strong> {{ row.completion.notes }}</p>
+          {% endif %}
           {% if row.completion and row.completion.photo_object_key %}
           <a class="photo-link" href="/photos/{{ row.completion.id }}">View photo</a>
           {% endif %}

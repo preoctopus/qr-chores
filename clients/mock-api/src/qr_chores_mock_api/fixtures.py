@@ -150,6 +150,7 @@ def completion_summary(c: dict[str, Any]) -> dict[str, Any]:
         "timing": c["timing"],
         "points_awarded": c["points_awarded"],
         "has_photo": c["has_photo"],
+        "notes": c.get("notes"),
     }
 
 

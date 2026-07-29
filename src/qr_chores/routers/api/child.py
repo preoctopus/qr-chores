@@ -1,6 +1,6 @@
 """Child-facing API: home, confirm, complete, achievements."""
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -127,6 +127,7 @@ async def api_complete_chore(
     db: AsyncSession = Depends(get_db),
     settings: Settings = Depends(get_settings),
     photo: UploadFile | None = File(None),
+    notes: str | None = Form(None),
 ) -> CompleteResponse:
     chore = await _load_chore_by_token(db, qr_token)
     if chore is None or not chore.is_active:
@@ -149,6 +150,7 @@ async def api_complete_chore(
             user=user,
             settings=settings,
             photo=photo_upload,
+            notes=notes,
         )
     except CompletionError as exc:
         raise _completion_http_error(exc) from exc

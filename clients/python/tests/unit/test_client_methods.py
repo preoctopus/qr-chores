@@ -212,6 +212,31 @@ async def test_complete_chore_with_photo(client: QrChoresClient):
 
 
 @respx.mock
+async def test_complete_chore_with_notes(client: QrChoresClient):
+    client.access_token = "t"
+    route = respx.post(f"{BASE}/api/v1/c/qr-active-1/complete").mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "already_done": False,
+                "chore": CHORE,
+                "completion": {**COMPLETION, "notes": "Need cat litter"},
+                "points": {
+                    "base": 10,
+                    "timing_bonus": 2,
+                    "achievement_points": 0,
+                    "total": 12,
+                },
+                "unlocks": [],
+            },
+        )
+    )
+    result = await client.complete_chore("qr-active-1", notes="Need cat litter")
+    assert result.completion.notes == "Need cat litter"
+    assert b"Need cat litter" in route.calls[0].request.content
+
+
+@respx.mock
 async def test_get_achievements(client: QrChoresClient):
     client.access_token = "t"
     respx.get(f"{BASE}/api/v1/achievements").mock(

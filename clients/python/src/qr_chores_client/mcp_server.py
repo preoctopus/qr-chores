@@ -529,9 +529,10 @@ def create_mcp_server() -> Any:
         qr_token: str,
         photo_base64: str | None = None,
         photo_filename: str = "photo.jpg",
+        notes: str | None = None,
         ctx: Any = None,
     ) -> dict[str, Any]:
-        """Complete a chore by QR token. Optionally attach a base64-encoded photo."""
+        """Complete a chore by QR token. Optionally attach a base64-encoded photo and/or note for parents."""
         client = await _holder.get_client_for_request(ctx)
         photo: bytes | None = None
         if photo_base64:
@@ -541,6 +542,7 @@ def create_mcp_server() -> Any:
                 qr_token,
                 photo=photo,
                 photo_filename=photo_filename,
+                notes=notes,
             )
         )
 

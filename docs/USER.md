@@ -136,7 +136,8 @@ You only complete chores **assigned to you**. To finish one, scan its physical Q
 1. **Scan the QR** on the sticker.
 2. Confirm the name and due time.
 3. If a **photo** is required or optional, take or choose a picture (JPEG, PNG, or WebP; size limit applies).
-4. Tap **I did it**.
+4. Optionally enter a **note for parents** (e.g., "We're out of cat litter"). If entered, an email alert will be sent to your parent(s).
+5. Tap **I did it**.
 
 You’ll get a celebration screen with:
 

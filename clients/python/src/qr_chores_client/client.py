@@ -232,14 +232,19 @@ class QrChoresClient:
         photo: bytes | None = None,
         photo_filename: str = "photo.jpg",
         photo_content_type: str = "image/jpeg",
+        notes: str | None = None,
     ) -> CompleteResponse:
         files = None
         if photo is not None:
             files = {"photo": (photo_filename, photo, photo_content_type)}
+        data_body = None
+        if notes is not None:
+            data_body = {"notes": notes}
         data = await self._request(
             "POST",
             f"{API_PREFIX}/c/{qr_token}/complete",
             files=files,
+            data=data_body,
         )
         return CompleteResponse.model_validate(data)
 

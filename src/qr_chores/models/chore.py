@@ -103,6 +103,7 @@ class ChoreCompletion(Base):
         nullable=False,
     )
     photo_object_key: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     points_awarded: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
     chore: Mapped[Chore] = relationship(back_populates="completions")

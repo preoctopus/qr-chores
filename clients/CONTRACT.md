@@ -35,6 +35,8 @@ Tiny valid PNG bytes served for `GET .../qr.png` and `GET .../photos/{id}`.
 | GET | `/api/v1/home` | `get_home` | `getHome` |
 | GET | `/api/v1/c/{qr_token}` | `get_confirm` | `getConfirm` |
 | POST | `/api/v1/c/{qr_token}/complete` | `complete_chore` | `completeChore` |
+
+- `POST /api/v1/c/{qr_token}/complete`: accepts optional multipart/form `photo` bytes and/or optional `notes` string for parents. `Completion` DTO includes `notes: string | null`.
 | GET | `/api/v1/achievements` | `get_achievements` | `getAchievements` |
 | GET | `/api/v1/today` | `get_today` | `getToday` |
 | GET | `/api/v1/history` | `get_history` | `getHistory` |

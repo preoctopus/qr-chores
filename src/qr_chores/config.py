@@ -42,6 +42,13 @@ class Settings(BaseSettings):
     # SYSLOG_SERVER format: host or host:port (UDP, default 514). Empty = console only.
     log_level: str = "INFO"
     syslog_server: str = ""
+    # Email notifications (completion notes)
+    smtp_host: str = ""
+    smtp_port: int = 587
+    smtp_user: str = ""
+    smtp_password: str = ""
+    smtp_from_email: str = "noreply@qrchores.com"
+    smtp_use_tls: bool = True
 
     @property
     def is_production(self) -> bool:

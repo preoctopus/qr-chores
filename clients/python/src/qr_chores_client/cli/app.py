@@ -256,6 +256,12 @@ def complete(
         dir_okay=False,
         readable=True,
     ),
+    notes: str | None = typer.Option(
+        None,
+        "--notes",
+        "-n",
+        help="Optional note for parents (e.g. 'We are out of cat litter').",
+    ),
 ) -> None:
     """Complete a chore (POST /api/v1/c/{token}/complete). Child."""
     cfg = get_config(ctx)
@@ -273,6 +279,7 @@ def complete(
             photo=photo_bytes,
             photo_filename=filename,
             photo_content_type=content_type,
+            notes=notes,
         )
     finally:
         client.close()

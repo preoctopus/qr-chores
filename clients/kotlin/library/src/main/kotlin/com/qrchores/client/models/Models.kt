@@ -53,6 +53,7 @@ data class Completion(
     val timing: String,
     @SerialName("points_awarded") val pointsAwarded: Int,
     @SerialName("has_photo") val hasPhoto: Boolean,
+    val notes: String? = null,
 )
 
 @Serializable

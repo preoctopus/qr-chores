@@ -153,28 +153,34 @@ class QrChoresClient(
         photoBytes: ByteArray? = null,
         photoFileName: String? = null,
         photoContentType: String? = null,
+        notes: String? = null,
     ): CompleteResponse {
         val response =
             client.post("$baseUrl/api/v1/c/${encodePath(qrToken)}/complete") {
                 applyAuth()
-                if (photoBytes != null) {
-                    val name = photoFileName ?: "photo.jpg"
-                    val ct = photoContentType ?: "image/jpeg"
+                if (photoBytes != null || notes != null) {
                     setBody(
                         MultiPartFormDataContent(
                             formData {
-                                append(
-                                    key = "photo",
-                                    value = photoBytes,
-                                    headers =
-                                        Headers.build {
-                                            append(HttpHeaders.ContentType, ct)
-                                            append(
-                                                HttpHeaders.ContentDisposition,
-                                                "filename=\"$name\"",
-                                            )
-                                        },
-                                )
+                                if (photoBytes != null) {
+                                    val name = photoFileName ?: "photo.jpg"
+                                    val ct = photoContentType ?: "image/jpeg"
+                                    append(
+                                        key = "photo",
+                                        value = photoBytes,
+                                        headers =
+                                            Headers.build {
+                                                append(HttpHeaders.ContentType, ct)
+                                                append(
+                                                    HttpHeaders.ContentDisposition,
+                                                    "filename=\"$name\"",
+                                                )
+                                            },
+                                    )
+                                }
+                                if (notes != null) {
+                                    append(key = "notes", value = notes)
+                                }
                             },
                         ),
                     )

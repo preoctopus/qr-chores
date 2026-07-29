@@ -45,6 +45,7 @@ def completion_summary(completion: ChoreCompletion) -> CompletionSummaryOut:
         timing=completion.timing.value,
         points_awarded=completion.points_awarded,
         has_photo=bool(completion.photo_object_key),
+        notes=completion.notes,
     )
 
 

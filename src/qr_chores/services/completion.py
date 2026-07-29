@@ -135,6 +135,7 @@ async def complete_chore(
     user: User,
     settings: Settings,
     photo: PhotoUpload | None = None,
+    notes: str | None = None,
 ) -> CompletionResult:
     if not chore.is_active:
         raise CompletionError("This chore is no longer active.", "inactive")
@@ -145,6 +146,8 @@ async def complete_chore(
             "This chore is assigned to someone else.",
             "wrong_assignee",
         )
+
+    clean_notes = notes.strip() if notes and notes.strip() else None
 
     # Capture primitives before the write transaction: after IntegrityError +
     # rollback, ORM instances may be expired and unsafe to attribute-load.
@@ -188,6 +191,7 @@ async def complete_chore(
         completed_at=now,
         timing=timing,
         photo_object_key=photo_key,
+        notes=clean_notes,
         points_awarded=points_awarded,
     )
     db.add(completion)
@@ -238,6 +242,18 @@ async def complete_chore(
                 already_done=True,
             )
         raise CompletionError("Could not save completion.", "db") from exc
+
+    if clean_notes:
+        from qr_chores.services.email import send_completion_note_email
+
+        await send_completion_note_email(
+            db=db,
+            settings=settings,
+            completion=completion,
+            chore=chore,
+            child=user,
+            notes=clean_notes,
+        )
 
     await db.refresh(completion)
     return CompletionResult(

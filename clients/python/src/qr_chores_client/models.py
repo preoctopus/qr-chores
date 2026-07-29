@@ -51,6 +51,7 @@ class Completion(BaseModel):
     timing: str
     points_awarded: int
     has_photo: bool
+    notes: str | None = None
 
 
 class BoardItem(BaseModel):

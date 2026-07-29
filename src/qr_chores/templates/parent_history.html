@@ -111,6 +111,9 @@
             {{ c.local_date }} · {{ c.timing.value.replace('_', ' ') }} ·
             +{{ c.points_awarded }} pts
           </p>
+          {% if c.notes %}
+          <p class="chore-note muted small"><strong>Note:</strong> {{ c.notes }}</p>
+          {% endif %}
         </div>
         {% if c.photo_object_key %}
         <a class="photo-link" href="/photos/{{ c.id }}">Photo</a>

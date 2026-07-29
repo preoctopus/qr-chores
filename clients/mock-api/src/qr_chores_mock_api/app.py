@@ -5,7 +5,7 @@ from __future__ import annotations
 import secrets
 from typing import Any
 
-from fastapi import Depends, FastAPI, File, Header, HTTPException, Query, UploadFile, status
+from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, Query, UploadFile, status
 from fastapi.responses import Response
 from pydantic import BaseModel, Field
 
@@ -259,6 +259,7 @@ def confirm(qr_token: str, user: dict[str, Any] = Depends(require_child)) -> dic
 async def complete(
     qr_token: str,
     photo: UploadFile | None = File(default=None),
+    notes: str | None = Form(default=None),
     user: dict[str, Any] = Depends(require_child),
 ) -> dict[str, Any]:
     chore = _chore_by_token(qr_token)
@@ -293,6 +294,7 @@ async def complete(
     timing = "on_time"
     bonus = STATE["bonuses"]["on_time_bonus_points"]
     total = chore["base_points"] + bonus
+    clean_notes = notes.strip() if notes and notes.strip() else None
     completion = {
         "id": cid,
         "chore_id": chore["id"],
@@ -302,6 +304,7 @@ async def complete(
         "timing": timing,
         "points_awarded": total,
         "has_photo": bool(photo_bytes),
+        "notes": clean_notes,
         "photo_bytes": photo_bytes or None,
     }
     STATE["completions"][cid] = completion

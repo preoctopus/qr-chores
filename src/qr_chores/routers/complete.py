@@ -2,7 +2,7 @@
 
 from datetime import datetime, timedelta
 
-from fastapi import APIRouter, Depends, File, Request, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, Request, UploadFile, status
 from fastapi.responses import RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -130,6 +130,7 @@ async def complete_submit(
     settings: Settings = Depends(get_settings),
     user: User = Depends(require_role(UserRole.child)),
     photo: UploadFile | None = File(None),
+    notes: str | None = Form(None),
 ):
     chore = await _load_chore(db, token)
     if chore is None or not chore.is_active:
@@ -167,6 +168,7 @@ async def complete_submit(
             user=user,
             settings=settings,
             photo=photo_upload,
+            notes=notes,
         )
         timing = result.completion.timing
         log_user_action(
