@@ -73,7 +73,9 @@ async def seed() -> None:
             parent_email = spec.get("parent_email")
             if parent_email:
                 parent = by_email.get(parent_email)
-                if parent is None:
+                if parent is None:  # pragma: no cover
+                    # Defensive DB fallback: unreachable while DEFAULT_USERS lists
+                    # every parent before its children, which guarantees a cache hit.
                     parent_row = await db.execute(select(User).where(User.email == parent_email))
                     parent = parent_row.scalar_one_or_none()
                 parent_id = parent.id if parent is not None else None

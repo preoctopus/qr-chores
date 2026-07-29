@@ -6,6 +6,7 @@ import pytest
 from httpx import AsyncClient
 
 from qr_chores.config import Settings, get_settings
+from qr_chores.security_headers import SecurityHeadersMiddleware
 
 
 @pytest.mark.asyncio
@@ -61,3 +62,23 @@ async def test_hsts_when_base_url_is_https(
 async def test_hsts_when_x_forwarded_proto_is_https(client: AsyncClient) -> None:
     resp = await client.get("/login", headers={"x-forwarded-proto": "https"})
     assert resp.headers["strict-transport-security"] == "max-age=63072000; includeSubDomains"
+
+
+@pytest.mark.asyncio
+async def test_non_http_scope_bypasses_header_wrapping() -> None:
+    calls: list[str] = []
+
+    async def inner_app(scope, receive, send) -> None:
+        calls.append(scope["type"])
+
+    middleware = SecurityHeadersMiddleware(inner_app)
+
+    async def receive():
+        return {"type": "lifespan.startup"}
+
+    async def send(message) -> None:
+        return None
+
+    await middleware({"type": "lifespan"}, receive, send)
+    assert calls == ["lifespan"]
+

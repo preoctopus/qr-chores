@@ -1,13 +1,13 @@
 """Photo policy, upload, and serving tests."""
 
-from datetime import time
+from datetime import UTC, datetime, time
 from io import BytesIO
 
 import pytest
 from httpx import AsyncClient
 from sqlalchemy import select
 
-from qr_chores.models.chore import Chore, ChoreCompletion, PhotoPolicy
+from qr_chores.models.chore import Chore, ChoreCompletion, PhotoPolicy, TimingStatus
 from qr_chores.models.user import User
 from qr_chores.services.qr import new_qr_token
 from qr_chores.services.storage import sniff_content_type
@@ -199,6 +199,32 @@ async def test_photo_requires_auth(client: AsyncClient, child_user: User, app) -
     async with AC(transport=transport, base_url="http://testserver") as anon:
         resp = await anon.get(f"/photos/{cid}")
         assert resp.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_photo_missing_on_disk_returns_404(
+    client: AsyncClient, child_user: User, app
+) -> None:
+    chore = await _create_chore(
+        app.state.session_factory, photo_policy=PhotoPolicy.required, assignee_user_id=child_user.id
+    )
+    async with app.state.session_factory() as session:
+        completion = ChoreCompletion(
+            chore_id=chore.id,
+            user_id=child_user.id,
+            local_date=datetime.now(UTC).date(),
+            completed_at=datetime.now(UTC),
+            timing=TimingStatus.on_time,
+            photo_object_key="missing/does-not-exist.png",
+            points_awarded=10,
+        )
+        session.add(completion)
+        await session.commit()
+        completion_id = completion.id
+
+    await _login_child(client, child_user)
+    response = await client.get(f"/photos/{completion_id}")
+    assert response.status_code == 404
 
 
 @pytest.mark.asyncio
