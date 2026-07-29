@@ -22,9 +22,9 @@ from qr_chores_client.cli.config import (
 from qr_chores_client.cli.context import get_config, set_config
 from qr_chores_client.cli.errors import handle_api_errors
 
-EPILOG = """
+EPILOG = f"""
 [bold]API[/]
-  Origin default: [cyan]https://chores.indecline.ca[/]
+  Origin default: [cyan]{DEFAULT_BASE_URL}[/]
   Paths always under [cyan]/api/v1[/] (provided by the Python client library).
 
 [bold]Auth[/]

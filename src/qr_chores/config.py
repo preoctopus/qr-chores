@@ -52,7 +52,7 @@ class Settings(BaseSettings):
         """True when defaults are unsafe (HTTPS, Postgres, or explicit prod)."""
         if self.is_production:
             return True
-        if self.base_url.startswith("https://"):
+        if self.base_url and self.base_url.startswith("https://"):
             return True
         url = self.database_url.lower()
         return "postgresql" in url or "asyncpg" in url or "postgres" in url

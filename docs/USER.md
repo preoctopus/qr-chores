@@ -21,7 +21,7 @@ There is **no public “sign up” page**. Parent logins are provided for your h
 
 ### Log in
 
-1. Open the app URL (for example `https://chores.indecline.ca` or your local/dev URL).
+1. Open the app URL (for example `https://chores.example.com` or your local/dev URL).
 2. Enter username and password.
 3. Parents land on **Today**; each child lands on **Home** (their points, achievements, and chores only).
 

@@ -26,7 +26,7 @@ Requires **Python 3.12+**.
 
 ## CLI (`qrc`)
 
-Terminal front-end over `SyncQrChoresClient` (no separate HTTP stack). Default API origin: **`https://chores.indecline.ca`** (paths under `/api/v1`).
+Terminal front-end over `SyncQrChoresClient` (no separate HTTP stack). Default API origin: **`http://127.0.0.1:8765`** (paths under `/api/v1`).
 
 ```bash
 uv run qrc --help

@@ -10,7 +10,7 @@ from typing import Any
 
 from platformdirs import user_config_dir
 
-DEFAULT_BASE_URL = "https://chores.indecline.ca"
+DEFAULT_BASE_URL = "http://127.0.0.1:8765"
 APP_NAME = "qrc"
 CREDENTIALS_FILENAME = "credentials.json"
 

@@ -55,3 +55,9 @@ async def test_hsts_when_base_url_is_https(
         assert resp.headers["strict-transport-security"] == "max-age=63072000; includeSubDomains"
 
     get_settings.cache_clear()
+
+
+@pytest.mark.asyncio
+async def test_hsts_when_x_forwarded_proto_is_https(client: AsyncClient) -> None:
+    resp = await client.get("/login", headers={"x-forwarded-proto": "https"})
+    assert resp.headers["strict-transport-security"] == "max-age=63072000; includeSubDomains"

@@ -54,7 +54,14 @@ class SecurityHeadersMiddleware:
             return
 
         settings = self._settings or get_settings()
-        https = settings.base_url.startswith("https://")
+        https = (
+            scope.get("scheme") == "https"
+            or any(
+                k.lower() == b"x-forwarded-proto" and v.strip().lower() == b"https"
+                for k, v in scope.get("headers", [])
+            )
+            or (bool(settings.base_url) and settings.base_url.startswith("https://"))
+        )
 
         async def send_wrapper(message: Message) -> None:
             if message["type"] == "http.response.start":

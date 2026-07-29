@@ -107,7 +107,7 @@ async def login_submit(
     is_https = (
         request.headers.get("x-forwarded-proto") == "https"
         or request.url.scheme == "https"
-        or settings.base_url.startswith("https://")
+        or (bool(settings.base_url) and settings.base_url.startswith("https://"))
     )
     response = RedirectResponse(destination, status_code=status.HTTP_303_SEE_OTHER)
     response.set_cookie(

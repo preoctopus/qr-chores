@@ -38,7 +38,7 @@ def _set_session_cookie(
     is_https = (
         request
         and (request.headers.get("x-forwarded-proto") == "https" or request.url.scheme == "https")
-    ) or settings.base_url.startswith("https://")
+    ) or (bool(settings.base_url) and settings.base_url.startswith("https://"))
     response.set_cookie(
         key=settings.session_cookie_name,
         value=dump_session(settings, user_id),
