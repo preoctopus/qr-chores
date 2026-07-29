@@ -26,11 +26,16 @@
     <li class="chore-card {% if not chore.is_active %}is-inactive{% endif %}">
       <div class="chore-card-main">
         <div>
-          <p class="chore-title">{{ chore.title }}</p>
+          <p class="chore-title">
+            {{ chore.title }}
+            {% if chore.assignee %}
+            <span class="child-badge">{{ chore.assignee.display_name or chore.assignee.first_name }}</span>
+            {% endif %}
+          </p>
           <p class="muted small">
-            {% if chore.assignee %}{{ chore.assignee.display_name }} · {% endif %}
             Due {{ format_due_time(chore.due_time) }} · {{ schedule_labels(chore.schedule_days) }}
             · {{ chore.base_points }} pts
+            {% if chore.photo_policy.value != 'none' %} · Photo: {{ chore.photo_policy.value }}{% endif %}
             {% if not chore.is_active %} · inactive{% endif %}
           </p>
         </div>

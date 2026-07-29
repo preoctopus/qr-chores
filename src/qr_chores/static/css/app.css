@@ -841,4 +841,61 @@ input[type="file"] {
   margin-left: 0.35rem;
 }
 
+.chore-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.chore-card-photo {
+  margin-top: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* Desktop Responsive Layout for Parent Dashboard */
+@media (min-width: 768px) {
+  .app-shell.parent-shell {
+    max-width: 1120px;
+    padding: 0 2rem 3rem;
+  }
+
+  .parent-shell .topbar {
+    padding: 1.25rem 0;
+  }
+
+  .parent-shell .chore-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1.25rem;
+  }
+
+  .parent-shell .chore-card {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    margin-bottom: 0;
+  }
+
+  .parent-shell .history-stats-grid {
+    grid-template-columns: repeat(5, 1fr);
+    gap: 1rem;
+  }
+
+  .parent-shell .filter-grid {
+    grid-template-columns: repeat(5, 1fr);
+    gap: 1rem;
+  }
+
+  .parent-shell .history-stat-card {
+    padding: 1rem;
+  }
+
+  .parent-shell .history-stat-val {
+    font-size: 1.65rem;
+  }
+}
+
 

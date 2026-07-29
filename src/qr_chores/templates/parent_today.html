@@ -19,23 +19,30 @@
   <ul class="chore-list">
     {% for row in board %}
     <li class="chore-card">
-      <div class="chore-card-main">
-        <div>
-          <p class="chore-title">{{ row.chore.title }}</p>
-          <p class="muted small">Due {{ format_due_time(row.chore.due_time) }} · {{ row.chore.base_points }} pts</p>
-          {% if row.completion and row.completion.notes %}
-          <p class="chore-note muted small"><strong>Note:</strong> {{ row.completion.notes }}</p>
-          {% endif %}
-          {% if row.completion and row.completion.photo_object_key %}
-          <a class="photo-link" href="/photos/{{ row.completion.id }}">View photo</a>
-          {% endif %}
+      <div class="chore-card-header">
+        <div class="chore-card-meta">
+          <p class="chore-title">
+            {{ row.chore.title }}
+            {% if row.chore.assignee %}
+            <span class="child-badge">{{ row.chore.assignee.display_name or row.chore.assignee.first_name }}</span>
+            {% endif %}
+          </p>
+          <p class="muted small">
+            Due {{ format_due_time(row.chore.due_time) }} · {{ row.chore.base_points }} pts
+          </p>
         </div>
         <span class="chip chip-{{ row.status_kind }}">{{ row.status_label }}</span>
       </div>
+      {% if row.completion and row.completion.notes %}
+      <p class="chore-note muted small"><strong>Note:</strong> {{ row.completion.notes }}</p>
+      {% endif %}
       {% if row.completion and row.completion.photo_object_key %}
-      <a href="/photos/{{ row.completion.id }}" class="photo-thumb-link">
-        <img class="photo-thumb sm" src="/photos/{{ row.completion.id }}" alt="Proof for {{ row.chore.title }}">
-      </a>
+      <div class="chore-card-photo">
+        <a href="/photos/{{ row.completion.id }}" class="photo-thumb-link">
+          <img class="photo-thumb sm" src="/photos/{{ row.completion.id }}" alt="Proof for {{ row.chore.title }}">
+        </a>
+        <a class="photo-link" href="/photos/{{ row.completion.id }}">View photo</a>
+      </div>
       {% endif %}
     </li>
     {% endfor %}

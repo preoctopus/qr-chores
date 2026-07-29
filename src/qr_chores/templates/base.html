@@ -13,11 +13,11 @@
   <link rel="icon" href="/static/favicon.ico" sizes="any">
   <link rel="apple-touch-icon" href="/static/icons/app-logo-192.png">
   <link rel="manifest" href="/static/manifest.webmanifest">
-  <link rel="stylesheet" href="/static/css/app.css">
+  <link rel="stylesheet" href="/static/css/app.css?v=20260729">
   {% block head %}{% endblock %}
 </head>
 <body>
-  <div class="app-shell">
+  <div class="app-shell{% if user is defined and user and user.role.value == 'parent' %} parent-shell{% endif %}">
     <header class="topbar">
       <a class="brand" href="/login">QR Chores</a>
       {% if user is defined and user %}

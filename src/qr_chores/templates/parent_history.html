@@ -99,7 +99,7 @@
   <ul class="chore-list">
     {% for c in completions %}
     <li class="chore-card">
-      <div class="chore-card-main">
+      <div class="chore-card-header">
         <div>
           <p class="chore-title">
             {{ c.chore.title if c.chore else "Chore" }}
@@ -111,18 +111,19 @@
             {{ c.local_date }} · {{ c.timing.value.replace('_', ' ') }} ·
             +{{ c.points_awarded }} pts
           </p>
-          {% if c.notes %}
-          <p class="chore-note muted small"><strong>Note:</strong> {{ c.notes }}</p>
-          {% endif %}
         </div>
-        {% if c.photo_object_key %}
-        <a class="photo-link" href="/photos/{{ c.id }}">Photo</a>
-        {% endif %}
+        <span class="chip chip-{{ c.timing.value }}">{{ c.timing.value.replace('_', ' ') }}</span>
       </div>
+      {% if c.notes %}
+      <p class="chore-note muted small"><strong>Note:</strong> {{ c.notes }}</p>
+      {% endif %}
       {% if c.photo_object_key %}
-      <a href="/photos/{{ c.id }}" class="photo-thumb-link">
-        <img class="photo-thumb sm" src="/photos/{{ c.id }}" alt="Proof photo">
-      </a>
+      <div class="chore-card-photo">
+        <a href="/photos/{{ c.id }}" class="photo-thumb-link">
+          <img class="photo-thumb sm" src="/photos/{{ c.id }}" alt="Proof photo">
+        </a>
+        <a class="photo-link" href="/photos/{{ c.id }}">View photo</a>
+      </div>
       {% endif %}
     </li>
     {% endfor %}
