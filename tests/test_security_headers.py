@@ -81,4 +81,3 @@ async def test_non_http_scope_bypasses_header_wrapping() -> None:
 
     await middleware({"type": "lifespan"}, receive, send)
     assert calls == ["lifespan"]
-
