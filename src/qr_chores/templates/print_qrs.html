@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Print QR codes · QR Chores</title>
+  <link rel="icon" href="/static/favicon.ico" sizes="any">
   <link rel="stylesheet" href="/static/css/app.css">
   <style>
     :root {
@@ -189,7 +190,7 @@
     <header class="topbar">
       <a class="brand" href="/chores">← Chores</a>
       {% if items %}
-      <button class="btn btn-primary btn-sm" type="button" onclick="window.print()">Print sheet</button>
+      <button id="print-btn" class="btn btn-primary btn-sm" type="button">Print sheet</button>
       {% endif %}
     </header>
     {% if items %}
@@ -234,5 +235,6 @@
     <p class="print-footer">Cut on dashed lines · Reuse every day · {{ base_url }}</p>
   </div>
   {% endif %}
+  <script src="/static/js/print.js"></script>
 </body>
 </html>
