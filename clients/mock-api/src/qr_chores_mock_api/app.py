@@ -46,6 +46,7 @@ class ChoreCreate(BaseModel):
     schedule_days: str = "0123456"
     photo_policy: str = "none"
     base_points: int = 10
+    early_bonus_enabled: bool = True
 
 
 class ChoreUpdate(BaseModel):
@@ -55,6 +56,7 @@ class ChoreUpdate(BaseModel):
     schedule_days: str | None = None
     photo_policy: str | None = None
     base_points: int | None = None
+    early_bonus_enabled: bool | None = None
     clear_description: bool = False
 
 
@@ -404,6 +406,7 @@ def create_chore(body: ChoreCreate, user: dict[str, Any] = Depends(require_paren
         "schedule_days": body.schedule_days or "0123456",
         "photo_policy": body.photo_policy,
         "base_points": body.base_points,
+        "early_bonus_enabled": body.early_bonus_enabled,
         "is_active": True,
     }
     STATE["chores"][cid] = chore

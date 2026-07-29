@@ -18,6 +18,7 @@ from sqlalchemy import (
     Time,
     UniqueConstraint,
     func,
+    text,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -59,6 +60,9 @@ class Chore(Base):
         default=PhotoPolicy.none,
     )
     base_points: Mapped[int] = mapped_column(Integer, nullable=False, default=10)
+    early_bonus_enabled: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=True, server_default=text("1")
+    )
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     # Child who owns this chore (only they may complete it via QR).
     assignee_user_id: Mapped[int | None] = mapped_column(

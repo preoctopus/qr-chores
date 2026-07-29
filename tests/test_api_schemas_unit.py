@@ -77,8 +77,16 @@ def test_chore_create_defaults_and_strip() -> None:
     assert body.schedule_days == "0123456"
     assert body.photo_policy == "none"
     assert body.base_points == 10
+    assert body.early_bonus_enabled is True
     assert body.description is None
     assert body.assignee_user_id == 1
+
+
+def test_chore_create_early_bonus_disabled() -> None:
+    body = ChoreCreate(
+        title="Trash", due_time=time(19, 30), assignee_user_id=1, early_bonus_enabled=False
+    )
+    assert body.early_bonus_enabled is False
 
 
 def test_chore_create_description_blank_to_none() -> None:

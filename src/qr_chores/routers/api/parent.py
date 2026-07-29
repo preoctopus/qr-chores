@@ -144,6 +144,7 @@ async def api_create_chore(
         schedule_days=body.schedule_days,
         photo_policy=PhotoPolicy(body.photo_policy),
         base_points=body.base_points,
+        early_bonus_enabled=body.early_bonus_enabled,
         is_active=True,
         assignee_user_id=child.id,
     )
@@ -189,6 +190,8 @@ async def api_update_chore(
         chore.photo_policy = PhotoPolicy(body.photo_policy)
     if body.base_points is not None:
         chore.base_points = body.base_points
+    if body.early_bonus_enabled is not None:
+        chore.early_bonus_enabled = body.early_bonus_enabled
     if body.assignee_user_id is not None:
         child = await _require_own_child(db, user, body.assignee_user_id)
         chore.assignee_user_id = child.id

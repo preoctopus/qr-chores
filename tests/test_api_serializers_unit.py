@@ -25,6 +25,7 @@ def _chore(**kwargs) -> Chore:
         "schedule_days": "0123456",
         "photo_policy": PhotoPolicy.optional,
         "base_points": 15,
+        "early_bonus_enabled": True,
         "is_active": True,
     }
     defaults.update(kwargs)
@@ -56,6 +57,7 @@ def test_chore_summary() -> None:
     assert out.schedule_days == "0123456"
     assert out.photo_policy == "optional"
     assert out.base_points == 15
+    assert out.early_bonus_enabled is True
     assert out.is_active is True
 
 

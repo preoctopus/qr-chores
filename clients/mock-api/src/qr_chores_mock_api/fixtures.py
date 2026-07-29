@@ -74,6 +74,7 @@ def initial_state() -> dict[str, Any]:
                 "schedule_days": "0123456",
                 "photo_policy": "optional",
                 "base_points": 10,
+                "early_bonus_enabled": True,
                 "is_active": True,
             },
             2: {
@@ -85,6 +86,7 @@ def initial_state() -> dict[str, Any]:
                 "schedule_days": "0123456",
                 "photo_policy": "required",
                 "base_points": 5,
+                "early_bonus_enabled": True,
                 "is_active": True,
             },
             3: {
@@ -96,6 +98,7 @@ def initial_state() -> dict[str, Any]:
                 "schedule_days": "0123456",
                 "photo_policy": "none",
                 "base_points": 1,
+                "early_bonus_enabled": True,
                 "is_active": False,
             },
         },
@@ -116,15 +119,21 @@ def initial_state() -> dict[str, Any]:
             1: {
                 "id": 1,
                 "title": "Early bird",
-                "description": "Complete early 5 times",
-                "icon_key": "bird",
+                "description": "Complete 5 early chores",
+                "icon_key": "star",
                 "criteria_type": "complete_early_count",
                 "threshold": 5,
                 "points_reward": 25,
                 "is_active": True,
             },
         },
-        "user_achievements": [],  # list of {user_id, achievement_id, unlocked_at}
+        "user_achievements": [
+            {
+                "user_id": 2,
+                "achievement_id": 1,
+                "unlocked_at": completed_at,
+            }
+        ],
         "local_date": local_date,
     }
 
@@ -164,5 +173,6 @@ def chore_out(c: dict[str, Any]) -> dict[str, Any]:
         "schedule_days": c["schedule_days"],
         "photo_policy": c["photo_policy"],
         "base_points": c["base_points"],
+        "early_bonus_enabled": c.get("early_bonus_enabled", True),
         "is_active": c["is_active"],
     }

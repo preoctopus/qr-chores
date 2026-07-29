@@ -41,6 +41,7 @@ data class Chore(
     @SerialName("schedule_days") val scheduleDays: String,
     @SerialName("photo_policy") val photoPolicy: String,
     @SerialName("base_points") val basePoints: Int,
+    @SerialName("early_bonus_enabled") val earlyBonusEnabled: Boolean = true,
     @SerialName("is_active") val isActive: Boolean,
 )
 
@@ -168,6 +169,7 @@ data class ChoreCreate(
     @SerialName("schedule_days") val scheduleDays: String = "0123456",
     @SerialName("photo_policy") val photoPolicy: String = "none",
     @SerialName("base_points") val basePoints: Int = 10,
+    @SerialName("early_bonus_enabled") val earlyBonusEnabled: Boolean = true,
 )
 
 @Serializable
@@ -178,6 +180,7 @@ data class ChoreUpdate(
     @SerialName("schedule_days") val scheduleDays: String? = null,
     @SerialName("photo_policy") val photoPolicy: String? = null,
     @SerialName("base_points") val basePoints: Int? = null,
+    @SerialName("early_bonus_enabled") val earlyBonusEnabled: Boolean? = null,
     @SerialName("clear_description") val clearDescription: Boolean = false,
 )
 

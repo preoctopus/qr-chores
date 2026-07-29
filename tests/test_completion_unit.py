@@ -169,3 +169,20 @@ async def test_points_awarded_excludes_achievement_ledger_points(ctx) -> None:
     )
     assert sum(achievement_ledger) == 10
     assert result.completion.points_awarded + sum(achievement_ledger) == balance
+
+
+@pytest.mark.asyncio
+async def test_complete_chore_early_bonus_disabled(ctx) -> None:
+    """When early_bonus_enabled is False, completing early awards 0 timing bonus points."""
+    session, child, settings = ctx
+    chore = await _chore(
+        session,
+        base_points=10,
+        due_time=time(23, 59),
+        early_bonus_enabled=False,
+        assignee_user_id=child.id,
+    )
+    res = await complete_chore(session, chore=chore, user=child, settings=settings)
+    assert res.completion.timing == TimingStatus.early
+    assert res.points.timing_bonus == 0
+    assert res.completion.points_awarded == 10

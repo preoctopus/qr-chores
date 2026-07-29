@@ -79,6 +79,11 @@ def create_chore(
         help="required | optional | none",
     ),
     base_points: int = typer.Option(10, "--base-points", help="Points awarded on complete."),
+    early_bonus: bool = typer.Option(
+        True,
+        "--early-bonus/--no-early-bonus",
+        help="Whether completing early awards early bonus points.",
+    ),
 ) -> None:
     """Create a chore (POST /api/v1/chores). Assigns a stable QR token."""
     cfg = get_config(ctx)
@@ -89,6 +94,7 @@ def create_chore(
         schedule_days=schedule_days,
         photo_policy=photo_policy,
         base_points=base_points,
+        early_bonus_enabled=early_bonus,
     )
     client = make_client(cfg)
     try:
@@ -113,6 +119,11 @@ def update_chore(
     schedule_days: str | None = typer.Option(None, "--schedule-days"),
     photo_policy: str | None = typer.Option(None, "--photo-policy"),
     base_points: int | None = typer.Option(None, "--base-points"),
+    early_bonus: bool | None = typer.Option(
+        None,
+        "--early-bonus/--no-early-bonus",
+        help="Enable/disable early timing bonus.",
+    ),
     clear_description: bool = typer.Option(
         False,
         "--clear-description",
@@ -128,6 +139,7 @@ def update_chore(
         schedule_days=schedule_days,
         photo_policy=photo_policy,
         base_points=base_points,
+        early_bonus_enabled=early_bonus,
         clear_description=clear_description,
     )
     if not update.to_payload():

@@ -47,6 +47,7 @@ def _form_context(
             "description": chore.description or "",
             "due_time": chore.due_time.strftime("%H:%M"),
             "base_points": str(chore.base_points),
+            "early_bonus_enabled": chore.early_bonus_enabled,
             "photo_policy": chore.photo_policy.value,
             "schedule_days": list(chore.schedule_days),
             "assignee_user_id": str(chore.assignee_user_id or ""),
@@ -124,6 +125,7 @@ async def chores_new_form(
                     "description": "",
                     "due_time": "20:00",
                     "base_points": "10",
+                    "early_bonus_enabled": True,
                     "photo_policy": PhotoPolicy.none.value,
                     "schedule_days": list("0123456"),
                     "assignee_user_id": str(kids[0].id) if kids else "",
@@ -147,6 +149,10 @@ async def chores_create(
     photo_policy = str(data.get("photo_policy") or "none")
     schedule_day = [str(v) for v in data.getlist("schedule_day")]
     assignee_raw = str(data.get("assignee_user_id") or "")
+    early_raw = data.get("early_bonus_enabled")
+    early_bonus_enabled = (
+        True if early_raw is None else str(early_raw).lower() in ("true", "1", "on")
+    )
     try:
         base_points = int(str(data.get("base_points") or "10"))
     except ValueError:
@@ -157,6 +163,7 @@ async def chores_create(
         "description": description,
         "due_time": due_time,
         "base_points": str(base_points),
+        "early_bonus_enabled": early_bonus_enabled,
         "photo_policy": photo_policy,
         "schedule_days": schedule_day,
         "assignee_user_id": assignee_raw,
@@ -217,6 +224,7 @@ async def chores_create(
         schedule_days=parse_schedule_days(schedule_day),
         photo_policy=policy,
         base_points=max(0, base_points),
+        early_bonus_enabled=early_bonus_enabled,
         is_active=True,
         assignee_user_id=child.id,
     )
@@ -267,6 +275,12 @@ async def chores_edit(
     photo_policy = str(data.get("photo_policy") or "none")
     schedule_day = [str(v) for v in data.getlist("schedule_day")]
     assignee_raw = str(data.get("assignee_user_id") or "")
+    early_raw = data.get("early_bonus_enabled")
+    early_bonus_enabled = (
+        chore.early_bonus_enabled
+        if early_raw is None
+        else str(early_raw).lower() in ("true", "1", "on")
+    )
     try:
         base_points = int(str(data.get("base_points") or "10"))
     except ValueError:
@@ -277,6 +291,7 @@ async def chores_edit(
         "description": description,
         "due_time": due_time,
         "base_points": str(base_points),
+        "early_bonus_enabled": early_bonus_enabled,
         "photo_policy": photo_policy,
         "schedule_days": schedule_day,
         "assignee_user_id": assignee_raw,
@@ -337,6 +352,7 @@ async def chores_edit(
     chore.schedule_days = parse_schedule_days(schedule_day)
     chore.photo_policy = policy
     chore.base_points = max(0, base_points)
+    chore.early_bonus_enabled = early_bonus_enabled
     chore.assignee_user_id = child.id
     await db.commit()
     return RedirectResponse("/chores", status_code=status.HTTP_303_SEE_OTHER)

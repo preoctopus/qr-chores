@@ -86,6 +86,7 @@ On **Chores** → **New chore** (or edit an existing one):
 | **Due time** | Local wall-clock time (app timezone, usually America/Chicago) |
 | **Schedule days** | Which weekdays this chore appears |
 | **Base points** | Awarded once per day when completed |
+| **Allow early completion bonus** | Enabled by default; uncheck if completing early should not award bonus points (e.g. evening tasks) |
 | **Photo policy** | **Required**, **optional**, or **none** |
 
 Tips:

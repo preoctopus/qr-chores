@@ -173,11 +173,12 @@ All require **`role=parent`** (and authentication), except photo fetch (any auth
   "due_time": "20:00:00",
   "schedule_days": "0123456",
   "photo_policy": "optional",
-  "base_points": 10
+  "base_points": 10,
+  "early_bonus_enabled": true
 }
 ```
 
-`schedule_days` is a string of weekday digits (`0`=Mon … `6`=Sun). `photo_policy`: `required` | `optional` | `none`.
+`schedule_days` is a string of weekday digits (`0`=Mon … `6`=Sun). `photo_policy`: `required` | `optional` | `none`. `early_bonus_enabled`: boolean (default `true`, whether early completion awards bonus points).
 
 **PATCH** accepts any subset of create fields. Set `clear_description: true` to null out description.
 

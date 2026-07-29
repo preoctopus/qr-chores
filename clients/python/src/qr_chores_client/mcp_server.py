@@ -576,6 +576,7 @@ def create_mcp_server() -> Any:
         schedule_days: str = "0123456",
         photo_policy: str = "none",
         base_points: int = 10,
+        early_bonus_enabled: bool = True,
         ctx: Any = None,
     ) -> dict[str, Any]:
         """Create a chore (parent)."""
@@ -587,6 +588,7 @@ def create_mcp_server() -> Any:
             schedule_days=schedule_days,
             photo_policy=photo_policy,
             base_points=base_points,
+            early_bonus_enabled=early_bonus_enabled,
         )
         return _to_jsonable(await client.create_chore(chore))
 
@@ -605,6 +607,7 @@ def create_mcp_server() -> Any:
         schedule_days: str | None = None,
         photo_policy: str | None = None,
         base_points: int | None = None,
+        early_bonus_enabled: bool | None = None,
         clear_description: bool = False,
         ctx: Any = None,
     ) -> dict[str, Any]:
@@ -617,6 +620,7 @@ def create_mcp_server() -> Any:
             schedule_days=schedule_days,
             photo_policy=photo_policy,
             base_points=base_points,
+            early_bonus_enabled=early_bonus_enabled,
             clear_description=clear_description,
         )
         return _to_jsonable(await client.update_chore(chore_id, update))

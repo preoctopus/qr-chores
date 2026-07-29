@@ -125,7 +125,7 @@ Login → points (total balance + points change today) + achievements (awarded a
 ## Data model (conceptual)
 
 - **User** — email (username), first_name, last_name, display_name, password_hash, role (`parent`|`child`), **parent_id** (children → parent who manages them)
-- **Chore** — title, description, **qr_token** (unique, stable), due_time, schedule_days, photo_policy, base_points, is_active, **assignee_user_id** (child who owns the chore)
+- **Chore** — title, description, **qr_token** (unique, stable), due_time, schedule_days, photo_policy, base_points, **early_bonus_enabled**, is_active, **assignee_user_id** (child who owns the chore)
 - **ChoreCompletion** — chore_id, user_id, local_date, completed_at, timing, photo_object_key, points_awarded (base + timing bonus only; not achievement rewards); **UNIQUE (chore_id, local_date)**
 - **PointLedger** — user_id, delta, reason, ref_type, ref_id (sum = balance; “points today” is ledger deltas for the local day)
 - **Achievement** — title, description, icon_key, criteria_type, criteria_json, points_reward, is_active

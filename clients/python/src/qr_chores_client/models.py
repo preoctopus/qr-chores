@@ -38,6 +38,7 @@ class Chore(BaseModel):
     schedule_days: str
     photo_policy: str
     base_points: int
+    early_bonus_enabled: bool = True
     is_active: bool
 
 
@@ -177,6 +178,7 @@ class ChoreCreate(BaseModel):
     schedule_days: str = "0123456"
     photo_policy: str = "none"
     base_points: int = 10
+    early_bonus_enabled: bool = True
 
 
 class ChoreUpdate(BaseModel):
@@ -188,6 +190,7 @@ class ChoreUpdate(BaseModel):
     schedule_days: str | None = None
     photo_policy: str | None = None
     base_points: int | None = None
+    early_bonus_enabled: bool | None = None
     clear_description: bool = False
 
     def to_payload(self) -> dict[str, Any]:

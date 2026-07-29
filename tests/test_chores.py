@@ -78,6 +78,32 @@ async def test_parent_creates_chore(
         assert chore.qr_token
         assert chore.due_time.hour == 19
         assert chore.due_time.minute == 30
+        assert chore.early_bonus_enabled is True
+
+
+@pytest.mark.asyncio
+async def test_parent_creates_chore_early_bonus_disabled(
+    client: AsyncClient, parent_user: User, app, child_user: User
+) -> None:
+    await _login_parent(client, parent_user)
+    response = await client.post(
+        "/chores",
+        data={
+            "title": "Evening task",
+            "due_time": "21:00",
+            "base_points": "10",
+            "photo_policy": "none",
+            "early_bonus_enabled": "false",
+            "schedule_day": ["0", "1", "2", "3", "4", "5", "6"],
+            "assignee_user_id": str(child_user.id),
+        },
+        follow_redirects=False,
+    )
+    assert response.status_code == 303
+    async with app.state.session_factory() as session:
+        result = await session.execute(select(Chore).where(Chore.title == "Evening task"))
+        chore = result.scalar_one()
+        assert chore.early_bonus_enabled is False
 
 
 @pytest.mark.asyncio

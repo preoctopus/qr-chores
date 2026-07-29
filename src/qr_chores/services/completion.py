@@ -108,13 +108,18 @@ def _resolve_photo_key(
         raise CompletionError(exc.message, exc.code) from exc
 
 
-def _timing_bonus_amount(timing: TimingStatus, bonuses: dict[str, int]) -> int:
+def _timing_bonus_amount(
+    timing: TimingStatus, bonuses: dict[str, int], *, early_bonus_enabled: bool = True
+) -> int:
     """Return timing bonus points for a completion status.
 
     Early and on-time bonuses are clamped to non-negative values. Late may be
     negative so parents can configure a late *penalty* (e.g. -2 points).
+    If early_bonus_enabled is False, completing early awards 0 bonus points.
     """
     if timing == TimingStatus.early:
+        if not early_bonus_enabled:
+            return 0
         return max(0, bonuses.get("early_bonus_points", 0))
     if timing == TimingStatus.on_time:
         return max(0, bonuses.get("on_time_bonus_points", 0))
@@ -147,6 +152,7 @@ async def complete_chore(
     schedule_days = chore.schedule_days
     due_time = chore.due_time
     base = max(0, chore.base_points)
+    early_bonus_enabled = chore.early_bonus_enabled
 
     today = local_today(settings)
     if not is_scheduled_on(schedule_days, today):
@@ -171,7 +177,7 @@ async def complete_chore(
         settings=settings,
     )
     bonuses = await get_timing_bonuses(db)
-    timing_bonus = _timing_bonus_amount(timing, bonuses)
+    timing_bonus = _timing_bonus_amount(timing, bonuses, early_bonus_enabled=early_bonus_enabled)
     points_awarded = base + timing_bonus
 
     completion = ChoreCompletion(

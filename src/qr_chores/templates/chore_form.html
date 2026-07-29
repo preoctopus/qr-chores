@@ -47,6 +47,12 @@
       <input type="number" name="base_points" min="0" step="1" value="{{ form.base_points or '10' }}">
     </label>
 
+    <label class="checkbox-field">
+      <input type="hidden" name="early_bonus_enabled" value="false">
+      <input type="checkbox" name="early_bonus_enabled" value="true" {% if form.early_bonus_enabled %}checked{% endif %}>
+      <span>Allow early completion bonus</span>
+    </label>
+
     <label class="field">
       <span>Photo when completing</span>
       <select name="photo_policy">

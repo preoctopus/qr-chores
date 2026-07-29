@@ -52,6 +52,7 @@ class ModelsCoverageTest {
             scheduleDays = "0123456",
             photoPolicy = "optional",
             basePoints = 10,
+            earlyBonusEnabled = true,
             isActive = true,
         )
 
@@ -230,11 +231,14 @@ class ModelsCoverageTest {
                 scheduleDays = "01",
                 photoPolicy = "none",
                 basePoints = 3,
+                earlyBonusEnabled = false,
             )
         assertEquals("X", create.copy().title)
+        assertTrue(!create.copy().earlyBonusEnabled)
 
-        val update = ChoreUpdate(title = "Z", clearDescription = true)
+        val update = ChoreUpdate(title = "Z", earlyBonusEnabled = true, clearDescription = true)
         assertTrue(update.copy().clearDescription)
+        assertTrue(update.copy().earlyBonusEnabled == true)
 
         val list = ChoreListResponse(listOf(chore))
         assertEquals(1, list.copy().chores.size)

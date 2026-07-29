@@ -54,6 +54,7 @@ class ChoreWrite(BaseModel):
     schedule_days: str = "0123456"
     photo_policy: str = "none"
     base_points: Annotated[int, Field(ge=0, le=1_000_000)] = 10
+    early_bonus_enabled: bool = True
     assignee_user_id: int
 
     @field_validator("title")
@@ -100,6 +101,7 @@ class ChoreUpdate(BaseModel):
     schedule_days: str | None = None
     photo_policy: str | None = None
     base_points: Annotated[int | None, Field(default=None, ge=0, le=1_000_000)] = None
+    early_bonus_enabled: bool | None = None
     assignee_user_id: int | None = None
     clear_description: bool = False
 

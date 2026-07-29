@@ -28,6 +28,9 @@ def chore_summary(chore: Chore) -> ChoreSummaryOut:
         schedule_days=chore.schedule_days,
         photo_policy=chore.photo_policy.value,
         base_points=chore.base_points,
+        early_bonus_enabled=chore.early_bonus_enabled
+        if chore.early_bonus_enabled is not None
+        else True,
         is_active=chore.is_active,
         assignee_user_id=chore.assignee_user_id,
         assignee_name=assignee_name,

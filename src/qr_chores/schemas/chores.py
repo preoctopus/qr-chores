@@ -16,6 +16,7 @@ class ChoreSummaryOut(BaseModel):
     schedule_days: str
     photo_policy: str
     base_points: int
+    early_bonus_enabled: bool = True
     is_active: bool
     assignee_user_id: int | None = None
     assignee_name: str | None = None
