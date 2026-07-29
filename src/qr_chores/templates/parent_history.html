@@ -3,13 +3,95 @@
 {% block content %}
 <section class="stack">
   <div class="page-header">
-    <h1>Recent completions</h1>
-    <p class="muted">Last 50 · photos when provided</p>
+    <h1>Completion history</h1>
+    <p class="muted">Track child completions, photos, timing, and point awards</p>
+  </div>
+
+  {% if stats %}
+  <div class="history-stats-grid">
+    <div class="history-stat-card">
+      <div class="history-stat-val">{{ stats.total_completions }}</div>
+      <div class="history-stat-lbl">Total</div>
+    </div>
+    <div class="history-stat-card">
+      <div class="history-stat-val">{{ stats.completions_this_week }}</div>
+      <div class="history-stat-lbl">This Week</div>
+    </div>
+    <div class="history-stat-card">
+      <div class="history-stat-val">{{ stats.on_time_rate }}%</div>
+      <div class="history-stat-lbl">On Time</div>
+    </div>
+    <div class="history-stat-card">
+      <div class="history-stat-val">{{ stats.total_points }}</div>
+      <div class="history-stat-lbl">Points</div>
+    </div>
+    <div class="history-stat-card">
+      <div class="history-stat-val">{{ stats.current_streak }}d</div>
+      <div class="history-stat-lbl">Streak</div>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="filter-bar">
+    <form method="get" action="/history">
+      <div class="filter-grid">
+        <div class="form-group">
+          <label for="child_id" class="small muted">Child</label>
+          <select id="child_id" name="child_id" class="form-input">
+            <option value="">All children</option>
+            {% for c in children %}
+            <option value="{{ c.id }}" {% if filters.child_id == c.id %}selected{% endif %}>
+              {{ c.display_name or c.first_name }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="chore_id" class="small muted">Chore</label>
+          <select id="chore_id" name="chore_id" class="form-input">
+            <option value="">All chores</option>
+            {% for ch in chores %}
+            <option value="{{ ch.id }}" {% if filters.chore_id == ch.id %}selected{% endif %}>
+              {{ ch.title }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="timing" class="small muted">Timing</label>
+          <select id="timing" name="timing" class="form-input">
+            <option value="">All timings</option>
+            <option value="early" {% if filters.timing == "early" %}selected{% endif %}>Early</option>
+            <option value="on_time" {% if filters.timing == "on_time" %}selected{% endif %}>On time</option>
+            <option value="late" {% if filters.timing == "late" %}selected{% endif %}>Late</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="start_date" class="small muted">Start Date</label>
+          <input type="date" id="start_date" name="start_date" value="{{ filters.start_date }}" class="form-input">
+        </div>
+
+        <div class="form-group">
+          <label for="end_date" class="small muted">End Date</label>
+          <input type="date" id="end_date" name="end_date" value="{{ filters.end_date }}" class="form-input">
+        </div>
+      </div>
+
+      <div class="filter-actions">
+        <button type="submit" class="btn btn-sm btn-primary">Apply filters</button>
+        {% if filters.child_id or filters.chore_id or filters.start_date or filters.end_date or filters.timing %}
+        <a href="/history" class="btn btn-sm btn-ghost">Reset</a>
+        {% endif %}
+      </div>
+    </form>
   </div>
 
   {% if not completions %}
-  {% set empty_title = "No completions yet" %}
-  {% set empty_message = "When chores get marked done, they’ll show up here with photos and timing." %}
+  {% set empty_title = "No matching completions" %}
+  {% set empty_message = "Try clearing or adjusting your filters to view completion records." if (filters.child_id or filters.chore_id or filters.start_date or filters.end_date or filters.timing) else "When chores get marked done, they’ll show up here with photos and timing." %}
   {% set empty_primary_href = "/today" %}
   {% set empty_primary_label = "Today’s board" %}
   {% include "empty_state.html" %}
@@ -19,7 +101,12 @@
     <li class="chore-card">
       <div class="chore-card-main">
         <div>
-          <p class="chore-title">{{ c.chore.title if c.chore else "Chore" }}</p>
+          <p class="chore-title">
+            {{ c.chore.title if c.chore else "Chore" }}
+            {% if c.user %}
+            <span class="child-badge">{{ c.user.display_name or c.user.first_name }}</span>
+            {% endif %}
+          </p>
           <p class="muted small">
             {{ c.local_date }} · {{ c.timing.value.replace('_', ' ') }} ·
             +{{ c.points_awarded }} pts
@@ -37,6 +124,27 @@
     </li>
     {% endfor %}
   </ul>
+
+  {% if pagination and pagination.total_pages > 1 %}
+  <div class="pagination-bar">
+    {% set query_base = "&child_id=" ~ (filters.child_id or "") ~ "&chore_id=" ~ (filters.chore_id or "") ~ "&start_date=" ~ filters.start_date ~ "&end_date=" ~ filters.end_date ~ "&timing=" ~ filters.timing %}
+    {% if pagination.has_prev %}
+    <a href="/history?page={{ pagination.page - 1 }}{{ query_base }}" class="btn btn-sm btn-ghost">← Previous</a>
+    {% else %}
+    <span></span>
+    {% endif %}
+
+    <span class="pagination-info">
+      Page {{ pagination.page }} of {{ pagination.total_pages }} ({{ pagination.total_count }} total)
+    </span>
+
+    {% if pagination.has_next %}
+    <a href="/history?page={{ pagination.page + 1 }}{{ query_base }}" class="btn btn-sm btn-ghost">Next →</a>
+    {% else %}
+    <span></span>
+    {% endif %}
+  </div>
+  {% endif %}
   {% endif %}
 </section>
 {% endblock %}

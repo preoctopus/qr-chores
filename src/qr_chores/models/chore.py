@@ -106,3 +106,4 @@ class ChoreCompletion(Base):
     points_awarded: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
     chore: Mapped[Chore] = relationship(back_populates="completions")
+    user: Mapped[User] = relationship(foreign_keys=[user_id])

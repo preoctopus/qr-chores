@@ -151,10 +151,33 @@ data class HistoryItem(
 )
 
 @Serializable
+data class HistoryStats(
+    @SerialName("total_completions") val totalCompletions: Int,
+    @SerialName("completions_this_week") val completionsThisWeek: Int,
+    @SerialName("on_time_count") val onTimeCount: Int,
+    @SerialName("on_time_rate") val onTimeRate: Double,
+    @SerialName("total_points") val totalPoints: Int,
+    @SerialName("current_streak") val currentStreak: Int,
+)
+
+@Serializable
+data class HistoryPagination(
+    val page: Int,
+    val limit: Int,
+    @SerialName("total_count") val totalCount: Int,
+    @SerialName("total_pages") val totalPages: Int,
+    @SerialName("has_next") val hasNext: Boolean,
+    @SerialName("has_prev") val hasPrev: Boolean,
+)
+
+@Serializable
 data class HistoryResponse(
     val items: List<HistoryItem> = emptyList(),
     val limit: Int,
+    val stats: HistoryStats? = null,
+    val pagination: HistoryPagination? = null,
 )
+
 
 @Serializable
 data class ChoreListResponse(

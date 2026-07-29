@@ -1,8 +1,9 @@
 """Mark chores complete for a local day."""
 
 from dataclasses import dataclass, field
+from datetime import date, timedelta
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -249,4 +250,167 @@ async def complete_chore(
             achievement_points=achievement_points,
         ),
         unlocks=unlocks,
+    )
+
+
+@dataclass
+class HistoryStats:
+    total_completions: int = 0
+    completions_this_week: int = 0
+    on_time_count: int = 0
+    on_time_rate: float = 0.0
+    total_points: int = 0
+    current_streak: int = 0
+
+
+@dataclass
+class HistoryPagination:
+    page: int = 1
+    limit: int = 50
+    total_count: int = 0
+    total_pages: int = 0
+    has_next: bool = False
+    has_prev: bool = False
+
+
+@dataclass
+class ParentHistoryResult:
+    completions: list[ChoreCompletion]
+    stats: HistoryStats
+    pagination: HistoryPagination
+
+
+async def get_parent_history(
+    db: AsyncSession,
+    settings: Settings,
+    parent_id: int,
+    *,
+    child_id: int | None = None,
+    chore_id: int | None = None,
+    start_date: date | None = None,
+    end_date: date | None = None,
+    timing: TimingStatus | str | None = None,
+    page: int = 1,
+    limit: int = 50,
+) -> ParentHistoryResult:
+    """Fetch paginated, filtered completion history and stats for a parent's children."""
+    import math
+
+    from sqlalchemy.orm import selectinload
+
+    from qr_chores.models.user import UserRole
+
+    if isinstance(timing, str):
+        try:
+            timing = TimingStatus(timing)
+        except ValueError:
+            timing = None
+
+    # Child IDs belonging to parent
+    child_ids_subquery = select(User.id).where(
+        User.role == UserRole.child,
+        User.parent_id == parent_id,
+    )
+
+    base_where = [ChoreCompletion.user_id.in_(child_ids_subquery)]
+    if child_id is not None:
+        base_where.append(ChoreCompletion.user_id == child_id)
+    if chore_id is not None:
+        base_where.append(ChoreCompletion.chore_id == chore_id)
+    if start_date is not None:
+        base_where.append(ChoreCompletion.local_date >= start_date)
+    if end_date is not None:
+        base_where.append(ChoreCompletion.local_date <= end_date)
+    if timing is not None:
+        base_where.append(ChoreCompletion.timing == timing)
+
+    # 1. Total count
+    count_q = select(func.count()).select_from(ChoreCompletion).where(*base_where)
+    total_count = int(await db.scalar(count_q) or 0)
+
+    # 2. Paginated completions
+    limit = max(1, min(limit, 200))
+    page = max(1, page)
+    total_pages = math.ceil(total_count / limit) if total_count > 0 else 1
+    page = min(page, total_pages)
+    offset = (page - 1) * limit
+
+    list_q = (
+        select(ChoreCompletion)
+        .options(
+            selectinload(ChoreCompletion.chore),
+            selectinload(ChoreCompletion.user),
+        )
+        .where(*base_where)
+        .order_by(ChoreCompletion.completed_at.desc())
+        .offset(offset)
+        .limit(limit)
+    )
+    result = await db.execute(list_q)
+    completions = list(result.scalars().all())
+
+    # 3. Summary stats
+    today = local_today(settings)
+    week_start = today - timedelta(days=6)
+
+    # Completions this week count
+    this_week_q = (
+        select(func.count())
+        .select_from(ChoreCompletion)
+        .where(
+            *base_where,
+            ChoreCompletion.local_date >= week_start,
+        )
+    )
+    completions_this_week = int(await db.scalar(this_week_q) or 0)
+
+    # On-time count (on_time or early)
+    on_time_q = (
+        select(func.count())
+        .select_from(ChoreCompletion)
+        .where(
+            *base_where,
+            ChoreCompletion.timing.in_([TimingStatus.on_time, TimingStatus.early]),
+        )
+    )
+    on_time_count = int(await db.scalar(on_time_q) or 0)
+    on_time_rate = round((on_time_count / total_count) * 100, 1) if total_count > 0 else 0.0
+
+    # Total points awarded
+    points_q = select(func.sum(ChoreCompletion.points_awarded)).where(*base_where)
+    total_points = int(await db.scalar(points_q) or 0)
+
+    # Current streak calculation across scope
+    dates_q = select(ChoreCompletion.local_date).where(*base_where).distinct()
+    dates_res = await db.execute(dates_q)
+    days = {row[0] for row in dates_res.all()}
+    streak = 0
+    if days:
+        cursor = today if today in days else today - timedelta(days=1)
+        while cursor in days:
+            streak += 1
+            cursor = cursor - timedelta(days=1)
+
+    stats = HistoryStats(
+        total_completions=total_count,
+        completions_this_week=completions_this_week,
+        on_time_count=on_time_count,
+        on_time_rate=on_time_rate,
+        total_points=total_points,
+        current_streak=streak,
+    )
+
+    pagination = HistoryPagination(
+        page=page,
+        limit=limit,
+        total_count=total_count,
+        total_pages=total_pages,
+        has_next=page < total_pages,
+        has_prev=page > 1,
+    )
+
+    return ParentHistoryResult(
+        completions=completions,
+        stats=stats,
+        pagination=pagination,
     )

@@ -255,12 +255,33 @@ class QrChoresClient:
     async def get_today(self) -> TodayResponse:
         return await self._request_model("GET", f"{API_PREFIX}/today", TodayResponse)
 
-    async def get_history(self, *, limit: int = 50) -> HistoryResponse:
+    async def get_history(
+        self,
+        *,
+        child_id: int | None = None,
+        chore_id: int | None = None,
+        start_date: str | None = None,
+        end_date: str | None = None,
+        timing: str | None = None,
+        page: int = 1,
+        limit: int = 50,
+    ) -> HistoryResponse:
+        params: dict[str, Any] = {"limit": limit, "page": page}
+        if child_id is not None:
+            params["child_id"] = child_id
+        if chore_id is not None:
+            params["chore_id"] = chore_id
+        if start_date:
+            params["start_date"] = start_date
+        if end_date:
+            params["end_date"] = end_date
+        if timing:
+            params["timing"] = timing
         return await self._request_model(
             "GET",
             f"{API_PREFIX}/history",
             HistoryResponse,
-            params={"limit": limit},
+            params=params,
         )
 
     # --- Chores ---

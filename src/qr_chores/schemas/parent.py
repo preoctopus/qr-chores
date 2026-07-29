@@ -20,9 +20,29 @@ class HistoryItemOut(BaseModel):
     user_id: int
 
 
+class HistoryStatsOut(BaseModel):
+    total_completions: int
+    completions_this_week: int
+    on_time_count: int
+    on_time_rate: float
+    total_points: int
+    current_streak: int
+
+
+class HistoryPaginationOut(BaseModel):
+    page: int
+    limit: int
+    total_count: int
+    total_pages: int
+    has_next: bool
+    has_prev: bool
+
+
 class HistoryResponse(BaseModel):
     items: list[HistoryItemOut]
     limit: int
+    stats: HistoryStatsOut | None = None
+    pagination: HistoryPaginationOut | None = None
 
 
 class ChoreListResponse(BaseModel):

@@ -182,13 +182,29 @@ def home(ctx: typer.Context) -> None:
 @handle_api_errors
 def history(
     ctx: typer.Context,
+    child_id: int | None = typer.Option(None, "--child-id", help="Filter by child ID."),
+    chore_id: int | None = typer.Option(None, "--chore-id", help="Filter by chore ID."),
+    start_date: str | None = typer.Option(None, "--start-date", help="Start date (YYYY-MM-DD)."),
+    end_date: str | None = typer.Option(None, "--end-date", help="End date (YYYY-MM-DD)."),
+    timing: str | None = typer.Option(
+        None, "--timing", help="Filter by timing (early, on_time, late)."
+    ),
+    page: int = typer.Option(1, "--page", "-p", min=1, help="Page number."),
     limit: int = typer.Option(50, "--limit", "-n", min=1, max=200, help="Max rows (1–200)."),
 ) -> None:
-    """Recent completions (GET /api/v1/history). Parent."""
+    """Recent completions with filtering and stats (GET /api/v1/history). Parent."""
     cfg = get_config(ctx)
     client = make_client(cfg)
     try:
-        resp = client.get_history(limit=limit)
+        resp = client.get_history(
+            child_id=child_id,
+            chore_id=chore_id,
+            start_date=start_date,
+            end_date=end_date,
+            timing=timing,
+            page=page,
+            limit=limit,
+        )
     finally:
         client.close()
     if cfg.as_json:

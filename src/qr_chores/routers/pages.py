@@ -6,12 +6,10 @@ from fastapi import APIRouter, Depends, Request, status
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
 from qr_chores.auth.deps import get_current_user, get_current_user_optional, require_role
 from qr_chores.config import Settings, get_settings
 from qr_chores.db import get_db
-from qr_chores.models.chore import ChoreCompletion
 from qr_chores.models.rewards import Achievement, UserAchievement
 from qr_chores.models.user import User, UserRole
 from qr_chores.services.achievements import ICON_CHOICES, criteria_threshold, progress_for
@@ -127,21 +125,71 @@ async def parent_history(
     request: Request,
     user: User = Depends(require_role(UserRole.parent)),
     db: AsyncSession = Depends(get_db),
+    settings: Settings = Depends(get_settings),
+    child_id: int | None = None,
+    chore_id: int | None = None,
+    start_date: str | None = None,
+    end_date: str | None = None,
+    timing: str | None = None,
+    page: int = 1,
+    limit: int = 50,
 ) -> HTMLResponse:
-    result = await db.execute(
-        select(ChoreCompletion)
-        .options(selectinload(ChoreCompletion.chore))
-        .order_by(ChoreCompletion.completed_at.desc())
-        .limit(50)
+    from datetime import date
+
+    from qr_chores.services.chores import list_all_chores
+    from qr_chores.services.completion import get_parent_history
+    from qr_chores.services.users import list_children_for_parent
+
+    parsed_start: date | None = None
+    if start_date:
+        try:
+            parsed_start = date.fromisoformat(start_date)
+        except ValueError:
+            parsed_start = None
+
+    parsed_end: date | None = None
+    if end_date:
+        try:
+            parsed_end = date.fromisoformat(end_date)
+        except ValueError:
+            parsed_end = None
+
+    children = await list_children_for_parent(db, parent_id=user.id)
+    chores = await list_all_chores(db, parent_id=user.id)
+
+    history_res = await get_parent_history(
+        db,
+        settings,
+        parent_id=user.id,
+        child_id=child_id,
+        chore_id=chore_id,
+        start_date=parsed_start,
+        end_date=parsed_end,
+        timing=timing,
+        page=page,
+        limit=limit,
     )
-    completions = list(result.scalars().all())
+
+    filters = {
+        "child_id": child_id,
+        "chore_id": chore_id,
+        "start_date": start_date or "",
+        "end_date": end_date or "",
+        "timing": timing or "",
+    }
+
     return templates.TemplateResponse(
         request,
         "parent_history.html",
         {
             "user": user,
             "title": "History",
-            "completions": completions,
+            "completions": history_res.completions,
+            "stats": history_res.stats,
+            "pagination": history_res.pagination,
+            "children": children,
+            "chores": chores,
+            "filters": filters,
             "format_due_time": format_due_time,
         },
     )

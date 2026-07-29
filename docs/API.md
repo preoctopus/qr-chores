@@ -148,7 +148,8 @@ All require **`role=parent`** (and authentication), except photo fetch (any auth
 | Method | Path | Description |
 |--------|------|-------------|
 | `GET` | `/api/v1/today` | Today’s status board (same domain rules as `/today`) |
-| `GET` | `/api/v1/history?limit=50` | Recent completions (default 50, max 200) |
+| `GET` | `/api/v1/history` | Paginated completion history with filters (`child_id`, `chore_id`, `start_date`, `end_date`, `timing`, `page`, `limit`) and summary stats |
+
 
 ### Chores
 
