@@ -38,24 +38,33 @@ def initial_state() -> dict[str, Any]:
             PARENT_EMAIL: {
                 "id": 1,
                 "email": PARENT_EMAIL,
-                "display_name": "Parent",
+                "first_name": "Parent",
+                "last_name": "User",
+                "display_name": "Parent User",
                 "role": "parent",
                 "password": PARENT_PASSWORD,
                 "points_balance": 0,
+                "parent_id": None,
+                "is_active": True,
             },
             CHILD_EMAIL: {
                 "id": 2,
                 "email": CHILD_EMAIL,
-                "display_name": "Child",
+                "first_name": "Child",
+                "last_name": "User",
+                "display_name": "Child User",
                 "role": "child",
                 "password": CHILD_PASSWORD,
                 "points_balance": 42,
+                "parent_id": 1,
+                "is_active": True,
             },
         },
         "tokens": {
             PARENT_TOKEN: PARENT_EMAIL,
             CHILD_TOKEN: CHILD_EMAIL,
         },
+        "next_user_id": 3,
         "next_chore_id": 4,
         "next_achievement_id": 2,
         "next_completion_id": 2,
@@ -155,11 +164,18 @@ def completion_summary(c: dict[str, Any]) -> dict[str, Any]:
 
 
 def user_out(u: dict[str, Any]) -> dict[str, Any]:
+    first = u.get("first_name") or ""
+    last = u.get("last_name") or ""
+    display = u.get("display_name") or f"{first} {last}".strip() or u["email"]
     return {
         "id": u["id"],
         "email": u["email"],
-        "display_name": u["display_name"],
+        "first_name": first,
+        "last_name": last,
+        "display_name": display,
         "role": u["role"],
+        "parent_id": u.get("parent_id"),
+        "is_active": u.get("is_active", True),
         "points_balance": u["points_balance"],
     }
 

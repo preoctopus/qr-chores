@@ -69,6 +69,33 @@ def test_parent_surface(client: TestClient) -> None:
     h = {"Authorization": f"Bearer {token}"}
     assert client.get("/api/v1/today", headers=h).status_code == 200
     assert client.get("/api/v1/history", headers=h).status_code == 200
+    kids = client.get("/api/v1/children", headers=h)
+    assert kids.status_code == 200
+    assert any(c["email"] == CHILD_EMAIL for c in kids.json()["children"])
+    created_kid = client.post(
+        "/api/v1/children",
+        headers=h,
+        json={
+            "email": "newkid@example.com",
+            "password": "kid-pass",
+            "first_name": "New",
+            "last_name": "Kid",
+        },
+    )
+    assert created_kid.status_code == 201, created_kid.text
+    kid_id = created_kid.json()["id"]
+    assert created_kid.json()["parent_id"] == 1
+    assert client.get(f"/api/v1/children/{kid_id}", headers=h).status_code == 200
+    assert (
+        client.patch(
+            f"/api/v1/children/{kid_id}",
+            headers=h,
+            json={"first_name": "Newer"},
+        ).status_code
+        == 200
+    )
+    assert client.post(f"/api/v1/children/{kid_id}/deactivate", headers=h).status_code == 200
+    assert client.post(f"/api/v1/children/{kid_id}/activate", headers=h).status_code == 200
     assert client.get("/api/v1/chores", headers=h).status_code == 200
     r = client.post(
         "/api/v1/chores",

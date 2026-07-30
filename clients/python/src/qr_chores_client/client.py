@@ -22,6 +22,9 @@ from qr_chores_client.models import (
     AchievementCreate,
     AchievementsResponse,
     AchievementUpdate,
+    ChildCreate,
+    ChildListResponse,
+    ChildUpdate,
     Chore,
     ChoreConfirm,
     ChoreCreate,
@@ -287,6 +290,58 @@ class QrChoresClient:
             f"{API_PREFIX}/history",
             HistoryResponse,
             params=params,
+        )
+
+    # --- Children ---
+
+    async def list_children(self, *, include_inactive: bool = True) -> ChildListResponse:
+        return await self._request_model(
+            "GET",
+            f"{API_PREFIX}/children",
+            ChildListResponse,
+            params={"include_inactive": include_inactive},
+        )
+
+    async def create_child(self, child: ChildCreate | dict[str, Any]) -> User:
+        payload = child.model_dump() if isinstance(child, ChildCreate) else child
+        return await self._request_model(
+            "POST",
+            f"{API_PREFIX}/children",
+            User,
+            json_body=payload,
+        )
+
+    async def get_child(self, child_id: int) -> User:
+        return await self._request_model("GET", f"{API_PREFIX}/children/{child_id}", User)
+
+    async def update_child(
+        self,
+        child_id: int,
+        update: ChildUpdate | dict[str, Any],
+    ) -> User:
+        if isinstance(update, ChildUpdate):
+            payload = update.to_payload()
+        else:
+            payload = update
+        return await self._request_model(
+            "PATCH",
+            f"{API_PREFIX}/children/{child_id}",
+            User,
+            json_body=payload,
+        )
+
+    async def activate_child(self, child_id: int) -> User:
+        return await self._request_model(
+            "POST",
+            f"{API_PREFIX}/children/{child_id}/activate",
+            User,
+        )
+
+    async def deactivate_child(self, child_id: int) -> User:
+        return await self._request_model(
+            "POST",
+            f"{API_PREFIX}/children/{child_id}/deactivate",
+            User,
         )
 
     # --- Chores ---

@@ -37,6 +37,13 @@ def criteria_threshold(achievement: Achievement) -> int:
     return int(data.get("count", data.get("days", 1)))
 
 
+def criteria_json_for(criteria_type: CriteriaType, threshold: int) -> str:
+    """Build ``criteria_json`` from type + threshold (inverse of :func:`criteria_threshold`)."""
+    if criteria_type == CriteriaType.streak_days:
+        return json.dumps({"days": threshold})
+    return json.dumps({"count": threshold})
+
+
 async def _count_completions(
     db: AsyncSession,
     user_id: int,

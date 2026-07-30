@@ -13,11 +13,38 @@ from qr_chores.models.rewards import Achievement, CriteriaType
 from qr_chores.models.user import User, UserRole
 from qr_chores.services.achievements import (
     _streak_days,
+    criteria_json_for,
     criteria_threshold,
     ensure_default_achievements,
     progress_for,
 )
 from qr_chores.services.timeutil import local_today
+
+
+def test_criteria_json_for_round_trip() -> None:
+    streak = criteria_json_for(CriteriaType.streak_days, 4)
+    assert json.loads(streak) == {"days": 4}
+    ach = Achievement(
+        title="t",
+        description="",
+        icon_key="star",
+        criteria_type=CriteriaType.streak_days,
+        criteria_json=streak,
+        points_reward=1,
+    )
+    assert criteria_threshold(ach) == 4
+
+    total = criteria_json_for(CriteriaType.total_completions, 12)
+    assert json.loads(total) == {"count": 12}
+    ach2 = Achievement(
+        title="t",
+        description="",
+        icon_key="star",
+        criteria_type=CriteriaType.total_completions,
+        criteria_json=total,
+        points_reward=1,
+    )
+    assert criteria_threshold(ach2) == 12
 
 
 def test_criteria_threshold_parses() -> None:

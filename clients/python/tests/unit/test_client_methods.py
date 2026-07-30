@@ -10,6 +10,8 @@ from qr_chores_client import QrChoresClient
 from qr_chores_client.models import (
     AchievementCreate,
     AchievementUpdate,
+    ChildCreate,
+    ChildUpdate,
     ChoreCreate,
     ChoreUpdate,
 )
@@ -304,6 +306,73 @@ async def test_get_history(client: QrChoresClient):
     assert hist.limit == 10
     assert hist.items[0].chore_title == "Unload dishwasher"
     assert route.calls[0].request.url.params["limit"] == "10"
+
+
+@respx.mock
+async def test_list_children(client: QrChoresClient):
+    client.access_token = "t"
+    child_user = {
+        "id": 2,
+        "email": "child@example.com",
+        "first_name": "Child",
+        "last_name": "User",
+        "display_name": "Child User",
+        "role": "child",
+        "parent_id": 1,
+        "is_active": True,
+        "points_balance": 42,
+    }
+    respx.get(f"{BASE}/api/v1/children").mock(
+        return_value=httpx.Response(200, json={"children": [child_user]})
+    )
+    listed = await client.list_children(include_inactive=False)
+    assert listed.children[0].id == 2
+    assert listed.children[0].parent_id == 1
+
+
+@respx.mock
+async def test_create_get_update_activate_deactivate_child(client: QrChoresClient):
+    client.access_token = "t"
+    created = {
+        "id": 3,
+        "email": "sam@example.com",
+        "first_name": "Sam",
+        "last_name": "Kid",
+        "display_name": "Sam Kid",
+        "role": "child",
+        "parent_id": 1,
+        "is_active": True,
+        "points_balance": 0,
+    }
+    respx.post(f"{BASE}/api/v1/children").mock(return_value=httpx.Response(201, json=created))
+    respx.get(f"{BASE}/api/v1/children/3").mock(return_value=httpx.Response(200, json=created))
+    respx.patch(f"{BASE}/api/v1/children/3").mock(
+        return_value=httpx.Response(
+            200,
+            json={**created, "first_name": "Sammy", "display_name": "Sammy Kid"},
+        )
+    )
+    respx.post(f"{BASE}/api/v1/children/3/deactivate").mock(
+        return_value=httpx.Response(200, json={**created, "is_active": False})
+    )
+    respx.post(f"{BASE}/api/v1/children/3/activate").mock(
+        return_value=httpx.Response(200, json={**created, "is_active": True})
+    )
+
+    child = await client.create_child(
+        ChildCreate(
+            email="sam@example.com",
+            password="child-pass",
+            first_name="Sam",
+            last_name="Kid",
+        )
+    )
+    assert child.id == 3
+    assert (await client.get_child(3)).email == "sam@example.com"
+    updated = await client.update_child(3, ChildUpdate(first_name="Sammy"))
+    assert updated.display_name == "Sammy Kid"
+    assert (await client.deactivate_child(3)).is_active is False
+    assert (await client.activate_child(3)).is_active is True
 
 
 @respx.mock

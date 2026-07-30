@@ -152,6 +152,18 @@ All require **`role=parent`** (and authentication), except photo fetch (any auth
 | `GET` | `/api/v1/today` | Today’s status board (same domain rules as `/today`) |
 | `GET` | `/api/v1/history` | Paginated completion history with filters (`child_id`, `chore_id`, `start_date`, `end_date`, `timing`, `page`, `limit`) and summary stats |
 
+### Children
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/api/v1/children` | List children (`include_inactive`, default true) |
+| `POST` | `/api/v1/children` | Create child account (`email`, `password`, `first_name`, `last_name`) → `201` |
+| `GET` | `/api/v1/children/{id}` | Child detail (`UserOut`) |
+| `PATCH` | `/api/v1/children/{id}` | Partial update (`email`, `password`, `first_name`, `last_name`, `is_active`) |
+| `POST` | `/api/v1/children/{id}/deactivate` | Soft-deactivate child login |
+| `POST` | `/api/v1/children/{id}/activate` | Re-activate child |
+
+Username taken → **`409`** with `{ "detail": { "message", "code": "username_taken" } }`. Other domain errors → **`400`** with the same shape. Unknown child / not owned by parent → **`404`**.
 
 ### Chores
 

@@ -35,6 +35,8 @@ COPY migrations ./migrations
 COPY alembic.ini ./
 COPY scripts/entrypoint.sh ./scripts/entrypoint.sh
 COPY scripts/qrc-docker.sh ./scripts/qrc-docker.sh
+# Design library (source of truth). marketing/assets/* are relative symlinks into imgs/.
+COPY imgs ./imgs
 COPY marketing ./marketing
 COPY docker ./docker
 

@@ -16,6 +16,7 @@ Login issues opaque bearer tokens: `parent-token` / `child-token` (stable for te
 
 ## Seed data
 
+- **Parent user id 1** / **Child user id 2** (seed accounts above). Child has `parent_id=1`.
 - **Chore 1** (active): title `Unload dishwasher`, `qr_token=qr-active-1`, due `20:00:00`, schedule `0123456`, photo_policy `optional`, base_points `10`
 - **Chore 2** (active): title `Make bed`, `qr_token=qr-photo-required`, due `09:00:00`, schedule `0123456`, photo_policy `required`, base_points `5`
 - **Chore 3** (inactive): title `Old chore`, `qr_token=qr-inactive`, photo_policy `none`, base_points `1`
@@ -40,6 +41,12 @@ Tiny valid PNG bytes served for `GET .../qr.png` and `GET .../photos/{id}`.
 | GET | `/api/v1/achievements` | `get_achievements` | `getAchievements` |
 | GET | `/api/v1/today` | `get_today` | `getToday` |
 | GET | `/api/v1/history` | `get_history` | `getHistory` |
+| GET | `/api/v1/children` | `list_children` | `listChildren` |
+| POST | `/api/v1/children` | `create_child` | `createChild` |
+| GET | `/api/v1/children/{id}` | `get_child` | `getChild` |
+| PATCH | `/api/v1/children/{id}` | `update_child` | `updateChild` |
+| POST | `/api/v1/children/{id}/activate` | `activate_child` | `activateChild` |
+| POST | `/api/v1/children/{id}/deactivate` | `deactivate_child` | `deactivateChild` |
 | GET | `/api/v1/chores` | `list_chores` | `listChores` |
 | POST | `/api/v1/chores` | `create_chore` | `createChore` |
 | GET | `/api/v1/chores/{id}` | `get_chore` | `getChore` |

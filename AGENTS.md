@@ -142,6 +142,8 @@ qr-chores/
   docs/DEPLOY.md
   docs/API.md                # Internal /api/v1 for native apps (not user Help)
   README.md / AGENTS.md
+  imgs/                      # Design library (source of truth for brand art)
+  marketing/                 # Static landing site; assets/ → symlinks into imgs/
   clients/                   # First-party API clients (isolated from app)
     CONTRACT.md              # Shared method/error/fixture contract
     mock-api/                # Deterministic /api/v1 mock for client tests
@@ -159,7 +161,7 @@ qr-chores/
       api/                   # Internal JSON API
     services/                # qr, completion, achievements, points, storage, timeutil
     templates/
-    static/
+    static/                  # App runtime static (PWA icons, CSS, JS)
   migrations/
   tests/                     # unit + HTTP tests
     integration/             # multi-step flows (@pytest.mark.integration)

@@ -1,7 +1,5 @@
 """Parent rewards admin API: timing bonuses + achievements."""
 
-import json
-
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -18,16 +16,14 @@ from qr_chores.schemas.rewards import (
     TimingBonusesOut,
     TimingBonusesUpdate,
 )
-from qr_chores.services.achievements import criteria_threshold, ensure_default_achievements
+from qr_chores.services.achievements import (
+    criteria_json_for,
+    criteria_threshold,
+    ensure_default_achievements,
+)
 from qr_chores.services.points import DEFAULT_BONUSES, get_timing_bonuses, set_setting
 
 router = APIRouter(tags=["api-rewards"])
-
-
-def _criteria_json(criteria_type: CriteriaType, threshold: int) -> str:
-    if criteria_type == CriteriaType.streak_days:
-        return json.dumps({"days": threshold})
-    return json.dumps({"count": threshold})
 
 
 def _achievement_out(ach: Achievement) -> AchievementAdminOut:
@@ -101,7 +97,7 @@ async def api_create_achievement(
         description=body.description,
         icon_key=body.icon_key,
         criteria_type=criteria_type,
-        criteria_json=_criteria_json(criteria_type, body.threshold),
+        criteria_json=criteria_json_for(criteria_type, body.threshold),
         points_reward=body.points_reward,
         is_active=True,
     )
@@ -133,7 +129,7 @@ async def api_update_achievement(
         ach.criteria_type = CriteriaType(body.criteria_type)
     if body.threshold is not None or body.criteria_type is not None:
         threshold = body.threshold if body.threshold is not None else criteria_threshold(ach)
-        ach.criteria_json = _criteria_json(ach.criteria_type, threshold)
+        ach.criteria_json = criteria_json_for(ach.criteria_type, threshold)
     if body.points_reward is not None:
         ach.points_reward = body.points_reward
 

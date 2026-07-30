@@ -74,6 +74,23 @@ async def get_completion_for_today(
     return result.scalar_one_or_none()
 
 
+async def open_completion_photo(
+    db: AsyncSession,
+    settings: Settings,
+    completion_id: int,
+) -> tuple[bytes, str]:
+    """Return ``(bytes, content_type)`` for a completion photo.
+
+    Raises :class:`StorageError` with ``code="not_found"`` when the completion
+    or photo is missing; other storage failures re-raise as :class:`StorageError`.
+    """
+    result = await db.execute(select(ChoreCompletion).where(ChoreCompletion.id == completion_id))
+    completion = result.scalar_one_or_none()
+    if completion is None or not completion.photo_object_key:
+        raise StorageError("Photo not found", code="not_found")
+    return get_photo_storage(settings).open(completion.photo_object_key)
+
+
 def _resolve_photo_key(
     *,
     chore: Chore,

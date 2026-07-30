@@ -19,6 +19,9 @@ from qr_chores_client.models import (
     AchievementCreate,
     AchievementsResponse,
     AchievementUpdate,
+    ChildCreate,
+    ChildListResponse,
+    ChildUpdate,
     Chore,
     ChoreConfirm,
     ChoreCreate,
@@ -169,6 +172,24 @@ class SyncQrChoresClient:
                 limit=limit,
             )
         )
+
+    def list_children(self, *, include_inactive: bool = True) -> ChildListResponse:
+        return self._run(self._async.list_children(include_inactive=include_inactive))
+
+    def create_child(self, child: ChildCreate | dict[str, Any]) -> User:
+        return self._run(self._async.create_child(child))
+
+    def get_child(self, child_id: int) -> User:
+        return self._run(self._async.get_child(child_id))
+
+    def update_child(self, child_id: int, update: ChildUpdate | dict[str, Any]) -> User:
+        return self._run(self._async.update_child(child_id, update))
+
+    def activate_child(self, child_id: int) -> User:
+        return self._run(self._async.activate_child(child_id))
+
+    def deactivate_child(self, child_id: int) -> User:
+        return self._run(self._async.deactivate_child(child_id))
 
     def list_chores(self, *, include_inactive: bool = True) -> ChoreListResponse:
         return self._run(self._async.list_chores(include_inactive=include_inactive))

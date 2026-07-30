@@ -174,7 +174,7 @@ Example:
 
 The container reverse-proxy:
 
-- Serves marketing + `/static/` **directly** (bypasses uvicorn)
+- Serves marketing + `/static/` **directly** (bypasses uvicorn). Marketing media under `marketing/assets/` are symlinks into `imgs/` (design library); the image copies both trees, and the entrypoint stages marketing onto tmpfs with symlink dereference (`cp -aL`).
 - Stages those trees into **tmpfs** (`/dev/shm`) when free space allows
 - Uses `open_file_cache`, `sendfile`, keepalive to app/MCP upstreams, and gzip
 - Starts FastAPI and MCP **in parallel** for faster cold start

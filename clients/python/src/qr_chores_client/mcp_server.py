@@ -21,6 +21,8 @@ from qr_chores_client.client import QrChoresClient
 from qr_chores_client.models import (
     AchievementCreate,
     AchievementUpdate,
+    ChildCreate,
+    ChildUpdate,
     ChoreCreate,
     ChoreUpdate,
 )
@@ -584,6 +586,69 @@ def create_mcp_server() -> Any:
         )
 
     @mcp.tool
+    async def list_children(include_inactive: bool = True, ctx: Any = None) -> dict[str, Any]:
+        """List children for the logged-in parent."""
+        client = await _holder.get_client_for_request(ctx)
+        return _to_jsonable(await client.list_children(include_inactive=include_inactive))
+
+    @mcp.tool
+    async def create_child(
+        email: str,
+        password: str,
+        first_name: str,
+        last_name: str,
+        ctx: Any = None,
+    ) -> dict[str, Any]:
+        """Create a child account (parent)."""
+        client = await _holder.get_client_for_request(ctx)
+        body = ChildCreate(
+            email=email,
+            password=password,
+            first_name=first_name,
+            last_name=last_name,
+        )
+        return _to_jsonable(await client.create_child(body))
+
+    @mcp.tool
+    async def get_child(child_id: int, ctx: Any = None) -> dict[str, Any]:
+        """Get one child by id (parent)."""
+        client = await _holder.get_client_for_request(ctx)
+        return _to_jsonable(await client.get_child(child_id))
+
+    @mcp.tool
+    async def update_child(
+        child_id: int,
+        email: str | None = None,
+        password: str | None = None,
+        first_name: str | None = None,
+        last_name: str | None = None,
+        is_active: bool | None = None,
+        ctx: Any = None,
+    ) -> dict[str, Any]:
+        """Partial update of a child profile (parent)."""
+        client = await _holder.get_client_for_request(ctx)
+        update = ChildUpdate(
+            email=email,
+            password=password,
+            first_name=first_name,
+            last_name=last_name,
+            is_active=is_active,
+        )
+        return _to_jsonable(await client.update_child(child_id, update))
+
+    @mcp.tool
+    async def activate_child(child_id: int, ctx: Any = None) -> dict[str, Any]:
+        """Activate a child account (parent)."""
+        client = await _holder.get_client_for_request(ctx)
+        return _to_jsonable(await client.activate_child(child_id))
+
+    @mcp.tool
+    async def deactivate_child(child_id: int, ctx: Any = None) -> dict[str, Any]:
+        """Deactivate a child account (parent)."""
+        client = await _holder.get_client_for_request(ctx)
+        return _to_jsonable(await client.deactivate_child(child_id))
+
+    @mcp.tool
     async def list_chores(include_inactive: bool = True, ctx: Any = None) -> dict[str, Any]:
         """List chores (parent)."""
         client = await _holder.get_client_for_request(ctx)
@@ -791,6 +856,12 @@ def list_tool_names() -> list[str]:
             "get_achievements",
             "get_today",
             "get_history",
+            "list_children",
+            "create_child",
+            "get_child",
+            "update_child",
+            "activate_child",
+            "deactivate_child",
             "list_chores",
             "create_chore",
             "get_chore",
