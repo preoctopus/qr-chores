@@ -23,8 +23,9 @@
         <div class="chore-card-meta">
           <p class="chore-title">
             {{ row.chore.title }}
-            {% if row.chore.assignee %}
-            <span class="child-badge">{{ row.chore.assignee.display_name or row.chore.assignee.first_name }}</span>
+            {% set child_user = (row.completion.user if row.completion and row.completion.user else None) or (row.chore.assignee if row.chore else None) %}
+            {% if child_user %}
+            <span class="child-badge">{{ child_user.display_name or child_user.first_name }}</span>
             {% endif %}
           </p>
           <p class="muted small">

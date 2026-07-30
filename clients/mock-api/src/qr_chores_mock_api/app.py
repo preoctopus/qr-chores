@@ -358,7 +358,24 @@ def achievements(user: dict[str, Any] = Depends(require_child)) -> dict[str, Any
 def today(user: dict[str, Any] = Depends(require_parent)) -> dict[str, Any]:
     del user
     active = [c for c in STATE["chores"].values() if c["is_active"]]
-    board = [_board_item(c) for c in sorted(active, key=lambda x: x["id"])]
+    board = [_board_item(c) for c in active]
+
+    def sort_key(item: dict[str, Any]) -> tuple[int, str, str]:
+        done = item["done"]
+        is_late_pending = item["is_late_pending"]
+        timing = item["timing"]
+        if not done:
+            rank = 0 if is_late_pending else 1
+        else:
+            if timing == "late":
+                rank = 2
+            elif timing == "early":
+                rank = 3
+            else:
+                rank = 4
+        return (rank, item["chore"]["due_time"], item["chore"]["title"])
+
+    board.sort(key=sort_key)
     return {"local_date": STATE["local_date"], "board": board}
 
 

@@ -1,16 +1,16 @@
 """Unit tests for today_board and list helpers."""
 
-from datetime import time
+from datetime import UTC, datetime, time
 
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from qr_chores.config import Settings
 from qr_chores.db import Base
-from qr_chores.models.chore import Chore, PhotoPolicy
+from qr_chores.models.chore import Chore, ChoreCompletion, PhotoPolicy, TimingStatus
 from qr_chores.services.chores import list_active_chores, list_all_chores, today_board
 from qr_chores.services.qr import new_qr_token
-from qr_chores.services.timeutil import local_now
+from qr_chores.services.timeutil import local_now, local_today
 
 
 @pytest.fixture
@@ -77,6 +77,67 @@ async def test_today_board_pending_and_late(board_ctx) -> None:
         assert titles["Midnight due"].is_late_pending is True
         assert titles["Midnight due"].status_kind == "late"
     assert titles["Late night"].done is False
+
+
+@pytest.mark.asyncio
+async def test_today_board_sorting_order(board_ctx) -> None:
+    session, settings = board_ctx
+    today = local_today(settings)
+
+    # 1. Done on time
+    c_on_time = await _add_chore(session, title="Chore On Time", due_time=time(12, 0))
+    # 2. Done early
+    c_early = await _add_chore(session, title="Chore Early", due_time=time(12, 0))
+    # 3. Done late
+    c_late = await _add_chore(session, title="Chore Done Late", due_time=time(12, 0))
+    # 4. Late uncompleted (due at 00:00, past grace)
+    await _add_chore(session, title="Chore Late Uncompleted", due_time=time(0, 0))
+    # 5. Pending uncompleted (due at 23:59)
+    await _add_chore(session, title="Chore Pending Uncompleted", due_time=time(23, 59))
+
+    session.add(
+        ChoreCompletion(
+            chore_id=c_on_time.id,
+            user_id=1,
+            local_date=today,
+            completed_at=datetime.now(UTC),
+            timing=TimingStatus.on_time,
+            points_awarded=10,
+        )
+    )
+    session.add(
+        ChoreCompletion(
+            chore_id=c_early.id,
+            user_id=1,
+            local_date=today,
+            completed_at=datetime.now(UTC),
+            timing=TimingStatus.early,
+            points_awarded=12,
+        )
+    )
+    session.add(
+        ChoreCompletion(
+            chore_id=c_late.id,
+            user_id=1,
+            local_date=today,
+            completed_at=datetime.now(UTC),
+            timing=TimingStatus.late,
+            points_awarded=8,
+        )
+    )
+    await session.commit()
+
+    board = await today_board(session, settings)
+    now = local_now(settings)
+    if now.hour > 0 or now.minute > 15:
+        titles = [row.chore.title for row in board]
+        assert titles == [
+            "Chore Late Uncompleted",
+            "Chore Pending Uncompleted",
+            "Chore Done Late",
+            "Chore Early",
+            "Chore On Time",
+        ]
 
 
 @pytest.mark.asyncio
