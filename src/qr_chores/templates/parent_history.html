@@ -124,6 +124,8 @@
         </a>
         <a class="photo-link" href="/photos/{{ c.id }}">View photo</a>
       </div>
+      {% elif c.had_photo %}
+      <p class="muted small">Photo no longer available</p>
       {% endif %}
     </li>
     {% endfor %}

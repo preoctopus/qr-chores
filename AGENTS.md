@@ -126,7 +126,7 @@ Login → points (total balance + points change today) + achievements (awarded a
 
 - **User** — email (username), first_name, last_name, display_name, password_hash, role (`parent`|`child`), **parent_id** (children → parent who manages them)
 - **Chore** — title, description, **qr_token** (unique, stable), due_time, schedule_days, photo_policy, base_points, **early_bonus_enabled**, is_active, **assignee_user_id** (child who owns the chore)
-- **ChoreCompletion** — chore_id, user_id, local_date, completed_at, timing, photo_object_key, points_awarded (base + timing bonus only; not achievement rewards); **UNIQUE (chore_id, local_date)**
+- **ChoreCompletion** — chore_id, user_id, local_date, completed_at, timing, photo_object_key, **had_photo** (stays true after reaping), points_awarded (base + timing bonus only; not achievement rewards); **UNIQUE (chore_id, local_date)**
 - **PointLedger** — user_id, delta, reason, ref_type, ref_id (sum = balance; “points today” is ledger deltas for the local day)
 - **Achievement** — title, description, icon_key, criteria_type, criteria_json, points_reward, is_active
 - **UserAchievement** — user_id, achievement_id, unlocked_at; unique pair
@@ -182,6 +182,7 @@ qr-chores/
 | `PHOTO_LOCAL_DIR` | Local upload root (dev) |
 | `GCS_BUCKET` | Bucket when `PHOTO_STORAGE=gcs` |
 | `PHOTO_MAX_BYTES` | Max upload size (default 5 MB); enforced while reading the upload stream |
+| `PHOTO_RETENTION_DAYS` | Keep proof photo blobs this many calendar days (`local_date`); `0` disables. Run `qr-chores-reap-photos` on a schedule |
 | `PORT` | Cloud Run listens on `8080` |
 | `RUN_MIGRATIONS` / `RUN_SEED` | Docker entrypoint flags |
 | `ADMIN_API_KEY` | Optional internal registration API key (not family-facing UX) |
@@ -206,7 +207,7 @@ Local default port: **8765** (8000 is often taken).
 1. Skeleton & deploy path ✅  
 2. Chores + QR ✅  
 2.5. Chore delete ✅  
-3. Photos ✅  
+3. Photos ✅ (incl. `qr-chores-reap-photos` retention job)
 4. Points & achievements ✅  
 5. Polish + deploy docs ✅  
 6. Lint, coverage (≥ 90%), unit + integration tests ✅  

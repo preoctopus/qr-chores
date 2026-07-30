@@ -202,6 +202,49 @@ gcloud run jobs create qr-chores-migrate \
   --execute-now
 ```
 
+### Photo retention (`qr-chores-reap-photos`)
+
+Proof photos are stored outside the DB (`PHOTO_STORAGE=local` or `gcs`). Completions keep history forever, but **blobs** should not. Configure:
+
+| Env | Default | Meaning |
+|-----|---------|---------|
+| `PHOTO_RETENTION_DAYS` | `90` | Delete objects whose completion `local_date` is older than this many days. `0` disables the job. |
+
+Run the reaper (idempotent) as a **Cloud Run Job** on a schedule (daily is fine):
+
+```bash
+# One-off dry-run
+gcloud run jobs execute qr-chores-reap-photos --region=${REGION} --project=${PROJECT_ID}
+
+# Create job (once)
+gcloud run jobs create qr-chores-reap-photos \
+  --image="${IMAGE}" \
+  --region=${REGION} \
+  --project=${PROJECT_ID} \
+  --set-cloudsql-instances="${INSTANCE_CONNECTION}" \
+  --set-secrets="DATABASE_URL=DATABASE_URL:latest,SECRET_KEY=SECRET_KEY:latest" \
+  --set-env-vars="PHOTO_STORAGE=gcs,GCS_BUCKET=${BUCKET},PHOTO_RETENTION_DAYS=90,APP_TIMEZONE=America/Chicago" \
+  --command=qr-chores-reap-photos \
+  --args= \
+  --max-retries=1 \
+  --task-timeout=10m
+
+# Optional: Cloud Scheduler → Job daily
+# gcloud scheduler jobs create http ... targeting the Run Job execute API
+```
+
+Locally:
+
+```bash
+uv run qr-chores-reap-photos --dry-run
+uv run qr-chores-reap-photos
+uv run qr-chores-reap-photos --retention-days 30
+```
+
+The job deletes aged objects, clears `photo_object_key`, and leaves `had_photo=true` so photo achievements still count. History shows “Photo no longer available” when the blob is gone.
+
+**Defense in depth (optional):** add a GCS Object Lifecycle rule on the photos bucket (e.g. delete objects under `completions/` after 100 days). Keep the app job so DB keys stay accurate and the UI does not link missing files.
+
 ## 7. Service account permissions
 
 The Cloud Run runtime SA needs:

@@ -505,6 +505,7 @@ async def test_photo_completions_require_photo_key(domain) -> None:
             completed_at=datetime.now(tz=UTC),
             timing=TimingStatus.on_time,
             photo_object_key="completions/1/x.png",
+            had_photo=True,
             points_awarded=0,
         )
     )

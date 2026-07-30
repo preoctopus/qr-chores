@@ -208,6 +208,7 @@ async def complete_chore(
         completed_at=now,
         timing=timing,
         photo_object_key=photo_key,
+        had_photo=bool(photo_key),
         notes=clean_notes,
         points_awarded=points_awarded,
     )

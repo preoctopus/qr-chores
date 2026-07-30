@@ -55,7 +55,8 @@ async def _count_completions(
     if timing is not None:
         q = q.where(ChoreCompletion.timing == timing)
     if with_photo:
-        q = q.where(ChoreCompletion.photo_object_key.is_not(None))
+        # Use had_photo so reaped blobs still count toward photo achievements.
+        q = q.where(ChoreCompletion.had_photo.is_(True))
     return int(await db.scalar(q) or 0)
 
 

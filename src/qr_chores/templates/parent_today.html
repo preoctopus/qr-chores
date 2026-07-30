@@ -44,6 +44,8 @@
         </a>
         <a class="photo-link" href="/photos/{{ row.completion.id }}">View photo</a>
       </div>
+      {% elif row.completion and row.completion.had_photo %}
+      <p class="muted small">Photo no longer available</p>
       {% endif %}
     </li>
     {% endfor %}
