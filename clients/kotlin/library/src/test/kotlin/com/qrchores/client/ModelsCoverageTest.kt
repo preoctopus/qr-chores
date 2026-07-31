@@ -27,6 +27,7 @@ import com.qrchores.client.models.StringDetail
 import com.qrchores.client.models.TimingBonuses
 import com.qrchores.client.models.TodayResponse
 import com.qrchores.client.models.TokenResponse
+import com.qrchores.client.models.UndoCompletionResponse
 import com.qrchores.client.models.Unlock
 import com.qrchores.client.models.User
 import com.qrchores.client.models.ValidationDetailEnvelope
@@ -246,6 +247,11 @@ class ModelsCoverageTest {
 
         val del = ChoreDeleteResponse(true, 1, 0)
         assertTrue(del.copy().deleted)
+
+        val undo = UndoCompletionResponse(true, 10, 1, 12)
+        assertTrue(undo.copy().success)
+        assertEquals(10, undo.completionId)
+        assertEquals(12, undo.pointsReverted)
 
         val qr = QrInfo(1, "T", "tok", "http://x/c/tok", "/png")
         assertEquals("tok", qr.copy().qrToken)

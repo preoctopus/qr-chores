@@ -40,6 +40,7 @@ Tiny valid PNG bytes served for `GET .../qr.png` and `GET .../photos/{id}`.
 | GET | `/api/v1/achievements` | `get_achievements` | `getAchievements` |
 | GET | `/api/v1/today` | `get_today` | `getToday` |
 | GET | `/api/v1/history` | `get_history` | `getHistory` |
+| POST | `/api/v1/completions/{id}/undo` | `undo_completion` | `undoCompletion` |
 | GET | `/api/v1/chores` | `list_chores` | `listChores` |
 | POST | `/api/v1/chores` | `create_chore` | `createChore` |
 | GET | `/api/v1/chores/{id}` | `get_chore` | `getChore` |

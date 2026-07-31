@@ -563,3 +563,23 @@ async def test_logout_clears_token_even_on_error(client: QrChoresClient):
     )
     await client.logout()
     assert client.access_token is None
+
+
+@respx.mock
+async def test_undo_completion(client: QrChoresClient):
+    client.access_token = "parent-token"
+    respx.post(f"{BASE}/api/v1/completions/10/undo").mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "success": True,
+                "completion_id": 10,
+                "chore_id": 1,
+                "points_reverted": 12,
+            },
+        )
+    )
+    res = await client.undo_completion(10)
+    assert res.success is True
+    assert res.completion_id == 10
+    assert res.points_reverted == 12

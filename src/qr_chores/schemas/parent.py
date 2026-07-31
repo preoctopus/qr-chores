@@ -166,3 +166,10 @@ class ChoreDeleteResponse(BaseModel):
     deleted: bool
     chore_id: int
     completions_removed: int
+
+
+class UndoCompletionResponse(BaseModel):
+    success: bool = True
+    completion_id: int
+    chore_id: int
+    points_reverted: int

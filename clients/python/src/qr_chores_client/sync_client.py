@@ -33,6 +33,7 @@ from qr_chores_client.models import (
     TimingBonuses,
     TodayResponse,
     TokenResponse,
+    UndoCompletionResponse,
     User,
 )
 
@@ -169,6 +170,9 @@ class SyncQrChoresClient:
                 limit=limit,
             )
         )
+
+    def undo_completion(self, completion_id: int) -> UndoCompletionResponse:
+        return self._run(self._async.undo_completion(completion_id))
 
     def list_chores(self, *, include_inactive: bool = True) -> ChoreListResponse:
         return self._run(self._async.list_chores(include_inactive=include_inactive))

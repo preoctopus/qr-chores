@@ -151,6 +151,7 @@ All require **`role=parent`** (and authentication), except photo fetch (any auth
 |--------|------|-------------|
 | `GET` | `/api/v1/today` | Today’s status board (same domain rules as `/today`) |
 | `GET` | `/api/v1/history` | Paginated completion history with filters (`child_id`, `chore_id`, `start_date`, `end_date`, `timing`, `page`, `limit`) and summary stats |
+| `POST` | `/api/v1/completions/{id}/undo` | Revert completion points in ledger, delete photo, and allow chore to be completed again today |
 
 
 ### Chores

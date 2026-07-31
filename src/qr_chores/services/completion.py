@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from qr_chores.config import Settings
 from qr_chores.models.chore import Chore, ChoreCompletion, PhotoPolicy, TimingStatus
+from qr_chores.models.rewards import PointLedger
 from qr_chores.models.user import User
 from qr_chores.services.achievements import UnlockedAchievement, evaluate_achievements
 from qr_chores.services.points import add_ledger_entry, get_timing_bonuses
@@ -429,4 +430,85 @@ async def get_parent_history(
         completions=completions,
         stats=stats,
         pagination=pagination,
+    )
+
+
+@dataclass
+class UndoCompletionResult:
+    completion_id: int
+    chore_id: int
+    chore_title: str
+    user_id: int
+    points_reverted: int
+
+
+async def undo_completion(
+    db: AsyncSession,
+    *,
+    completion_id: int,
+    parent_id: int,
+    settings: Settings,
+) -> UndoCompletionResult:
+    """Undo a chore completion for one of the parent's children.
+
+    - Reverts banked points via compensating negative PointLedger entries
+    - Deletes proof photo file if present
+    - Deletes ChoreCompletion row to free the local_date unique constraint
+    """
+    stmt = (
+        select(ChoreCompletion, Chore, User)
+        .join(Chore, ChoreCompletion.chore_id == Chore.id)
+        .join(User, ChoreCompletion.user_id == User.id)
+        .where(
+            ChoreCompletion.id == completion_id,
+            User.parent_id == parent_id,
+        )
+    )
+    res = await db.execute(stmt)
+    row = res.first()
+    if row is None:
+        raise CompletionError("Completion not found or access denied.", "not_found")
+
+    completion, chore, child = row
+
+    ledger_stmt = select(PointLedger).where(
+        PointLedger.user_id == completion.user_id,
+        PointLedger.ref_type.in_(["completion", "completion_bonus"]),
+        PointLedger.ref_id == completion.id,
+    )
+    ledger_res = await db.execute(ledger_stmt)
+    ledger_entries = ledger_res.scalars().all()
+
+    points_reverted = 0
+    for entry in ledger_entries:
+        if entry.delta != 0:
+            add_ledger_entry(
+                db,
+                user_id=completion.user_id,
+                delta=-entry.delta,
+                reason=f"Undo: {entry.reason}",
+                ref_type="completion_undo",
+                ref_id=completion.id,
+            )
+            points_reverted += entry.delta
+
+    if completion.photo_object_key:
+        from contextlib import suppress
+
+        with suppress(StorageError):
+            get_photo_storage(settings).delete(completion.photo_object_key)
+
+    chore_id = completion.chore_id
+    chore_title = chore.title
+    user_id = completion.user_id
+
+    await db.delete(completion)
+    await db.commit()
+
+    return UndoCompletionResult(
+        completion_id=completion_id,
+        chore_id=chore_id,
+        chore_title=chore_title,
+        user_id=user_id,
+        points_reverted=points_reverted,
     )

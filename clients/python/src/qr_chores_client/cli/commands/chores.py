@@ -272,3 +272,22 @@ def qr_png(
         output.emit_json({"chore_id": chore_id, "path": str(output_path), "size": len(data)})
         return
     output.success(f"Wrote {len(data)} bytes to {output_path}")
+
+
+@app.command("undo-completion")
+@handle_api_errors
+def undo_completion(
+    ctx: typer.Context,
+    completion_id: int = typer.Argument(help="Completion ID to undo."),
+) -> None:
+    """Undo a completion (POST /api/v1/completions/{id}/undo)."""
+    cfg = get_config(ctx)
+    client = make_client(cfg)
+    try:
+        res = client.undo_completion(completion_id)
+    finally:
+        client.close()
+    if cfg.as_json:
+        output.emit_json(res)
+        return
+    output.success(f"Undid completion id={res.completion_id} (reverted {res.points_reverted} pts)")
