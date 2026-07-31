@@ -66,6 +66,27 @@ def test_sync_parent_methods():
     respx.get(f"{BASE}/api/v1/history").mock(
         return_value=httpx.Response(200, json={"items": [], "limit": 50})
     )
+    child_user = {
+        "id": 2,
+        "email": "child@example.com",
+        "display_name": "Child User",
+        "role": "child",
+        "parent_id": 1,
+        "is_active": True,
+        "points_balance": 42,
+    }
+    respx.get(f"{BASE}/api/v1/children").mock(
+        return_value=httpx.Response(200, json={"children": [child_user]})
+    )
+    respx.get(f"{BASE}/api/v1/children/2").mock(return_value=httpx.Response(200, json=child_user))
+    respx.post(f"{BASE}/api/v1/children").mock(return_value=httpx.Response(201, json=child_user))
+    respx.patch(f"{BASE}/api/v1/children/2").mock(return_value=httpx.Response(200, json=child_user))
+    respx.post(f"{BASE}/api/v1/children/2/activate").mock(
+        return_value=httpx.Response(200, json=child_user)
+    )
+    respx.post(f"{BASE}/api/v1/children/2/deactivate").mock(
+        return_value=httpx.Response(200, json={**child_user, "is_active": False})
+    )
     respx.get(f"{BASE}/api/v1/chores").mock(
         return_value=httpx.Response(200, json={"chores": [CHORE]})
     )
@@ -173,6 +194,22 @@ def test_sync_parent_methods():
     try:
         assert client.get_today().board == []
         assert client.get_history().items == []
+        assert client.list_children().children[0].id == 2
+        assert client.get_child(2).role == "child"
+        assert (
+            client.create_child(
+                {
+                    "email": "child@example.com",
+                    "password": "x",
+                    "first_name": "Child",
+                    "last_name": "User",
+                }
+            ).id
+            == 2
+        )
+        assert client.update_child(2, {"first_name": "C"}).id == 2
+        assert client.activate_child(2).is_active is True
+        assert client.deactivate_child(2).is_active is False
         assert client.list_chores().chores[0].id == 1
         assert client.get_chore(1).id == 1
         assert client.create_chore({"title": "X"}).id == 1

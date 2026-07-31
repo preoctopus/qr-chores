@@ -92,13 +92,40 @@ def print_user(user: Any, *, title: str = "Signed in") -> None:
     name = data.get("display_name") or data.get("email") or "?"
     email = data.get("email", "")
     points = data.get("points_balance", 0)
+    active = data.get("is_active", True)
     style = role_style(role)
+    active_s = "active" if active else "inactive"
     panel = Panel(
-        f"[bold]{name}[/]\n{email}\nRole: [{style}]{role}[/]  ·  Points: [bold]{points}[/]",
+        f"[bold]{name}[/]\n{email}\n"
+        f"Role: [{style}]{role}[/]  ·  Points: [bold]{points}[/]  ·  {active_s}",
         title=title,
         border_style=style,
     )
     console.print(panel)
+
+
+def print_children_table(children: list[Any]) -> None:
+    """Render a list of child User models."""
+    table = Table(show_header=True, header_style="bold", expand=True, title="Children")
+    table.add_column("ID", style="dim", width=6)
+    table.add_column("Name")
+    table.add_column("Email")
+    table.add_column("Active", width=8)
+    table.add_column("Points", justify="right", width=8)
+    for child in children:
+        if isinstance(child, BaseModel):
+            data = child.model_dump(mode="json")
+        else:
+            data = dict(child)
+        active = "yes" if data.get("is_active", True) else "no"
+        table.add_row(
+            str(data.get("id", "")),
+            str(data.get("display_name") or ""),
+            str(data.get("email") or ""),
+            active,
+            str(data.get("points_balance", 0)),
+        )
+    console.print(table)
 
 
 def print_board(

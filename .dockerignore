@@ -17,3 +17,7 @@ dist
 build
 htmlcov
 .coverage
+
+# Design-only sources not needed at runtime (marketing links only used media under imgs/)
+imgs/badge_samples.png
+imgs/*.xcf

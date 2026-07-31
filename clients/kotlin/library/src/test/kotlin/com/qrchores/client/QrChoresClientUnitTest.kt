@@ -8,6 +8,8 @@ import com.qrchores.client.errors.NotFoundException
 import com.qrchores.client.errors.ValidationException
 import com.qrchores.client.models.AchievementCreate
 import com.qrchores.client.models.AchievementUpdate
+import com.qrchores.client.models.ChildCreate
+import com.qrchores.client.models.ChildUpdate
 import com.qrchores.client.models.ChoreCreate
 import com.qrchores.client.models.ChoreUpdate
 import com.qrchores.client.models.TimingBonuses
@@ -354,6 +356,101 @@ class QrChoresClientUnitTest {
             val history = client.getHistory(limit = 25)
             assertEquals(1, history.items.size)
             assertEquals(25, history.limit)
+            client.close()
+        }
+
+    @Test
+    fun listChildren() =
+        runTest {
+            val client =
+                clientFor { request ->
+                    assertTrue(request.url.encodedPath.endsWith("/api/v1/children"))
+                    assertEquals("false", request.url.parameters["include_inactive"])
+                    okJson(
+                        """
+                        {
+                          "children": [
+                            {
+                              "id": 2,
+                              "email": "child@example.com",
+                              "first_name": "Child",
+                              "last_name": "User",
+                              "display_name": "Child User",
+                              "role": "child",
+                              "parent_id": 1,
+                              "is_active": true,
+                              "points_balance": 42
+                            }
+                          ]
+                        }
+                        """.trimIndent(),
+                    )
+                }
+            client.accessToken = "parent-token"
+            val list = client.listChildren(includeInactive = false)
+            assertEquals(1, list.children.size)
+            assertEquals(2, list.children[0].id)
+            assertEquals(1, list.children[0].parentId)
+            client.close()
+        }
+
+    @Test
+    fun createGetUpdateActivateDeactivateChild() =
+        runTest {
+            val childJson =
+                """
+                {
+                  "id": 3,
+                  "email": "sam@example.com",
+                  "first_name": "Sam",
+                  "last_name": "Kid",
+                  "display_name": "Sam Kid",
+                  "role": "child",
+                  "parent_id": 1,
+                  "is_active": true,
+                  "points_balance": 0
+                }
+                """.trimIndent()
+            val client =
+                clientFor { request ->
+                    when {
+                        request.method == HttpMethod.Post &&
+                            request.url.encodedPath.endsWith("/api/v1/children") ->
+                            respond(childJson, HttpStatusCode.Created, jsonHeaders)
+                        request.method == HttpMethod.Get &&
+                            request.url.encodedPath.endsWith("/api/v1/children/3") ->
+                            okJson(childJson)
+                        request.method == HttpMethod.Patch &&
+                            request.url.encodedPath.endsWith("/api/v1/children/3") ->
+                            okJson(
+                                childJson.replace("\"first_name\": \"Sam\"", "\"first_name\": \"Sammy\"")
+                                    .replace("\"display_name\": \"Sam Kid\"", "\"display_name\": \"Sammy Kid\""),
+                            )
+                        request.method == HttpMethod.Post &&
+                            request.url.encodedPath.endsWith("/api/v1/children/3/deactivate") ->
+                            okJson(childJson.replace("\"is_active\": true", "\"is_active\": false"))
+                        request.method == HttpMethod.Post &&
+                            request.url.encodedPath.endsWith("/api/v1/children/3/activate") ->
+                            okJson(childJson)
+                        else -> error("unexpected ${request.method} ${request.url}")
+                    }
+                }
+            client.accessToken = "parent-token"
+            val created =
+                client.createChild(
+                    ChildCreate(
+                        email = "sam@example.com",
+                        password = "child-pass",
+                        firstName = "Sam",
+                        lastName = "Kid",
+                    ),
+                )
+            assertEquals(3, created.id)
+            assertEquals("sam@example.com", client.getChild(3).email)
+            val updated = client.updateChild(3, ChildUpdate(firstName = "Sammy"))
+            assertEquals("Sammy Kid", updated.displayName)
+            assertFalse(client.deactivateChild(3).isActive)
+            assertTrue(client.activateChild(3).isActive)
             client.close()
         }
 

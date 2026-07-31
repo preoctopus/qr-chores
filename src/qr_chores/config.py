@@ -33,6 +33,8 @@ class Settings(BaseSettings):
     photo_local_dir: str = "./data/uploads"
     gcs_bucket: str = ""
     photo_max_bytes: int = 5 * 1024 * 1024  # 5 MB
+    # Days to keep proof photo blobs (local_date age). <=0 disables reaping.
+    photo_retention_days: int = 90
     # Seed script defaults (override in env for real use)
     seed_parent_password: str = "parent-pass"
     seed_child_password: str = "child-pass"

@@ -34,6 +34,7 @@ dev = [
 [project.scripts]
 qr-chores = "qr_chores.main:run"
 qr-chores-seed = "qr_chores.seed:main"
+qr-chores-reap-photos = "qr_chores.reap_photos:main"
 
 [build-system]
 requires = ["uv_build>=0.11.26,<0.12.0"]

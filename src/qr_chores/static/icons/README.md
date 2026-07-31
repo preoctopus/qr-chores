@@ -5,7 +5,8 @@
 | `app-logo-192.png` | Web manifest `purpose: "any"` (192×192) |
 | `app-logo-512.png` | Web manifest `purpose: "any"` (512×512); also linked as `apple-touch-icon` today |
 
-Source / marketing art also lives under repo `imgs/` and `marketing/assets/`.
+Design library (logos, editable sources): repo `imgs/` (see `imgs/README.md`).  
+Marketing site loads a symlink subset via `marketing/assets/` → `imgs/`.
 
 ## Follow-ups (issue #29)
 

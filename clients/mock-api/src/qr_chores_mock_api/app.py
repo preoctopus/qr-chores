@@ -85,6 +85,21 @@ class AchievementUpdate(BaseModel):
     points_reward: int | None = None
 
 
+class ChildCreate(BaseModel):
+    email: str
+    password: str
+    first_name: str
+    last_name: str
+
+
+class ChildUpdate(BaseModel):
+    email: str | None = None
+    password: str | None = None
+    first_name: str | None = None
+    last_name: str | None = None
+    is_active: bool | None = None
+
+
 def _user_from_auth(authorization: str | None) -> dict[str, Any]:
     if not authorization or not authorization.lower().startswith("bearer "):
         raise HTTPException(status_code=401, detail="Not authenticated")
@@ -118,6 +133,25 @@ def _chore_by_id(chore_id: int) -> dict[str, Any]:
     if not chore:
         raise HTTPException(status_code=404, detail="Chore not found")
     return chore
+
+
+def _child_for_parent(parent: dict[str, Any], child_id: int) -> dict[str, Any]:
+    for user in STATE["users"].values():
+        if (
+            user["id"] == child_id
+            and user.get("role") == "child"
+            and user.get("parent_id") == parent["id"]
+        ):
+            return user
+    raise HTTPException(status_code=404, detail="Child not found")
+
+
+def _email_taken(email: str, *, except_user_id: int | None = None) -> bool:
+    key = email.strip().lower()
+    for user in STATE["users"].values():
+        if user["email"].lower() == key and user["id"] != except_user_id:
+            return True
+    return False
 
 
 def _chore_by_token(qr_token: str) -> dict[str, Any]:
@@ -480,6 +514,110 @@ def undo_completion_mock(
         "points_reverted": points_reverted,
     }
 
+
+
+@app.get("/api/v1/children")
+def list_children(
+    include_inactive: bool = Query(default=True),
+    user: dict[str, Any] = Depends(require_parent),
+) -> dict[str, Any]:
+    kids = [
+        u
+        for u in STATE["users"].values()
+        if u.get("role") == "child" and u.get("parent_id") == user["id"]
+    ]
+    if not include_inactive:
+        kids = [k for k in kids if k.get("is_active", True)]
+    kids = sorted(kids, key=lambda x: x["id"])
+    return {"children": [user_out(k) for k in kids]}
+
+
+@app.post("/api/v1/children", status_code=status.HTTP_201_CREATED)
+def create_child(
+    body: ChildCreate,
+    user: dict[str, Any] = Depends(require_parent),
+) -> dict[str, Any]:
+    email = body.email.strip().lower()
+    if _email_taken(email):
+        raise HTTPException(
+            status_code=409,
+            detail={"message": "That username is already taken.", "code": "username_taken"},
+        )
+    uid = STATE["next_user_id"]
+    STATE["next_user_id"] = uid + 1
+    first = body.first_name.strip()
+    last = body.last_name.strip()
+    child = {
+        "id": uid,
+        "email": email,
+        "first_name": first,
+        "last_name": last,
+        "display_name": f"{first} {last}".strip(),
+        "role": "child",
+        "password": body.password,
+        "points_balance": 0,
+        "parent_id": user["id"],
+        "is_active": True,
+    }
+    STATE["users"][email] = child
+    return user_out(child)
+
+
+@app.get("/api/v1/children/{child_id}")
+def get_child(child_id: int, user: dict[str, Any] = Depends(require_parent)) -> dict[str, Any]:
+    return user_out(_child_for_parent(user, child_id))
+
+
+@app.patch("/api/v1/children/{child_id}")
+def update_child(
+    child_id: int,
+    body: ChildUpdate,
+    user: dict[str, Any] = Depends(require_parent),
+) -> dict[str, Any]:
+    child = _child_for_parent(user, child_id)
+    data = body.model_dump(exclude_unset=True)
+    if "email" in data and data["email"] is not None:
+        new_email = str(data["email"]).strip().lower()
+        if _email_taken(new_email, except_user_id=child["id"]):
+            raise HTTPException(
+                status_code=409,
+                detail={"message": "That username is already taken.", "code": "username_taken"},
+            )
+        old_email = child["email"]
+        if new_email != old_email:
+            del STATE["users"][old_email]
+            child["email"] = new_email
+            STATE["users"][new_email] = child
+            # Retarget any tokens still pointing at the old email.
+            for tok, email in list(STATE["tokens"].items()):
+                if email == old_email:
+                    STATE["tokens"][tok] = new_email
+    if "password" in data and data["password"] is not None:
+        child["password"] = data["password"]
+    if "first_name" in data and data["first_name"] is not None:
+        child["first_name"] = str(data["first_name"]).strip()
+    if "last_name" in data and data["last_name"] is not None:
+        child["last_name"] = str(data["last_name"]).strip()
+    if "is_active" in data and data["is_active"] is not None:
+        child["is_active"] = bool(data["is_active"])
+    child["display_name"] = f"{child.get('first_name', '')} {child.get('last_name', '')}".strip()
+    return user_out(child)
+
+
+@app.post("/api/v1/children/{child_id}/deactivate")
+def deactivate_child(
+    child_id: int, user: dict[str, Any] = Depends(require_parent)
+) -> dict[str, Any]:
+    child = _child_for_parent(user, child_id)
+    child["is_active"] = False
+    return user_out(child)
+
+
+@app.post("/api/v1/children/{child_id}/activate")
+def activate_child(child_id: int, user: dict[str, Any] = Depends(require_parent)) -> dict[str, Any]:
+    child = _child_for_parent(user, child_id)
+    child["is_active"] = True
+    return user_out(child)
 
 
 @app.get("/api/v1/chores")

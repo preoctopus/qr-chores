@@ -16,9 +16,11 @@ from qr_chores.services.completion import (
     CompletionError,
     PhotoUpload,
     complete_chore,
+    open_completion_photo,
 )
 from qr_chores.services.points import points_balance, points_earned_today
 from qr_chores.services.qr import new_qr_token
+from qr_chores.services.storage import StorageError
 
 
 @pytest.fixture
@@ -192,3 +194,29 @@ async def test_complete_chore_early_bonus_disabled(ctx) -> None:
         assert res.completion.timing == TimingStatus.early
         assert res.points.timing_bonus == 0
         assert res.completion.points_awarded == 10
+
+
+@pytest.mark.asyncio
+async def test_open_completion_photo_missing_and_success(ctx) -> None:
+    session, child, settings = ctx
+
+    with pytest.raises(StorageError) as missing:
+        await open_completion_photo(session, settings, completion_id=999_999)
+    assert missing.value.code == "not_found"
+
+    chore = await _chore(session, photo_policy=PhotoPolicy.required, base_points=1)
+    png = (
+        b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01"
+        b"\x08\x02\x00\x00\x00\x90wS\xde\x00\x00\x00\x0cIDATx\x9cc\xf8\x0f\x00"
+        b"\x00\x01\x01\x00\x05\x18\xd8N\x00\x00\x00\x00IEND\xaeB`\x82"
+    )
+    result = await complete_chore(
+        session,
+        chore=chore,
+        user=child,
+        settings=settings,
+        photo=PhotoUpload(data=png, content_type="image/png"),
+    )
+    data, content_type = await open_completion_photo(session, settings, result.completion.id)
+    assert data.startswith(b"\x89PNG")
+    assert content_type.startswith("image/")

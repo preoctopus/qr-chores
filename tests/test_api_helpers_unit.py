@@ -7,11 +7,8 @@ from fastapi import HTTPException
 
 from qr_chores.models.rewards import Achievement, CriteriaType
 from qr_chores.routers.api.child import _completion_http_error
-from qr_chores.routers.api.rewards import (
-    _achievement_out,
-    _criteria_json,
-)
-from qr_chores.services.achievements import criteria_threshold
+from qr_chores.routers.api.rewards import _achievement_out
+from qr_chores.services.achievements import criteria_json_for, criteria_threshold
 from qr_chores.services.completion import CompletionError
 
 
@@ -24,7 +21,7 @@ def test_completion_http_error_shape() -> None:
 
 
 def test_criteria_json_streak_uses_days() -> None:
-    payload = json.loads(_criteria_json(CriteriaType.streak_days, 7))
+    payload = json.loads(criteria_json_for(CriteriaType.streak_days, 7))
     assert payload == {"days": 7}
 
 
@@ -35,7 +32,7 @@ def test_criteria_json_count_types() -> None:
         CriteriaType.complete_early_count,
         CriteriaType.photo_completions,
     ):
-        payload = json.loads(_criteria_json(ct, 5))
+        payload = json.loads(criteria_json_for(ct, 5))
         assert payload == {"count": 5}
 
 

@@ -62,6 +62,24 @@ async def test_parent_flow(parent_client: QrChoresClient):
     assert history.limit == 20
     assert any(i.chore_id == 1 for i in history.items)
 
+    children = await parent_client.list_children()
+    assert any(c.role == "child" for c in children.children)
+    created_child = await parent_client.create_child(
+        {
+            "email": f"kid-{id(parent_client)}@example.com",
+            "password": "child-pass",
+            "first_name": "Integration",
+            "last_name": "Kid",
+        }
+    )
+    assert created_child.parent_id is not None
+    got = await parent_client.get_child(created_child.id)
+    assert got.id == created_child.id
+    renamed = await parent_client.update_child(created_child.id, {"first_name": "Integ"})
+    assert "Integ" in renamed.display_name
+    assert (await parent_client.deactivate_child(created_child.id)).is_active is False
+    assert (await parent_client.activate_child(created_child.id)).is_active is True
+
     chores = await parent_client.list_chores()
     assert len(chores.chores) >= 3
 

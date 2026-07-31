@@ -111,6 +111,7 @@ def test_help_lists_commands():
     assert "todays-chores" in result.output
     assert "auth" in result.output
     assert "chores" in result.output
+    assert "children" in result.output
     assert "qr_chores_client" in result.output
 
 
@@ -126,6 +127,13 @@ def test_chores_help():
     assert result.exit_code == 0
     assert "create" in result.output
     assert "qr-png" in result.output
+
+
+def test_children_help():
+    result = runner.invoke(app, ["children", "--help"])
+    assert result.exit_code == 0
+    assert "create" in result.output
+    assert "list" in result.output
 
 
 def test_config_path(config_dir: Path):
@@ -325,6 +333,123 @@ def test_chores_crud_flow(config_dir: Path):
 
     delete = runner.invoke(app, ["--base-url", BASE, "chores", "delete", "1", "--yes"])
     assert delete.exit_code == 0
+
+
+@respx.mock
+def test_children_crud_flow(config_dir: Path):
+    _save_token(config_dir)
+    child_json = {
+        "id": 3,
+        "email": "sam@example.com",
+        "first_name": "Sam",
+        "last_name": "Kid",
+        "display_name": "Sam Kid",
+        "role": "child",
+        "parent_id": 1,
+        "is_active": True,
+        "points_balance": 0,
+    }
+    respx.get(f"{BASE}/api/v1/children").mock(
+        return_value=httpx.Response(200, json={"children": [child_json]})
+    )
+    respx.get(f"{BASE}/api/v1/children/3").mock(return_value=httpx.Response(200, json=child_json))
+    respx.post(f"{BASE}/api/v1/children").mock(return_value=httpx.Response(201, json=child_json))
+    respx.patch(f"{BASE}/api/v1/children/3").mock(
+        return_value=httpx.Response(
+            200,
+            json={**child_json, "first_name": "Sammy", "display_name": "Sammy Kid"},
+        )
+    )
+    respx.post(f"{BASE}/api/v1/children/3/activate").mock(
+        return_value=httpx.Response(200, json=child_json)
+    )
+    respx.post(f"{BASE}/api/v1/children/3/deactivate").mock(
+        return_value=httpx.Response(200, json={**child_json, "is_active": False})
+    )
+
+    listed = runner.invoke(app, ["--base-url", BASE, "children", "list"])
+    assert listed.exit_code == 0
+    assert "Sam Kid" in listed.output
+
+    get_one = runner.invoke(app, ["--base-url", BASE, "children", "get", "3"])
+    assert get_one.exit_code == 0
+
+    create = runner.invoke(
+        app,
+        [
+            "--base-url",
+            BASE,
+            "children",
+            "create",
+            "-e",
+            "sam@example.com",
+            "-p",
+            "child-pass",
+            "--first-name",
+            "Sam",
+            "--last-name",
+            "Kid",
+        ],
+    )
+    assert create.exit_code == 0, create.output
+    assert "Created child" in create.output
+
+    update = runner.invoke(
+        app,
+        ["--base-url", BASE, "children", "update", "3", "--first-name", "Sammy"],
+    )
+    assert update.exit_code == 0
+    assert runner.invoke(app, ["--base-url", BASE, "children", "activate", "3"]).exit_code == 0
+    assert runner.invoke(app, ["--base-url", BASE, "children", "deactivate", "3"]).exit_code == 0
+
+    empty = runner.invoke(app, ["--base-url", BASE, "children", "update", "3"])
+    assert empty.exit_code == 2
+
+    json_list = runner.invoke(app, ["--base-url", BASE, "--json", "children", "list"])
+    assert json_list.exit_code == 0
+    payload = json.loads(json_list.output)
+    assert payload["children"][0]["id"] == 3
+
+    assert runner.invoke(app, ["--base-url", BASE, "--json", "children", "get", "3"]).exit_code == 0
+    assert (
+        runner.invoke(
+            app,
+            [
+                "--base-url",
+                BASE,
+                "--json",
+                "children",
+                "create",
+                "-e",
+                "sam@example.com",
+                "-p",
+                "child-pass",
+                "--first-name",
+                "Sam",
+                "--last-name",
+                "Kid",
+            ],
+        ).exit_code
+        == 0
+    )
+    assert (
+        runner.invoke(
+            app,
+            ["--base-url", BASE, "--json", "children", "update", "3", "--first-name", "Sammy"],
+        ).exit_code
+        == 0
+    )
+    assert (
+        runner.invoke(app, ["--base-url", BASE, "--json", "children", "activate", "3"]).exit_code
+        == 0
+    )
+    assert (
+        runner.invoke(app, ["--base-url", BASE, "--json", "children", "deactivate", "3"]).exit_code
+        == 0
+    )
+    assert (
+        runner.invoke(app, ["--base-url", BASE, "children", "list", "--active-only"]).exit_code == 0
+    )
 
 
 @respx.mock
