@@ -30,6 +30,10 @@ dev = [
     "pytest-cov>=7.0.0",
     "ruff>=0.9.0",
 ]
+e2e = [
+    "playwright>=1.40.0",
+    "pytest-playwright>=0.5.0",
+]
 
 [project.scripts]
 qr-chores = "qr_chores.main:run"
@@ -50,6 +54,7 @@ testpaths = ["tests"]
 pythonpath = ["tests"]
 markers = [
     "integration: multi-step flows across HTTP routes and persistence",
+    "e2e: end-to-end playwright UI tests",
 ]
 addopts = [
     "--strict-markers",
@@ -80,7 +85,7 @@ skip_covered = false
 [tool.ruff]
 target-version = "py312"
 line-length = 100
-src = ["src", "tests"]
+src = ["src", "tests", "tests_e2e"]
 
 [tool.ruff.lint]
 select = [
@@ -98,6 +103,7 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**/*.py" = ["B011"]
+"tests_e2e/**/*.py" = ["B011"]
 "migrations/**/*.py" = ["E", "F", "I", "UP"]
 
 [tool.ruff.format]

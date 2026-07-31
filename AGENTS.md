@@ -219,9 +219,10 @@ Local default port: **8765** (8000 is often taken).
 ## Quality gates (required)
 
 ```bash
-uv run ruff check src tests
-uv run ruff format --check src tests
+uv run ruff check src tests tests_e2e
+uv run ruff format --check src tests tests_e2e
 uv run pytest -q                 # includes coverage fail-under=90
+uv run pytest tests_e2e          # Playwright UI tests
 ```
 
 When changing clients:
@@ -261,10 +262,11 @@ Work is **not** done until the relevant quality gates pass **locally** (and CI w
 
 ```bash
 # App
-uv run ruff check src tests
-uv run ruff format --check src tests
+uv run ruff check src tests tests_e2e
+uv run ruff format --check src tests tests_e2e
 uv run pytest -q
-
+uv run pytest tests_e2e
+```
 # Client mock (if clients/ touched)
 cd clients/mock-api && uv run ruff check src tests && uv run pytest -q
 
