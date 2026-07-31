@@ -32,7 +32,20 @@
             Due {{ format_due_time(row.chore.due_time) }} · {{ row.chore.base_points }} pts
           </p>
         </div>
-        <span class="chip chip-{{ row.status_kind }}">{{ row.status_label }}</span>
+        <div class="chore-card-status-wrapper">
+          <span class="chip chip-{{ row.status_kind }}">{{ row.status_label }}</span>
+          {% if row.completion %}
+          <details class="action-menu">
+            <summary class="action-menu-trigger" aria-label="Actions for {{ row.chore.title }}">&#8942;</summary>
+            <div class="action-menu-dropdown">
+              <form method="post" action="/completions/{{ row.completion.id }}/undo">
+                <input type="hidden" name="next" value="/today">
+                <button type="submit" class="btn btn-sm btn-danger-ghost action-menu-item">Undo completion</button>
+              </form>
+            </div>
+          </details>
+          {% endif %}
+        </div>
       </div>
       {% if row.completion and row.completion.notes %}
       <p class="chore-note muted small"><strong>Note:</strong> {{ row.completion.notes }}</p>

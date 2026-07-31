@@ -32,6 +32,7 @@ import com.qrchores.client.models.StringDetail
 import com.qrchores.client.models.TimingBonuses
 import com.qrchores.client.models.TodayResponse
 import com.qrchores.client.models.TokenResponse
+import com.qrchores.client.models.UndoCompletionResponse
 import com.qrchores.client.models.User
 import com.qrchores.client.models.ValidationDetailEnvelope
 import io.ktor.client.HttpClient
@@ -218,6 +219,14 @@ class QrChoresClient(
             if (endDate != null) parameter("end_date", endDate)
             if (timing != null) parameter("timing", timing)
         }
+
+    suspend fun undoCompletion(completionId: Int): UndoCompletionResponse {
+        val response =
+            client.post("$baseUrl/api/v1/completions/$completionId/undo") {
+                applyAuth()
+            }
+        return response.decodeOrThrow()
+    }
 
 
     // --- Children ---

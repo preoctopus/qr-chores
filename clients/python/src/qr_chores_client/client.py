@@ -39,6 +39,7 @@ from qr_chores_client.models import (
     TimingBonuses,
     TodayResponse,
     TokenResponse,
+    UndoCompletionResponse,
     User,
 )
 
@@ -290,6 +291,13 @@ class QrChoresClient:
             f"{API_PREFIX}/history",
             HistoryResponse,
             params=params,
+        )
+
+    async def undo_completion(self, completion_id: int) -> UndoCompletionResponse:
+        return await self._request_model(
+            "POST",
+            f"{API_PREFIX}/completions/{completion_id}/undo",
+            UndoCompletionResponse,
         )
 
     # --- Children ---

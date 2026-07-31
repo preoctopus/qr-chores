@@ -492,6 +492,29 @@ def history(
     }
 
 
+@app.post("/api/v1/completions/{completion_id}/undo")
+def undo_completion_mock(
+    completion_id: int,
+    user: dict[str, Any] = Depends(require_parent),
+) -> dict[str, Any]:
+    del user
+    comp = STATE["completions"].get(completion_id)
+    if not comp:
+        raise HTTPException(status_code=404, detail="Completion not found")
+
+    chore_id = comp["chore_id"]
+    points_reverted = comp.get("points_awarded", 0)
+
+    del STATE["completions"][completion_id]
+
+    return {
+        "success": True,
+        "completion_id": completion_id,
+        "chore_id": chore_id,
+        "points_reverted": points_reverted,
+    }
+
+
 
 @app.get("/api/v1/children")
 def list_children(

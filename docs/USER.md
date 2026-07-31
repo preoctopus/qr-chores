@@ -114,9 +114,11 @@ On **Rewards** you configure:
 
 Awards are calculated **on the server** when a child completes a chore. The app never trusts the phone for point totals. Points and achievements are tracked **per child**.
 
-### History
+### History & Undoing Completions
 
 **History** lists recent completions with timing, points, and proof photos (when provided). Open a photo from the list while logged in.
+
+If a chore was completed by mistake (e.g., scanning the wrong sticker), parents can open the 3-dot (⋮) action menu next to any completed item on **Today** or **History** and select **Undo completion**. This safely deducts the banked points in the points ledger, deletes the proof photo, and frees the chore so it can be completed again today.
 
 ---
 

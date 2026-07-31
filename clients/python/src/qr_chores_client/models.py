@@ -323,3 +323,12 @@ class RewardsResponse(BaseModel):
 
     bonuses: TimingBonuses
     achievements: list[AchievementAdmin]
+
+
+class UndoCompletionResponse(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    success: bool = True
+    completion_id: int
+    chore_id: int
+    points_reverted: int

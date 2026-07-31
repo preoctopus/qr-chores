@@ -41,6 +41,7 @@ Tiny valid PNG bytes served for `GET .../qr.png` and `GET .../photos/{id}`.
 | GET | `/api/v1/achievements` | `get_achievements` | `getAchievements` |
 | GET | `/api/v1/today` | `get_today` | `getToday` |
 | GET | `/api/v1/history` | `get_history` | `getHistory` |
+| POST | `/api/v1/completions/{id}/undo` | `undo_completion` | `undoCompletion` |
 | GET | `/api/v1/children` | `list_children` | `listChildren` |
 | POST | `/api/v1/children` | `create_child` | `createChild` |
 | GET | `/api/v1/children/{id}` | `get_child` | `getChild` |

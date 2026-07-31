@@ -299,6 +299,14 @@ data class RewardsResponse(
     val achievements: List<Achievement> = emptyList(),
 )
 
+@Serializable
+data class UndoCompletionResponse(
+    val success: Boolean = true,
+    @SerialName("completion_id") val completionId: Int,
+    @SerialName("chore_id") val choreId: Int,
+    @SerialName("points_reverted") val pointsReverted: Int,
+)
+
 // --- Errors (wire) ---
 
 @Serializable

@@ -586,6 +586,12 @@ def create_mcp_server() -> Any:
         )
 
     @mcp.tool
+    async def undo_chore_completion(completion_id: int, ctx: Any = None) -> dict[str, Any]:
+        """Undo a chore completion for a parent's child (parent role required). Reverts banked points and deletes proof photo if present."""
+        client = await _holder.get_client_for_request(ctx)
+        return _to_jsonable(await client.undo_completion(completion_id))
+
+    @mcp.tool
     async def list_children(include_inactive: bool = True, ctx: Any = None) -> dict[str, Any]:
         """List children for the logged-in parent."""
         client = await _holder.get_client_for_request(ctx)
