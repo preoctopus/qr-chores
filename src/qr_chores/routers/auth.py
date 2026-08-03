@@ -14,6 +14,7 @@ from qr_chores.config import Settings, get_settings
 from qr_chores.db import get_db
 from qr_chores.logging_setup import log_user_action
 from qr_chores.models.user import User, UserRole
+from qr_chores.services.auth_rate_limit import get_client_ip, get_login_rate_limiter
 from qr_chores.templating import templates
 
 router = APIRouter(tags=["auth"])
@@ -81,12 +82,31 @@ async def login_submit(
     db: AsyncSession = Depends(get_db),
     settings: Settings = Depends(get_settings),
 ):
+    client_ip = get_client_ip(request)
+    email_clean = email.strip().lower()
+    limiter = get_login_rate_limiter()
+
+    if limiter.is_rate_limited(client_ip, email_clean, settings):
+        log_user_action("login_rate_limited", detail="html", email=email_clean, ip=client_ip)
+        return templates.TemplateResponse(
+            request,
+            "login.html",
+            {
+                "next": next,
+                "error": "Too many failed login attempts. Please try again later.",
+                "title": "Log in",
+                "email": email_clean,
+            },
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+        )
+
     result = await db.execute(
-        select(User).where(User.email == email.strip().lower(), User.is_active.is_(True))
+        select(User).where(User.email == email_clean, User.is_active.is_(True))
     )
     user = result.scalar_one_or_none()
     if user is None or not verify_password(password, user.password_hash):
-        log_user_action("login_failed", detail="html", email=email.strip().lower())
+        limiter.record_failure(client_ip, email_clean, settings)
+        log_user_action("login_failed", detail="html", email=email_clean)
         # Re-render form with error (use 401 body via template)
         return templates.TemplateResponse(
             request,
@@ -95,10 +115,12 @@ async def login_submit(
                 "next": next,
                 "error": "Invalid email or password.",
                 "title": "Log in",
-                "email": email.strip().lower(),
+                "email": email_clean,
             },
             status_code=status.HTTP_401_UNAUTHORIZED,
         )
+
+    limiter.record_success(client_ip, email_clean)
 
     destination = _safe_next_url(next) if next else _home_for_role(user.role)
     if destination == "/":

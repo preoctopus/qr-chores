@@ -67,7 +67,8 @@ Content-Type: application/json
 }
 ```
 
-**Failure `401`:** invalid email/password → `{ "detail": "Invalid email or password." }`
+**Failure `401`:** invalid email/password → `{ "detail": "Invalid email or password." }`  
+**Failure `429`:** rate limited (too many failed attempts) → `{ "detail": "Too many failed login attempts. Please try again later." }`
 
 Also sets the normal session cookie (optional convenience). Native clients should store **`access_token`** securely (Keychain / EncryptedSharedPreferences) and send it on every request.
 
@@ -339,3 +340,4 @@ curl -s "$BASE_URL/api/v1/chores" -H "Authorization: Bearer $PTOKEN" | jq .
 - Trust only server-awarded points from API responses; do not invent scores client-side.
 - QR tokens are unguessable but still require a child-authenticated complete call.
 - Prefer **deactivate** over **delete** unless you intend to wipe history and photo files.
+- Login rate-limiting: in-process sliding window throttle per `(client IP, email)` pair. Exceeding max attempts returns `429 Too Many Requests`.
