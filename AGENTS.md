@@ -120,7 +120,7 @@ Login → points (total balance + points change today) + achievements (awarded a
 - **Domain:** thin routers under `routers/api/`; awards only in `services/`.
 - **Errors:** always JSON on `/api/*` (never HTML login redirect). `401` / `403` / `404` / `422`; domain complete failures use `400` with `{ "detail": { "message", "code" } }`.
 - **OpenAPI:** `/docs` + `/openapi.json` in non-production only. Bearer scheme registered for try-it-out.
-- **Deferred:** login rate-limiting (document only until needed).
+- **Login rate-limiting:** in-process sliding window throttle per `(client IP, email)` pair with short lockout (429). Note: in-process state does not persist across process restarts or multiple horizontal instances.
 
 ## Data model (conceptual)
 
@@ -201,6 +201,8 @@ Local default port: **8765** (8000 is often taken).
 - Default `SECRET_KEY` (`dev-only-change-me`) is allowed only for local SQLite + non-HTTPS `BASE_URL` + non-production `ENVIRONMENT`.
 - Production (`ENVIRONMENT=production`): OpenAPI docs disabled.
 - Photo storage backends are cached (`get_photo_storage`); tests that change `PHOTO_*` should call `clear_photo_storage_cache()`.
+- CSRF tokens are omitted on HTML forms as an accepted gap; session cookies rely on browser `SameSite=Lax` defaults for cross-site POST protection.
+- Login rate-limiting is enforced in-process per `(client IP, email)` pair (sliding window, max attempts in config). Single-instance state reset on restart is an accepted limitation for family-scale deployment.
 
 ## Implementation status
 
@@ -299,6 +301,8 @@ Fix failures before declaring the task complete, opening a PR as ready, or askin
 - Open-redirect hardening on login `next` (relative paths only).
 - Strong `SECRET_KEY` required for HTTPS / Postgres / production.
 - Every response gets `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, and a `script-src 'self'` CSP (`security_headers.py`); `Strict-Transport-Security` is added only when `BASE_URL` is `https://`.
+- CSRF protection relies on `SameSite=Lax` session cookies; explicit CSRF token plumbing on HTML forms is omitted as a known gap.
+- Login rate-limiting is enforced in-process per `(client IP, email)` pair (sliding window, max attempts in config). Note: state is in-process and does not persist across process restarts or multiple instances.
 
 ## Out of scope (v1)
 

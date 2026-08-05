@@ -25,6 +25,9 @@ class Settings(BaseSettings):
     base_url: str = "http://127.0.0.1:8765"
     session_cookie_name: str = "qr_chores_session"
     session_max_age_seconds: int = 60 * 60 * 24 * 14  # 14 days
+    # Login rate limiting (in-process brute-force protection)
+    login_rate_limit_attempts: int = 5
+    login_rate_limit_window_seconds: int = 300
     # Timing windows (minutes)
     on_time_grace_minutes: int = 15
     early_window_minutes: int = 60

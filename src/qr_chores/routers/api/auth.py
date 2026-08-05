@@ -12,13 +12,13 @@ from qr_chores.db import get_db
 from qr_chores.logging_setup import log_user_action
 from qr_chores.models.user import User
 from qr_chores.schemas.auth import LoginRequest, TokenResponse, UserOut
+from qr_chores.services.auth_rate_limit import get_client_ip, get_login_rate_limiter
 from qr_chores.services.points import points_balance
 
 router = APIRouter(tags=["api-auth"])
 
 
-async def _user_out(db: AsyncSession, user: User) -> UserOut:
-    balance = await points_balance(db, user.id)
+def _user_out_sync(user: User, balance: int) -> UserOut:
     return UserOut(
         id=user.id,
         email=user.email,
@@ -30,6 +30,11 @@ async def _user_out(db: AsyncSession, user: User) -> UserOut:
         is_active=user.is_active,
         points_balance=balance,
     )
+
+
+async def _user_out(db: AsyncSession, user: User) -> UserOut:
+    balance = await points_balance(db, user.id)
+    return _user_out_sync(user, balance)
 
 
 def _set_session_cookie(
@@ -58,17 +63,31 @@ async def api_login(
     db: AsyncSession = Depends(get_db),
     settings: Settings = Depends(get_settings),
 ) -> TokenResponse:
+    client_ip = get_client_ip(request)
+    email_clean = body.email.strip().lower()
+    limiter = get_login_rate_limiter()
+
+    if limiter.is_rate_limited(client_ip, email_clean, settings):
+        log_user_action("login_rate_limited", detail="api", email=email_clean, ip=client_ip)
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Too many failed login attempts. Please try again later.",
+        )
+
     result = await db.execute(
-        select(User).where(User.email == body.email.strip().lower(), User.is_active.is_(True))
+        select(User).where(User.email == email_clean, User.is_active.is_(True))
     )
     user = result.scalar_one_or_none()
     if user is None or not verify_password(body.password, user.password_hash):
-        log_user_action("login_failed", detail="api", email=body.email.strip().lower())
+        limiter.record_failure(client_ip, email_clean, settings)
+        log_user_action("login_failed", detail="api", email=email_clean)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password.",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+    limiter.record_success(client_ip, email_clean)
 
     access_token = dump_api_token(settings, user.id)
     _set_session_cookie(response, settings, user.id, request=request)
