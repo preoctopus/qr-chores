@@ -8,7 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from qr_chores.auth.deps import get_current_user_optional
-from qr_chores.auth.passwords import verify_password
+from qr_chores.auth.passwords import verify_password_or_dummy
 from qr_chores.auth.session import dump_session
 from qr_chores.config import Settings, get_settings
 from qr_chores.db import get_db
@@ -82,7 +82,7 @@ async def login_submit(
     db: AsyncSession = Depends(get_db),
     settings: Settings = Depends(get_settings),
 ):
-    client_ip = get_client_ip(request)
+    client_ip = get_client_ip(request, settings)
     email_clean = email.strip().lower()
     limiter = get_login_rate_limiter()
 
@@ -104,7 +104,7 @@ async def login_submit(
         select(User).where(User.email == email_clean, User.is_active.is_(True))
     )
     user = result.scalar_one_or_none()
-    if user is None or not verify_password(password, user.password_hash):
+    if not verify_password_or_dummy(password, user.password_hash if user else None):
         limiter.record_failure(client_ip, email_clean, settings)
         log_user_action("login_failed", detail="html", email=email_clean)
         # Re-render form with error (use 401 body via template)

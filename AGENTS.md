@@ -203,6 +203,8 @@ Local default port: **8765** (8000 is often taken).
 - Photo storage backends are cached (`get_photo_storage`); tests that change `PHOTO_*` should call `clear_photo_storage_cache()`.
 - CSRF tokens are omitted on HTML forms as an accepted gap; session cookies rely on browser `SameSite=Lax` defaults for cross-site POST protection.
 - Login rate-limiting is enforced in-process per `(client IP, email)` pair (sliding window, max attempts in config). Single-instance state reset on restart is an accepted limitation for family-scale deployment.
+- `X-Forwarded-For` is only trusted when `TRUST_PROXY_HEADERS=true` (default off). Enable it **only** behind a proxy that overwrites the header; on a directly-exposed app the header is client-controlled and forging it hands the attacker a fresh rate-limit bucket per request. Cloud Run deployments should set it to `true`, otherwise every request is attributed to the proxy IP and the limiter becomes global.
+- Login must verify a password hash even when the email is unknown (`verify_password_or_dummy`). Short-circuiting on `user is None` skips the argon2 cost and leaks a ~30x timing oracle for account enumeration.
 
 ## Implementation status
 
@@ -303,6 +305,8 @@ Fix failures before declaring the task complete, opening a PR as ready, or askin
 - Every response gets `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, and a `script-src 'self'` CSP (`security_headers.py`); `Strict-Transport-Security` is added only when `BASE_URL` is `https://`.
 - CSRF protection relies on `SameSite=Lax` session cookies; explicit CSRF token plumbing on HTML forms is omitted as a known gap.
 - Login rate-limiting is enforced in-process per `(client IP, email)` pair (sliding window, max attempts in config). Note: state is in-process and does not persist across process restarts or multiple instances.
+- Client IP for rate limiting comes from the socket peer unless `TRUST_PROXY_HEADERS=true`, which opts into `X-Forwarded-For` behind a trusted proxy.
+- Failed logins burn an argon2 verification against a dummy hash when the email is unknown, so response time does not reveal whether an account exists.
 
 ## Out of scope (v1)
 

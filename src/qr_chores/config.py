@@ -28,6 +28,10 @@ class Settings(BaseSettings):
     # Login rate limiting (in-process brute-force protection)
     login_rate_limit_attempts: int = 5
     login_rate_limit_window_seconds: int = 300
+    # Honour X-Forwarded-For when identifying the client IP. Only enable when a
+    # trusted proxy (Cloud Run, load balancer) *overwrites* the header; otherwise
+    # any client can forge it and rotate past the login rate limiter.
+    trust_proxy_headers: bool = False
     # Timing windows (minutes)
     on_time_grace_minutes: int = 15
     early_window_minutes: int = 60

@@ -10,12 +10,21 @@ from fastapi import Request
 from qr_chores.config import Settings
 
 
-def get_client_ip(request: Request) -> str:
-    """Extract client IP address from request headers or socket."""
-    forwarded = request.headers.get("x-forwarded-for")
-    if forwarded:
-        # X-Forwarded-For can be a comma-separated list; first entry is the client IP.
-        return forwarded.split(",")[0].strip()
+def get_client_ip(request: Request, settings: Settings) -> str:
+    """Extract client IP address from request headers or socket.
+
+    X-Forwarded-For is only consulted when `trust_proxy_headers` is enabled. The
+    header is client-controlled on a direct connection, so trusting it
+    unconditionally would let an attacker rotate it and get a fresh rate-limit
+    bucket on every request.
+    """
+    if settings.trust_proxy_headers:
+        forwarded = request.headers.get("x-forwarded-for")
+        if forwarded:
+            # X-Forwarded-For can be a comma-separated list; first entry is the client IP.
+            client = forwarded.split(",")[0].strip()
+            if client:
+                return client
     if request.client and request.client.host:
         return request.client.host
     return "127.0.0.1"

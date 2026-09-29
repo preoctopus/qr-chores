@@ -22,6 +22,9 @@ def reset_rate_limiter():
 
 
 def test_get_client_ip():
+    untrusted = Settings(trust_proxy_headers=False)
+    trusted = Settings(trust_proxy_headers=True)
+
     # Socket client host fallback
     req1 = Request(
         {
@@ -30,9 +33,8 @@ def test_get_client_ip():
             "client": ("192.168.1.50", 12345),
         }
     )
-    assert get_client_ip(req1) == "192.168.1.50"
+    assert get_client_ip(req1, untrusted) == "192.168.1.50"
 
-    # X-Forwarded-For header takes precedence
     req2 = Request(
         {
             "type": "http",
@@ -40,11 +42,42 @@ def test_get_client_ip():
             "client": ("192.168.1.50", 12345),
         }
     )
-    assert get_client_ip(req2) == "203.0.113.195"
+    # Header is ignored by default so it cannot be forged to dodge the limiter...
+    assert get_client_ip(req2, untrusted) == "192.168.1.50"
+    # ...but honoured behind a trusted proxy, taking the leftmost entry.
+    assert get_client_ip(req2, trusted) == "203.0.113.195"
+
+    # Empty/whitespace header falls back to the socket peer even when trusted
+    req3 = Request(
+        {
+            "type": "http",
+            "headers": [(b"x-forwarded-for", b"  ")],
+            "client": ("192.168.1.50", 12345),
+        }
+    )
+    assert get_client_ip(req3, trusted) == "192.168.1.50"
 
     # Fallback to localhost if no client or header
-    req3 = Request({"type": "http", "headers": []})
-    assert get_client_ip(req3) == "127.0.0.1"
+    req4 = Request({"type": "http", "headers": []})
+    assert get_client_ip(req4, untrusted) == "127.0.0.1"
+
+
+@pytest.mark.asyncio
+async def test_forged_forwarded_for_cannot_bypass_rate_limit(
+    client: AsyncClient, parent_user: User
+):
+    """Rotating X-Forwarded-For must not hand the attacker a fresh bucket."""
+    saw_429 = False
+    for i in range(10):
+        resp = await client.post(
+            "/login",
+            data={"email": "dad@example.com", "password": "wrong-password"},
+            headers={"X-Forwarded-For": f"10.0.{i}.{i}"},
+        )
+        if resp.status_code == 429:
+            saw_429 = True
+            break
+    assert saw_429, "rotating X-Forwarded-For bypassed the login rate limiter"
 
 
 def test_login_rate_limiter_unit():

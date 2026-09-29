@@ -237,3 +237,60 @@ async def test_post_logout(client: AsyncClient, parent_user: User) -> None:
     assert response.status_code == 303
     assert response.headers["location"] == "/login"
     assert (await client.get("/me")).status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_login_hashes_even_for_unknown_email(
+    client: AsyncClient, parent_user: User, monkeypatch
+) -> None:
+    """Unknown and known emails must both pay one argon2 verification.
+
+    Otherwise the response-time difference (~30x) is an account-enumeration
+    oracle revealing which family emails are registered.
+    """
+    from qr_chores.auth import passwords
+
+    real = passwords._password_hash
+    calls: list[str] = []
+
+    class CountingHash:
+        def verify(self, password: str, password_hash: str) -> bool:
+            calls.append(password_hash)
+            return real.verify(password, password_hash)
+
+    monkeypatch.setattr(passwords, "_password_hash", CountingHash())
+
+    await client.post("/login", data={"email": "nobody@example.com", "password": "x"})
+    unknown_calls = len(calls)
+
+    calls.clear()
+    await client.post("/login", data={"email": parent_user.email, "password": "x"})
+    known_calls = len(calls)
+
+    assert unknown_calls == known_calls == 1
+
+
+@pytest.mark.asyncio
+async def test_api_login_hashes_even_for_unknown_email(
+    client: AsyncClient, parent_user: User, monkeypatch
+) -> None:
+    from qr_chores.auth import passwords
+
+    real = passwords._password_hash
+    calls: list[str] = []
+
+    class CountingHash:
+        def verify(self, password: str, password_hash: str) -> bool:
+            calls.append(password_hash)
+            return real.verify(password, password_hash)
+
+    monkeypatch.setattr(passwords, "_password_hash", CountingHash())
+
+    await client.post("/api/v1/auth/login", json={"email": "nobody@example.com", "password": "x"})
+    unknown_calls = len(calls)
+
+    calls.clear()
+    await client.post("/api/v1/auth/login", json={"email": parent_user.email, "password": "x"})
+    known_calls = len(calls)
+
+    assert unknown_calls == known_calls == 1
