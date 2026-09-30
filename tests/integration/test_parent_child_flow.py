@@ -80,7 +80,7 @@ async def test_end_to_end_chore_lifecycle(
     assert home.status_code == 200
     assert "Total points" in home.text
     assert "Awarded Achievements" in home.text
-    assert "Living room tidy" not in home.text
+    assert "Living room tidy" in home.text
 
     blocked = await client.post(f"/c/{token}")
     assert blocked.status_code == 400

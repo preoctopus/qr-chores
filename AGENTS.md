@@ -85,7 +85,7 @@ Scan QR → `GET /c/{token}` → login if needed (preserve `next`) → must be t
 
 ### Child (home)
 
-Login → points (total balance + points change today) + achievements (awarded and not yet awarded). Scanning QR code is the only path to chore confirmation/completion (own chores only).
+Login → today’s assigned chores (pending, done, or late) + points (total balance + points change today) + achievements. Opening a chore or scanning its QR both go to `/c/{token}`; only the assignee can complete it.
 
 ## Routes
 

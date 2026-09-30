@@ -77,6 +77,7 @@ async def child_home(
 ) -> HTMLResponse:
     points_today = await points_earned_today(db, user.id, settings)
     balance = await points_balance(db, user.id)
+    board = await today_board(db, settings, assignee_user_id=user.id)
 
     result = await db.execute(
         select(Achievement).where(Achievement.is_active.is_(True)).order_by(Achievement.title)
@@ -112,6 +113,7 @@ async def child_home(
             "title": "Home",
             "points_today": points_today,
             "balance": balance,
+            "board": board,
             "awarded_rows": awarded_rows,
             "not_awarded_rows": not_awarded_rows,
             "icon_emoji": ICON_EMOJI,
