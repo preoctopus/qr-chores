@@ -78,9 +78,11 @@ async def list_all_chores(
     if assignee_user_id is not None:
         q = q.where(Chore.assignee_user_id == assignee_user_id)
     if parent_id is not None:
+        from qr_chores.services.users import child_managed_by
+
         child_ids = select(User.id).where(
             User.role == UserRole.child,
-            User.parent_id == parent_id,
+            child_managed_by(parent_id),
         )
         q = q.where(Chore.assignee_user_id.in_(child_ids))
     result = await db.execute(q)

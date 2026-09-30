@@ -1,9 +1,14 @@
 """Unit tests for user registration helpers."""
 
+from datetime import time
+
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from qr_chores.models.user import UserRole, format_display_name
+from qr_chores.models.chore import Chore, PhotoPolicy
+from qr_chores.models.user import ChildParentLink, UserRole, format_display_name
+from qr_chores.services.chores import list_all_chores
+from qr_chores.services.qr import new_qr_token
 from qr_chores.services.users import (
     UserServiceError,
     create_user,
@@ -55,6 +60,59 @@ async def test_create_parent_and_child(db_session: AsyncSession) -> None:
     assert [k.id for k in kids] == [child.id]
     assert await get_child_for_parent(db_session, parent.id, child.id) is not None
     assert await get_child_for_parent(db_session, parent.id + 999, child.id) is None
+
+
+@pytest.mark.asyncio
+async def test_second_parent_sees_and_manages_child(db_session: AsyncSession) -> None:
+    primary = await create_user(
+        db_session,
+        email="mom-link@example.com",
+        password="secret",
+        first_name="Tawnia",
+        last_name="Example",
+        role=UserRole.parent,
+    )
+    second = await create_user(
+        db_session,
+        email="dad-link@example.com",
+        password="secret",
+        first_name="Andrew",
+        last_name="Example",
+        role=UserRole.parent,
+    )
+    child = await create_user(
+        db_session,
+        email="sam-link",
+        password="kid-pass",
+        first_name="Sam",
+        last_name="Example",
+        role=UserRole.child,
+        parent_id=primary.id,
+    )
+    db_session.add(ChildParentLink(child_id=child.id, parent_id=second.id))
+    await db_session.commit()
+
+    assert child.parent_id == primary.id
+    for parent in (primary, second):
+        kids = await list_children_for_parent(db_session, parent.id)
+        assert [k.id for k in kids] == [child.id]
+        assert await get_child_for_parent(db_session, parent.id, child.id) is not None
+
+    chore = Chore(
+        title="Dishes",
+        qr_token=new_qr_token(),
+        due_time=time(18, 0),
+        schedule_days="0123456",
+        photo_policy=PhotoPolicy.none,
+        base_points=5,
+        assignee_user_id=child.id,
+        is_active=True,
+    )
+    db_session.add(chore)
+    await db_session.commit()
+    for parent in (primary, second):
+        chores = await list_all_chores(db_session, parent_id=parent.id)
+        assert [c.id for c in chores] == [chore.id]
 
 
 @pytest.mark.asyncio

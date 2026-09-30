@@ -315,6 +315,7 @@ async def get_parent_history(
     from sqlalchemy.orm import selectinload
 
     from qr_chores.models.user import UserRole
+    from qr_chores.services.users import child_managed_by
 
     if isinstance(timing, str):
         try:
@@ -325,7 +326,7 @@ async def get_parent_history(
     # Child IDs belonging to parent
     child_ids_subquery = select(User.id).where(
         User.role == UserRole.child,
-        User.parent_id == parent_id,
+        child_managed_by(parent_id),
     )
 
     base_where = [ChoreCompletion.user_id.in_(child_ids_subquery)]

@@ -15,12 +15,13 @@ from qr_chores.models.rewards import (
     PointLedger,
     UserAchievement,
 )
-from qr_chores.models.user import User, UserRole
+from qr_chores.models.user import ChildParentLink, User, UserRole
 
 __all__ = [
     "ALL_DAYS",
     "Achievement",
     "AppSetting",
+    "ChildParentLink",
     "Chore",
     "ChoreCompletion",
     "CriteriaType",
