@@ -67,7 +67,8 @@ Content-Type: application/json
 }
 ```
 
-**Failure `401`:** invalid email/password → `{ "detail": "Invalid email or password." }`
+**Failure `401`:** invalid email/password → `{ "detail": "Invalid email or password." }`  
+**Failure `429`:** rate limited (too many failed attempts) → `{ "detail": "Too many failed login attempts. Please try again later." }`
 
 Also sets the normal session cookie (optional convenience). Native clients should store **`access_token`** securely (Keychain / EncryptedSharedPreferences) and send it on every request.
 
@@ -151,7 +152,20 @@ All require **`role=parent`** (and authentication), except photo fetch (any auth
 |--------|------|-------------|
 | `GET` | `/api/v1/today` | Today’s status board (same domain rules as `/today`) |
 | `GET` | `/api/v1/history` | Paginated completion history with filters (`child_id`, `chore_id`, `start_date`, `end_date`, `timing`, `page`, `limit`) and summary stats |
+| `POST` | `/api/v1/completions/{id}/undo` | Revert completion points in ledger, delete photo, and allow chore to be completed again today |
 
+### Children
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/api/v1/children` | List children (`include_inactive`, default true) |
+| `POST` | `/api/v1/children` | Create child account (`email`, `password`, `first_name`, `last_name`) → `201` |
+| `GET` | `/api/v1/children/{id}` | Child detail (`UserOut`) |
+| `PATCH` | `/api/v1/children/{id}` | Partial update (`email`, `password`, `first_name`, `last_name`, `is_active`) |
+| `POST` | `/api/v1/children/{id}/deactivate` | Soft-deactivate child login |
+| `POST` | `/api/v1/children/{id}/activate` | Re-activate child |
+
+Username taken → **`409`** with `{ "detail": { "message", "code": "username_taken" } }`. Other domain errors → **`400`** with the same shape. Unknown child / not owned by parent → **`404`**.
 
 ### Chores
 
@@ -326,3 +340,4 @@ curl -s "$BASE_URL/api/v1/chores" -H "Authorization: Bearer $PTOKEN" | jq .
 - Trust only server-awarded points from API responses; do not invent scores client-side.
 - QR tokens are unguessable but still require a child-authenticated complete call.
 - Prefer **deactivate** over **delete** unless you intend to wipe history and photo files.
+- Login rate-limiting: in-process sliding window throttle per `(client IP, email)` pair. Exceeding max attempts returns `429 Too Many Requests`.

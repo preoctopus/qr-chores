@@ -37,6 +37,13 @@ def criteria_threshold(achievement: Achievement) -> int:
     return int(data.get("count", data.get("days", 1)))
 
 
+def criteria_json_for(criteria_type: CriteriaType, threshold: int) -> str:
+    """Build ``criteria_json`` from type + threshold (inverse of :func:`criteria_threshold`)."""
+    if criteria_type == CriteriaType.streak_days:
+        return json.dumps({"days": threshold})
+    return json.dumps({"count": threshold})
+
+
 async def _count_completions(
     db: AsyncSession,
     user_id: int,
@@ -48,7 +55,8 @@ async def _count_completions(
     if timing is not None:
         q = q.where(ChoreCompletion.timing == timing)
     if with_photo:
-        q = q.where(ChoreCompletion.photo_object_key.is_not(None))
+        # Use had_photo so reaped blobs still count toward photo achievements.
+        q = q.where(ChoreCompletion.had_photo.is_(True))
     return int(await db.scalar(q) or 0)
 
 

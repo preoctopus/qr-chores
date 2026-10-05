@@ -78,7 +78,7 @@ stage_static_to_memory() {
     return 0
   fi
 
-  # marketing ~4MB + app static ~0.4MB; require ~16MB free headroom.
+  # marketing media ~1.3MB (symlinks resolved) + app static ~0.4MB; require ~16MB free headroom.
   avail_kb=$(df -k /dev/shm 2>/dev/null | awk 'NR==2 {print $4}')
   if [ -n "$avail_kb" ] && [ "$avail_kb" -lt 16384 ]; then
     echo "Static roots: disk (/dev/shm low free space: ${avail_kb}k)"
@@ -88,7 +88,8 @@ stage_static_to_memory() {
   stage="/dev/shm/qr-chores-static"
   rm -rf "$stage"
   mkdir -p "$stage"
-  if cp -a /app/marketing "$stage/marketing" \
+  # -L: dereference marketing/assets symlinks into imgs/ so tmpfs staging is self-contained.
+  if cp -aL /app/marketing "$stage/marketing" \
     && cp -a /app/src/qr_chores/static "$stage/app-static"; then
     NGINX_MARKETING_ROOT="$stage/marketing"
     NGINX_APP_STATIC_ROOT="$stage/app-static"

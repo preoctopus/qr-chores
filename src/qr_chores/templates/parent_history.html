@@ -112,7 +112,18 @@
             +{{ c.points_awarded }} pts
           </p>
         </div>
-        <span class="chip chip-{{ c.timing.value }}">{{ c.timing.value.replace('_', ' ') }}</span>
+        <div class="chore-card-status-wrapper">
+          <span class="chip chip-{{ c.timing.value }}">{{ c.timing.value.replace('_', ' ') }}</span>
+          <details class="action-menu">
+            <summary class="action-menu-trigger" aria-label="Actions for {{ c.chore.title if c.chore else 'completion' }}">&#8942;</summary>
+            <div class="action-menu-dropdown">
+              <form method="post" action="/completions/{{ c.id }}/undo">
+                <input type="hidden" name="next" value="/history">
+                <button type="submit" class="btn btn-sm btn-danger-ghost action-menu-item">Undo completion</button>
+              </form>
+            </div>
+          </details>
+        </div>
       </div>
       {% if c.notes %}
       <p class="chore-note muted small"><strong>Note:</strong> {{ c.notes }}</p>
@@ -124,6 +135,8 @@
         </a>
         <a class="photo-link" href="/photos/{{ c.id }}">View photo</a>
       </div>
+      {% elif c.had_photo %}
+      <p class="muted small">Photo no longer available</p>
       {% endif %}
     </li>
     {% endfor %}

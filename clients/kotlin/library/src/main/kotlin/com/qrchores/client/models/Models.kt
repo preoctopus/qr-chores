@@ -19,6 +19,10 @@ data class User(
     @SerialName("display_name") val displayName: String,
     val role: String,
     @SerialName("points_balance") val pointsBalance: Int = 0,
+    @SerialName("first_name") val firstName: String = "",
+    @SerialName("last_name") val lastName: String = "",
+    @SerialName("parent_id") val parentId: Int? = null,
+    @SerialName("is_active") val isActive: Boolean = true,
 )
 
 @Serializable
@@ -27,6 +31,30 @@ data class TokenResponse(
     @SerialName("token_type") val tokenType: String = "bearer",
     @SerialName("expires_in") val expiresIn: Int,
     val user: User,
+)
+
+// --- Children ---
+
+@Serializable
+data class ChildListResponse(
+    val children: List<User>,
+)
+
+@Serializable
+data class ChildCreate(
+    val email: String,
+    val password: String,
+    @SerialName("first_name") val firstName: String,
+    @SerialName("last_name") val lastName: String,
+)
+
+@Serializable
+data class ChildUpdate(
+    val email: String? = null,
+    val password: String? = null,
+    @SerialName("first_name") val firstName: String? = null,
+    @SerialName("last_name") val lastName: String? = null,
+    @SerialName("is_active") val isActive: Boolean? = null,
 )
 
 // --- Chores ---
@@ -269,6 +297,14 @@ data class AchievementUpdate(
 data class RewardsResponse(
     val bonuses: TimingBonuses,
     val achievements: List<Achievement> = emptyList(),
+)
+
+@Serializable
+data class UndoCompletionResponse(
+    val success: Boolean = true,
+    @SerialName("completion_id") val completionId: Int,
+    @SerialName("chore_id") val choreId: Int,
+    @SerialName("points_reverted") val pointsReverted: Int,
 )
 
 // --- Errors (wire) ---

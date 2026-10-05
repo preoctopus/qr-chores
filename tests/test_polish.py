@@ -60,7 +60,8 @@ async def test_print_sheet_with_chores(
     assert "Photo required" in response.text
     assert f"/chores/{chore.id}/qr.png" in response.text
     assert "Cut on dashed lines" in response.text
-    assert "window.print" in response.text or "Print sheet" in response.text
+    assert "Print sheet" in response.text
+    assert "/static/js/print.js" in response.text
 
 
 @pytest.mark.asyncio

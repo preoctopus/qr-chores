@@ -9,6 +9,7 @@ import typer
 from qr_chores_client.cli import output
 from qr_chores_client.cli.client_factory import make_client
 from qr_chores_client.cli.commands import auth as auth_cmd
+from qr_chores_client.cli.commands import children as children_cmd
 from qr_chores_client.cli.commands import chores as chores_cmd
 from qr_chores_client.cli.commands import rewards as rewards_cmd
 from qr_chores_client.cli.config import (
@@ -33,12 +34,14 @@ EPILOG = f"""
   [cyan]QRC_BASE_URL[/] / [cyan]QR_CHORES_BASE_URL[/].
 
 [bold]Roles[/]
-  [cyan]parent[/] — todays-chores, chores, history, rewards
+  [cyan]parent[/] — todays-chores, children, chores, history, rewards
   [magenta]child[/]  — home, confirm, complete, achievements
 
 [bold]Examples[/]
   qrc auth login -e dad@example.com -p parent-pass
   qrc todays-chores
+  qrc children list
+  qrc children create -e kid@example.com -p kid-pass --first-name Sam --last-name Kid
   qrc chores list
   qrc chores create --title "Unload dishwasher" --base-points 10
   qrc auth login -e daughter@example.com -p child-pass
@@ -64,6 +67,7 @@ app = typer.Typer(
 )
 
 app.add_typer(auth_cmd.app, name="auth")
+app.add_typer(children_cmd.app, name="children")
 app.add_typer(chores_cmd.app, name="chores")
 app.add_typer(rewards_cmd.app, name="rewards")
 

@@ -23,6 +23,7 @@ from qr_chores.schemas.parent import (
     HistoryStatsOut,
     QrInfoOut,
     TodayResponse,
+    UndoCompletionResponse,
 )
 from qr_chores.services.chores import (
     delete_chore,
@@ -308,3 +309,34 @@ async def api_chore_qr_png(
             "Cache-Control": "private, max-age=3600",
         },
     )
+
+
+@router.post("/completions/{completion_id}/undo", response_model=UndoCompletionResponse)
+async def api_undo_completion(
+    completion_id: int,
+    user: User = Depends(require_role(UserRole.parent)),
+    db: AsyncSession = Depends(get_db),
+    settings: Settings = Depends(get_settings),
+) -> UndoCompletionResponse:
+    from qr_chores.services.completion import CompletionError, undo_completion
+
+    try:
+        res = await undo_completion(
+            db,
+            completion_id=completion_id,
+            parent_id=user.id,
+            settings=settings,
+        )
+        return UndoCompletionResponse(
+            success=True,
+            completion_id=res.completion_id,
+            chore_id=res.chore_id,
+            points_reverted=res.points_reverted,
+        )
+    except CompletionError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND
+            if exc.code == "not_found"
+            else status.HTTP_400_BAD_REQUEST,
+            detail={"message": exc.message, "code": exc.code},
+        ) from exc

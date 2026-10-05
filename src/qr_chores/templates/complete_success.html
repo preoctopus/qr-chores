@@ -36,6 +36,8 @@
     <a href="/photos/{{ completion.id }}" class="photo-thumb-link">
       <img class="photo-thumb" src="/photos/{{ completion.id }}" alt="Your proof photo">
     </a>
+    {% elif completion.had_photo %}
+    <p class="muted small">Photo no longer available</p>
     {% endif %}
   </div>
 

@@ -893,9 +893,59 @@ input[type="file"] {
     padding: 1rem;
   }
 
-  .parent-shell .history-stat-val {
-    font-size: 1.65rem;
-  }
+
+/* 3-dot action menu for completed items */
+.chore-card-status-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.action-menu {
+  position: relative;
+  display: inline-block;
+}
+
+.action-menu summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 0.2rem 0.4rem;
+  font-size: 1.2rem;
+  line-height: 1;
+  color: var(--muted);
+  border-radius: 6px;
+  user-select: none;
+}
+
+.action-menu summary::-webkit-details-marker {
+  display: none;
+}
+
+.action-menu summary:hover,
+.action-menu summary:focus-visible {
+  color: var(--text);
+  background: color-mix(in srgb, var(--border) 40%, transparent);
+}
+
+.action-menu[open] .action-menu-dropdown {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  margin-top: 0.25rem;
+  z-index: 20;
+  background: var(--card-bg, var(--bg));
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.35rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  min-width: 140px;
+}
+
+.action-menu-item {
+  width: 100%;
+  text-align: left;
+  justify-content: flex-start;
+  white-space: nowrap;
 }
 
 

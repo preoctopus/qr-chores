@@ -103,6 +103,8 @@ class ChoreCompletion(Base):
         nullable=False,
     )
     photo_object_key: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    # True if a proof photo was submitted (stays true after reaping clears photo_object_key).
+    had_photo: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     points_awarded: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 

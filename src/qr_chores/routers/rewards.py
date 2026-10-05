@@ -1,7 +1,5 @@
 """Parent rewards configuration: bonuses and achievements."""
 
-import json
-
 from fastapi import APIRouter, Depends, Request, status
 from fastapi.responses import RedirectResponse
 from sqlalchemy import select
@@ -15,6 +13,7 @@ from qr_chores.models.user import User, UserRole
 from qr_chores.services.achievements import (
     CRITERIA_LABELS,
     ICON_CHOICES,
+    criteria_json_for,
     criteria_threshold,
     ensure_default_achievements,
 )
@@ -108,12 +107,6 @@ async def achievement_new_form(
     )
 
 
-def _criteria_json(criteria_type: CriteriaType, threshold: int) -> str:
-    if criteria_type == CriteriaType.streak_days:
-        return json.dumps({"days": threshold})
-    return json.dumps({"count": threshold})
-
-
 @router.post("/rewards/achievements", response_model=None)
 async def achievement_create(
     request: Request,
@@ -174,7 +167,7 @@ async def achievement_create(
         description=description,
         icon_key=icon_key,
         criteria_type=criteria_type,
-        criteria_json=_criteria_json(criteria_type, threshold),
+        criteria_json=criteria_json_for(criteria_type, threshold),
         points_reward=points_reward,
         is_active=True,
     )
@@ -239,7 +232,7 @@ async def achievement_edit(
     ach.description = str(data.get("description") or "").strip()
     ach.icon_key = str(data.get("icon_key") or "star")
     ach.criteria_type = criteria_type
-    ach.criteria_json = _criteria_json(criteria_type, threshold)
+    ach.criteria_json = criteria_json_for(criteria_type, threshold)
     ach.points_reward = points_reward
     await db.commit()
     return RedirectResponse("/rewards", status_code=status.HTTP_303_SEE_OTHER)

@@ -23,15 +23,29 @@
         <div class="chore-card-meta">
           <p class="chore-title">
             {{ row.chore.title }}
-            {% if row.chore.assignee %}
-            <span class="child-badge">{{ row.chore.assignee.display_name or row.chore.assignee.first_name }}</span>
+            {% set child_user = (row.completion.user if row.completion and row.completion.user else None) or (row.chore.assignee if row.chore else None) %}
+            {% if child_user %}
+            <span class="child-badge">{{ child_user.display_name or child_user.first_name }}</span>
             {% endif %}
           </p>
           <p class="muted small">
             Due {{ format_due_time(row.chore.due_time) }} · {{ row.chore.base_points }} pts
           </p>
         </div>
-        <span class="chip chip-{{ row.status_kind }}">{{ row.status_label }}</span>
+        <div class="chore-card-status-wrapper">
+          <span class="chip chip-{{ row.status_kind }}">{{ row.status_label }}</span>
+          {% if row.completion %}
+          <details class="action-menu">
+            <summary class="action-menu-trigger" aria-label="Actions for {{ row.chore.title }}">&#8942;</summary>
+            <div class="action-menu-dropdown">
+              <form method="post" action="/completions/{{ row.completion.id }}/undo">
+                <input type="hidden" name="next" value="/today">
+                <button type="submit" class="btn btn-sm btn-danger-ghost action-menu-item">Undo completion</button>
+              </form>
+            </div>
+          </details>
+          {% endif %}
+        </div>
       </div>
       {% if row.completion and row.completion.notes %}
       <p class="chore-note muted small"><strong>Note:</strong> {{ row.completion.notes }}</p>
@@ -43,6 +57,8 @@
         </a>
         <a class="photo-link" href="/photos/{{ row.completion.id }}">View photo</a>
       </div>
+      {% elif row.completion and row.completion.had_photo %}
+      <p class="muted small">Photo no longer available</p>
       {% endif %}
     </li>
     {% endfor %}

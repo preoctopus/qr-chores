@@ -25,10 +25,10 @@ jobs:
         run: uv sync --extra dev
 
       - name: Lint (ruff)
-        run: uv run ruff check src tests
+        run: uv run ruff check src tests tests_e2e
 
       - name: Format check (ruff)
-        run: uv run ruff format --check src tests
+        run: uv run ruff format --check src tests tests_e2e
 
       - name: Tests with coverage
         env:
@@ -46,6 +46,28 @@ jobs:
           name: coverage-xml
           path: coverage.xml
           if-no-files-found: ignore
+
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Install Python
+        run: uv python install 3.12
+
+      - name: Install dependencies (+ e2e)
+        run: uv sync --extra dev --extra e2e
+
+      - name: Install Playwright Chromium browser
+        run: uv run playwright install --with-deps chromium
+
+      - name: Playwright E2E UI tests
+        run: uv run pytest tests_e2e
 
   client-mock-api:
     runs-on: ubuntu-latest
@@ -135,7 +157,7 @@ jobs:
 
   docker:
     runs-on: ubuntu-latest
-    needs: test
+    needs: [test, e2e]
     steps:
       - uses: actions/checkout@v4
 

@@ -16,6 +16,10 @@ class User(BaseModel):
     display_name: str
     role: str
     points_balance: int = 0
+    first_name: str = ""
+    last_name: str = ""
+    parent_id: int | None = None
+    is_active: bool = True
 
 
 class TokenResponse(BaseModel):
@@ -25,6 +29,34 @@ class TokenResponse(BaseModel):
     token_type: str = "bearer"
     expires_in: int
     user: User
+
+
+class ChildListResponse(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    children: list[User]
+
+
+class ChildCreate(BaseModel):
+    """Body for POST /api/v1/children."""
+
+    email: str
+    password: str
+    first_name: str
+    last_name: str
+
+
+class ChildUpdate(BaseModel):
+    """Body for PATCH /api/v1/children/{id} (partial)."""
+
+    email: str | None = None
+    password: str | None = None
+    first_name: str | None = None
+    last_name: str | None = None
+    is_active: bool | None = None
+
+    def to_payload(self) -> dict[str, Any]:
+        return self.model_dump(exclude_none=True)
 
 
 class Chore(BaseModel):
@@ -291,3 +323,12 @@ class RewardsResponse(BaseModel):
 
     bonuses: TimingBonuses
     achievements: list[AchievementAdmin]
+
+
+class UndoCompletionResponse(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    success: bool = True
+    completion_id: int
+    chore_id: int
+    points_reverted: int

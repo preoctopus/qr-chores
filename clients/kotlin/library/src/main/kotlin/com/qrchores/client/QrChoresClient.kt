@@ -12,6 +12,9 @@ import com.qrchores.client.models.Achievement
 import com.qrchores.client.models.AchievementCreate
 import com.qrchores.client.models.AchievementUpdate
 import com.qrchores.client.models.AchievementsResponse
+import com.qrchores.client.models.ChildCreate
+import com.qrchores.client.models.ChildListResponse
+import com.qrchores.client.models.ChildUpdate
 import com.qrchores.client.models.Chore
 import com.qrchores.client.models.ChoreConfirm
 import com.qrchores.client.models.ChoreCreate
@@ -29,6 +32,7 @@ import com.qrchores.client.models.StringDetail
 import com.qrchores.client.models.TimingBonuses
 import com.qrchores.client.models.TodayResponse
 import com.qrchores.client.models.TokenResponse
+import com.qrchores.client.models.UndoCompletionResponse
 import com.qrchores.client.models.User
 import com.qrchores.client.models.ValidationDetailEnvelope
 import io.ktor.client.HttpClient
@@ -216,6 +220,63 @@ class QrChoresClient(
             if (timing != null) parameter("timing", timing)
         }
 
+    suspend fun undoCompletion(completionId: Int): UndoCompletionResponse {
+        val response =
+            client.post("$baseUrl/api/v1/completions/$completionId/undo") {
+                applyAuth()
+            }
+        return response.decodeOrThrow()
+    }
+
+
+    // --- Children ---
+
+    suspend fun listChildren(includeInactive: Boolean = true): ChildListResponse =
+        get("/api/v1/children") {
+            parameter("include_inactive", includeInactive)
+        }
+
+    suspend fun createChild(body: ChildCreate): User {
+        val response =
+            client.post("$baseUrl/api/v1/children") {
+                applyAuth()
+                contentType(ContentType.Application.Json)
+                setBody(body)
+            }
+        return response.decodeOrThrow()
+    }
+
+    suspend fun getChild(childId: Int): User =
+        get("/api/v1/children/$childId")
+
+    suspend fun updateChild(
+        childId: Int,
+        body: ChildUpdate,
+    ): User {
+        val response =
+            client.patch("$baseUrl/api/v1/children/$childId") {
+                applyAuth()
+                contentType(ContentType.Application.Json)
+                setBody(body)
+            }
+        return response.decodeOrThrow()
+    }
+
+    suspend fun activateChild(childId: Int): User {
+        val response =
+            client.post("$baseUrl/api/v1/children/$childId/activate") {
+                applyAuth()
+            }
+        return response.decodeOrThrow()
+    }
+
+    suspend fun deactivateChild(childId: Int): User {
+        val response =
+            client.post("$baseUrl/api/v1/children/$childId/deactivate") {
+                applyAuth()
+            }
+        return response.decodeOrThrow()
+    }
 
     // --- Chores ---
 

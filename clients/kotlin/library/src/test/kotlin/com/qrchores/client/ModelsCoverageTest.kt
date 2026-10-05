@@ -6,6 +6,9 @@ import com.qrchores.client.models.AchievementProgress
 import com.qrchores.client.models.AchievementUpdate
 import com.qrchores.client.models.AchievementsResponse
 import com.qrchores.client.models.BoardItem
+import com.qrchores.client.models.ChildCreate
+import com.qrchores.client.models.ChildListResponse
+import com.qrchores.client.models.ChildUpdate
 import com.qrchores.client.models.Chore
 import com.qrchores.client.models.ChoreConfirm
 import com.qrchores.client.models.ChoreCreate
@@ -27,6 +30,7 @@ import com.qrchores.client.models.StringDetail
 import com.qrchores.client.models.TimingBonuses
 import com.qrchores.client.models.TodayResponse
 import com.qrchores.client.models.TokenResponse
+import com.qrchores.client.models.UndoCompletionResponse
 import com.qrchores.client.models.Unlock
 import com.qrchores.client.models.User
 import com.qrchores.client.models.ValidationDetailEnvelope
@@ -74,6 +78,20 @@ class ModelsCoverageTest {
         assertEquals(user.hashCode(), user.copy().hashCode())
         assertTrue(user.toString().contains("parent"))
         assertEquals(1, user.component1())
+
+        val childCreate =
+            ChildCreate(
+                email = "kid@example.com",
+                password = "pass",
+                firstName = "Kid",
+                lastName = "One",
+            )
+        assertEquals(childCreate, childCreate.copy())
+        val childUpdate = ChildUpdate(firstName = "Kiddo")
+        assertEquals("Kiddo", childUpdate.copy().firstName)
+        val childList = ChildListResponse(listOf(user))
+        assertEquals(1, childList.children.size)
+        assertEquals(childList, childList.copy())
 
         val token = TokenResponse("tok", "bearer", 100, user)
         assertEquals("tok", token.copy(accessToken = "tok").accessToken)
@@ -246,6 +264,11 @@ class ModelsCoverageTest {
 
         val del = ChoreDeleteResponse(true, 1, 0)
         assertTrue(del.copy().deleted)
+
+        val undo = UndoCompletionResponse(true, 10, 1, 12)
+        assertTrue(undo.copy().success)
+        assertEquals(10, undo.completionId)
+        assertEquals(12, undo.pointsReverted)
 
         val qr = QrInfo(1, "T", "tok", "http://x/c/tok", "/png")
         assertEquals("tok", qr.copy().qrToken)

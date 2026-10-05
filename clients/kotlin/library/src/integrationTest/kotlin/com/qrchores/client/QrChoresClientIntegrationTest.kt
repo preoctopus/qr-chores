@@ -6,6 +6,8 @@ import com.qrchores.client.errors.ForbiddenException
 import com.qrchores.client.errors.NotFoundException
 import com.qrchores.client.models.AchievementCreate
 import com.qrchores.client.models.AchievementUpdate
+import com.qrchores.client.models.ChildCreate
+import com.qrchores.client.models.ChildUpdate
 import com.qrchores.client.models.ChoreCreate
 import com.qrchores.client.models.ChoreUpdate
 import com.qrchores.client.models.TimingBonuses
@@ -152,6 +154,27 @@ class QrChoresClientIntegrationTest {
     fun parentChoreCrudAndQr() {
         runBlocking {
             client.login("parent@example.com", "parent-pass")
+
+            val children = client.listChildren(includeInactive = true)
+            assertTrue(children.children.isNotEmpty())
+            val createdChild =
+                client.createChild(
+                    ChildCreate(
+                        email = "kt-kid-${System.currentTimeMillis()}@example.com",
+                        password = "child-pass",
+                        firstName = "Kotlin",
+                        lastName = "Kid",
+                    ),
+                )
+            assertTrue(createdChild.id > 0)
+            assertEquals("child", createdChild.role)
+            val fetchedChild = client.getChild(createdChild.id)
+            assertEquals(createdChild.id, fetchedChild.id)
+            val updatedChild =
+                client.updateChild(createdChild.id, ChildUpdate(firstName = "Kt"))
+            assertTrue(updatedChild.displayName.contains("Kt"))
+            assertFalse(client.deactivateChild(createdChild.id).isActive)
+            assertTrue(client.activateChild(createdChild.id).isActive)
 
             val list = client.listChores(includeInactive = true)
             assertTrue(list.chores.size >= 3)

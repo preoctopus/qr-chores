@@ -113,7 +113,9 @@ async def today_board(
 
     ids = [c.id for c in scheduled]
     result = await db.execute(
-        select(ChoreCompletion).where(
+        select(ChoreCompletion)
+        .options(selectinload(ChoreCompletion.user))
+        .where(
             ChoreCompletion.chore_id.in_(ids),
             ChoreCompletion.local_date == today,
         )
@@ -138,6 +140,20 @@ async def today_board(
                 is_late_pending=late_pending,
             )
         )
+
+    def sort_key(item: ChoreDayStatus) -> tuple[int, time, str]:
+        if not item.done:
+            rank = 0 if item.is_late_pending else 1
+        else:
+            if item.timing == TimingStatus.late:
+                rank = 2  # Done Late
+            elif item.timing == TimingStatus.early:
+                rank = 3  # Done early
+            else:
+                rank = 4  # Done on time
+        return (rank, item.chore.due_time, item.chore.title)
+
+    board.sort(key=sort_key)
     return board
 
 

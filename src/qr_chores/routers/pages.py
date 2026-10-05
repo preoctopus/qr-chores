@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 
-from fastapi import APIRouter, Depends, Request, status
+from fastapi import APIRouter, Depends, Form, Request, status
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -195,6 +195,32 @@ async def parent_history(
             "format_due_time": format_due_time,
         },
     )
+
+
+@router.post("/completions/{completion_id}/undo", response_class=RedirectResponse)
+async def undo_completion_page(
+    completion_id: int,
+    request: Request,
+    user: User = Depends(require_role(UserRole.parent)),
+    db: AsyncSession = Depends(get_db),
+    settings: Settings = Depends(get_settings),
+    next: str | None = Form(None),
+) -> RedirectResponse:
+    from contextlib import suppress
+
+    from qr_chores.routers.auth import _safe_next_url
+    from qr_chores.services.completion import CompletionError, undo_completion
+
+    with suppress(CompletionError):
+        await undo_completion(
+            db,
+            completion_id=completion_id,
+            parent_id=user.id,
+            settings=settings,
+        )
+
+    target = _safe_next_url(next) if next else "/today"
+    return RedirectResponse(target, status_code=status.HTTP_303_SEE_OTHER)
 
 
 @dataclass

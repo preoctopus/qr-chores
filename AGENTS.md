@@ -120,13 +120,13 @@ Login → today’s assigned chores (pending, done, or late) + points (total bal
 - **Domain:** thin routers under `routers/api/`; awards only in `services/`.
 - **Errors:** always JSON on `/api/*` (never HTML login redirect). `401` / `403` / `404` / `422`; domain complete failures use `400` with `{ "detail": { "message", "code" } }`.
 - **OpenAPI:** `/docs` + `/openapi.json` in non-production only. Bearer scheme registered for try-it-out.
-- **Deferred:** login rate-limiting (document only until needed).
+- **Login rate-limiting:** in-process sliding window throttle per `(client IP, email)` pair with short lockout (429). Note: in-process state does not persist across process restarts or multiple horizontal instances.
 
 ## Data model (conceptual)
 
 - **User** — email (username), first_name, last_name, display_name, password_hash, role (`parent`|`child`), **parent_id** (primary managing parent). Extra parents are **child_parent_links** rows (`child_id`, `parent_id`); those parents see and manage the child too. Do not clear `parent_id` when adding one.
 - **Chore** — title, description, **qr_token** (unique, stable), due_time, schedule_days, photo_policy, base_points, **early_bonus_enabled**, is_active, **assignee_user_id** (child who owns the chore)
-- **ChoreCompletion** — chore_id, user_id, local_date, completed_at, timing, photo_object_key, points_awarded (base + timing bonus only; not achievement rewards); **UNIQUE (chore_id, local_date)**
+- **ChoreCompletion** — chore_id, user_id, local_date, completed_at, timing, photo_object_key, **had_photo** (stays true after reaping), points_awarded (base + timing bonus only; not achievement rewards); **UNIQUE (chore_id, local_date)**
 - **PointLedger** — user_id, delta, reason, ref_type, ref_id (sum = balance; “points today” is ledger deltas for the local day)
 - **Achievement** — title, description, icon_key, criteria_type, criteria_json, points_reward, is_active
 - **UserAchievement** — user_id, achievement_id, unlocked_at; unique pair
@@ -142,6 +142,8 @@ qr-chores/
   docs/DEPLOY.md
   docs/API.md                # Internal /api/v1 for native apps (not user Help)
   README.md / AGENTS.md
+  imgs/                      # Design library (source of truth for brand art)
+  marketing/                 # Static landing site; assets/ → symlinks into imgs/
   clients/                   # First-party API clients (isolated from app)
     CONTRACT.md              # Shared method/error/fixture contract
     mock-api/                # Deterministic /api/v1 mock for client tests
@@ -159,7 +161,7 @@ qr-chores/
       api/                   # Internal JSON API
     services/                # qr, completion, achievements, points, storage, timeutil
     templates/
-    static/
+    static/                  # App runtime static (PWA icons, CSS, JS)
   migrations/
   tests/                     # unit + HTTP tests
     integration/             # multi-step flows (@pytest.mark.integration)
@@ -180,6 +182,7 @@ qr-chores/
 | `PHOTO_LOCAL_DIR` | Local upload root (dev) |
 | `GCS_BUCKET` | Bucket when `PHOTO_STORAGE=gcs` |
 | `PHOTO_MAX_BYTES` | Max upload size (default 5 MB); enforced while reading the upload stream |
+| `PHOTO_RETENTION_DAYS` | Keep proof photo blobs this many calendar days (`local_date`); `0` disables. Run `qr-chores-reap-photos` on a schedule |
 | `PORT` | Cloud Run listens on `8080` |
 | `RUN_MIGRATIONS` / `RUN_SEED` | Docker entrypoint flags |
 | `ADMIN_API_KEY` | Optional internal registration API key (not family-facing UX) |
@@ -198,13 +201,15 @@ Local default port: **8765** (8000 is often taken).
 - Default `SECRET_KEY` (`dev-only-change-me`) is allowed only for local SQLite + non-HTTPS `BASE_URL` + non-production `ENVIRONMENT`.
 - Production (`ENVIRONMENT=production`): OpenAPI docs disabled.
 - Photo storage backends are cached (`get_photo_storage`); tests that change `PHOTO_*` should call `clear_photo_storage_cache()`.
+- CSRF tokens are omitted on HTML forms as an accepted gap; session cookies rely on browser `SameSite=Lax` defaults for cross-site POST protection.
+- Login rate-limiting is enforced in-process per `(client IP, email)` pair (sliding window, max attempts in config). Single-instance state reset on restart is an accepted limitation for family-scale deployment.
 
 ## Implementation status
 
 1. Skeleton & deploy path ✅  
 2. Chores + QR ✅  
 2.5. Chore delete ✅  
-3. Photos ✅  
+3. Photos ✅ (incl. `qr-chores-reap-photos` retention job)
 4. Points & achievements ✅  
 5. Polish + deploy docs ✅  
 6. Lint, coverage (≥ 90%), unit + integration tests ✅  
@@ -216,9 +221,10 @@ Local default port: **8765** (8000 is often taken).
 ## Quality gates (required)
 
 ```bash
-uv run ruff check src tests
-uv run ruff format --check src tests
+uv run ruff check src tests tests_e2e
+uv run ruff format --check src tests tests_e2e
 uv run pytest -q                 # includes coverage fail-under=90
+uv run pytest tests_e2e          # Playwright UI tests
 ```
 
 When changing clients:
@@ -258,10 +264,11 @@ Work is **not** done until the relevant quality gates pass **locally** (and CI w
 
 ```bash
 # App
-uv run ruff check src tests
-uv run ruff format --check src tests
+uv run ruff check src tests tests_e2e
+uv run ruff format --check src tests tests_e2e
 uv run pytest -q
-
+uv run pytest tests_e2e
+```
 # Client mock (if clients/ touched)
 cd clients/mock-api && uv run ruff check src tests && uv run pytest -q
 
@@ -294,6 +301,8 @@ Fix failures before declaring the task complete, opening a PR as ready, or askin
 - Open-redirect hardening on login `next` (relative paths only).
 - Strong `SECRET_KEY` required for HTTPS / Postgres / production.
 - Every response gets `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, and a `script-src 'self'` CSP (`security_headers.py`); `Strict-Transport-Security` is added only when `BASE_URL` is `https://`.
+- CSRF protection relies on `SameSite=Lax` session cookies; explicit CSRF token plumbing on HTML forms is omitted as a known gap.
+- Login rate-limiting is enforced in-process per `(client IP, email)` pair (sliding window, max attempts in config). Note: state is in-process and does not persist across process restarts or multiple instances.
 
 ## Out of scope (v1)
 

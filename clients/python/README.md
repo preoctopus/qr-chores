@@ -36,6 +36,7 @@ uv run qrc chores --help
 # Parent
 uv run qrc auth login -e dad@example.com -p parent-pass
 uv run qrc todays-chores
+uv run qrc children list
 uv run qrc chores list
 uv run qrc history --limit 20
 
@@ -66,6 +67,7 @@ Credentials are stored under the platform config dir (`qrc config-path`). Overri
 | `todays-chores` / `today` | `GET /today` (parent) |
 | `home` | `GET /home` (child) |
 | `history` | `GET /history` |
+| `children list\|get\|create\|update\|activate\|deactivate` | `/children/*` |
 | `chores list\|get\|create\|update\|delete\|activate\|deactivate\|qr\|qr-png` | `/chores/*` |
 | `confirm` / `complete` | `/c/{token}` |
 | `achievements` | `GET /achievements` |

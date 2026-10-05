@@ -25,6 +25,9 @@ class Settings(BaseSettings):
     base_url: str = "http://127.0.0.1:8765"
     session_cookie_name: str = "qr_chores_session"
     session_max_age_seconds: int = 60 * 60 * 24 * 14  # 14 days
+    # Login rate limiting (in-process brute-force protection)
+    login_rate_limit_attempts: int = 5
+    login_rate_limit_window_seconds: int = 300
     # Timing windows (minutes)
     on_time_grace_minutes: int = 15
     early_window_minutes: int = 60
@@ -33,6 +36,8 @@ class Settings(BaseSettings):
     photo_local_dir: str = "./data/uploads"
     gcs_bucket: str = ""
     photo_max_bytes: int = 5 * 1024 * 1024  # 5 MB
+    # Days to keep proof photo blobs (local_date age). <=0 disables reaping.
+    photo_retention_days: int = 90
     # Seed script defaults (override in env for real use)
     seed_parent_password: str = "parent-pass"
     seed_child_password: str = "child-pass"

@@ -106,6 +106,52 @@ def test_parent_todays_chores_and_history(cli_mock_api: dict[str, Any]):
     assert "Unload dishwasher" in history.output or "dishwasher" in history.output.lower()
 
 
+def test_parent_children_crud(cli_mock_api: dict[str, Any]):
+    assert _login(cli_mock_api, PARENT_EMAIL, PARENT_PASSWORD).exit_code == 0
+
+    listed = runner.invoke(app, [*_base(cli_mock_api), "children", "list"])
+    assert listed.exit_code == 0
+    assert "Child" in listed.output
+
+    create = runner.invoke(
+        app,
+        [
+            *_base(cli_mock_api),
+            "children",
+            "create",
+            "-e",
+            "cli-kid@example.com",
+            "-p",
+            "child-pass",
+            "--first-name",
+            "Cli",
+            "--last-name",
+            "Kid",
+        ],
+    )
+    assert create.exit_code == 0, create.output
+    assert "Cli Kid" in create.output or "Created child" in create.output
+
+    created_json = runner.invoke(app, [*_base(cli_mock_api), "--json", "children", "list"])
+    assert created_json.exit_code == 0
+    kids = json.loads(created_json.output)["children"]
+    kid = next(c for c in kids if c["email"] == "cli-kid@example.com")
+    kid_id = str(kid["id"])
+
+    get_one = runner.invoke(app, [*_base(cli_mock_api), "children", "get", kid_id])
+    assert get_one.exit_code == 0
+
+    update = runner.invoke(
+        app,
+        [*_base(cli_mock_api), "children", "update", kid_id, "--first-name", "Clair"],
+    )
+    assert update.exit_code == 0
+    assert (
+        runner.invoke(app, [*_base(cli_mock_api), "children", "deactivate", kid_id]).exit_code == 0
+    )
+    assert runner.invoke(app, [*_base(cli_mock_api), "children", "activate", kid_id]).exit_code == 0
+
+
 def test_parent_chores_crud_and_qr(cli_mock_api: dict[str, Any], tmp_path: Path):
     assert _login(cli_mock_api, PARENT_EMAIL, PARENT_PASSWORD).exit_code == 0
 
