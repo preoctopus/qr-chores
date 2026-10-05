@@ -105,6 +105,17 @@ def test_parent_todays_chores_and_history(cli_mock_api: dict[str, Any]):
     # Seed completion for chore 1
     assert "Unload dishwasher" in history.output or "dishwasher" in history.output.lower()
 
+    assert "1/2" in today.output  # per-child header from summary/children
+    days = runner.invoke(app, [*_base(cli_mock_api), "history-days"])
+    assert days.exit_code == 0, days.output
+    assert "History" in days.output and "1 open" in days.output
+
+    days_json = runner.invoke(
+        app, [*_base(cli_mock_api), "--json", "history-days", "--child-id", "2"]
+    )
+    assert days_json.exit_code == 0
+    assert len(json.loads(days_json.output)["days"]) == 14
+
 
 def test_parent_children_crud(cli_mock_api: dict[str, Any]):
     assert _login(cli_mock_api, PARENT_EMAIL, PARENT_PASSWORD).exit_code == 0

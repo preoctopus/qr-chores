@@ -34,7 +34,7 @@ EPILOG = f"""
   [cyan]QRC_BASE_URL[/] / [cyan]QR_CHORES_BASE_URL[/].
 
 [bold]Roles[/]
-  [cyan]parent[/] — todays-chores, children, chores, history, rewards
+  [cyan]parent[/] — todays-chores, children, chores, history, history-days, rewards
   [magenta]child[/]  — home, confirm, complete, achievements
 
 [bold]Examples[/]
@@ -142,7 +142,15 @@ def todays_chores(ctx: typer.Context) -> None:
     if cfg.as_json:
         output.emit_json(resp)
         return
-    output.print_board(resp.board, local_date=resp.local_date, title="Today's chores")
+    if resp.summary is None or not resp.children:
+        output.print_board(resp.board, local_date=resp.local_date, title="Today's chores")
+        return
+    output.print_today_summary(resp)
+    for group in resp.children:
+        extra = f"{group.done}/{group.total} done · +{group.points_today} pts"
+        if group.overdue:
+            extra += f" · [yellow]{group.overdue} overdue[/]"
+        output.print_board(group.items, title=group.child_name, extra_header=extra)
 
 
 @app.command("today")
@@ -215,6 +223,37 @@ def history(
         output.emit_json(resp)
         return
     output.print_history(resp.items, limit=resp.limit)
+
+
+@app.command("history-days")
+@handle_api_errors
+def history_days(
+    ctx: typer.Context,
+    child_id: int | None = typer.Option(None, "--child-id", help="Filter by child ID."),
+    chore_id: int | None = typer.Option(None, "--chore-id", help="Filter by chore ID."),
+    start_date: str | None = typer.Option(None, "--start-date", help="Start date (YYYY-MM-DD)."),
+    end_date: str | None = typer.Option(None, "--end-date", help="End date (YYYY-MM-DD)."),
+    timing: str | None = typer.Option(
+        None, "--timing", help="Filter by timing (early, on_time, late); hides missed."
+    ),
+) -> None:
+    """History grouped by day with missed chores (GET /api/v1/history/days). Parent."""
+    cfg = get_config(ctx)
+    client = make_client(cfg)
+    try:
+        resp = client.get_history_days(
+            child_id=child_id,
+            chore_id=chore_id,
+            start_date=start_date,
+            end_date=end_date,
+            timing=timing,
+        )
+    finally:
+        client.close()
+    if cfg.as_json:
+        output.emit_json(resp)
+        return
+    output.print_history_days(resp)
 
 
 @app.command("confirm")

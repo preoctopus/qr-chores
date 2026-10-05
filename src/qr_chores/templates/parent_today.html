@@ -1,10 +1,11 @@
 {% extends "base.html" %}
 {% block title %}Today{% endblock %}
 {% block content %}
+{% set s = dashboard.summary %}
 <section class="stack">
   <div class="page-header">
     <h1>Today’s board</h1>
-    <p class="muted">Hey, {{ user.first_name }} — live status for scheduled chores.</p>
+    <p class="muted">Hey, {{ user.first_name }} — {{ dashboard.local_date.strftime("%A, %B") }} {{ dashboard.local_date.day }}.</p>
   </div>
 
   {% if not board %}
@@ -16,53 +17,86 @@
   {% set empty_secondary_label = "Manage chores" %}
   {% include "empty_state.html" %}
   {% else %}
-  <ul class="chore-list">
-    {% for row in board %}
-    <li class="chore-card">
-      <div class="chore-card-header">
-        <div class="chore-card-meta">
-          <p class="chore-title">
-            {{ row.chore.title }}
-            {% set child_user = (row.completion.user if row.completion and row.completion.user else None) or (row.chore.assignee if row.chore else None) %}
-            {% if child_user %}
-            <span class="child-badge">{{ child_user.display_name or child_user.first_name }}</span>
-            {% endif %}
-          </p>
-          <p class="muted small">
-            Due {{ format_due_time(row.chore.due_time) }} · {{ row.chore.base_points }} pts
-          </p>
-        </div>
-        <div class="chore-card-status-wrapper">
-          <span class="chip chip-{{ row.status_kind }}">{{ row.status_label }}</span>
-          {% if row.completion %}
-          <details class="action-menu">
-            <summary class="action-menu-trigger" aria-label="Actions for {{ row.chore.title }}">&#8942;</summary>
-            <div class="action-menu-dropdown">
-              <form method="post" action="/completions/{{ row.completion.id }}/undo">
-                <input type="hidden" name="next" value="/today">
-                <button type="submit" class="btn btn-sm btn-danger-ghost action-menu-item">Undo completion</button>
-              </form>
+  <div class="card summary-card" aria-label="Today’s progress">
+    <div class="summary-head">
+      <p class="summary-count"><strong>{{ s.done }}</strong> of {{ s.total }} done</p>
+      <p class="summary-points">+{{ s.points_today }} pts today</p>
+    </div>
+    <div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="{{ s.total }}" aria-valuenow="{{ s.done }}" aria-label="{{ s.done }} of {{ s.total }} chores done">
+      <div class="progress-fill{% if s.done == s.total %} is-complete{% endif %}" style="width: {{ s.percent }}%"></div>
+    </div>
+    <div class="summary-chips">
+      {% if s.overdue %}<span class="chip chip-late">{{ s.overdue }} overdue</span>{% endif %}
+      {% if s.pending %}<span class="chip chip-pending">{{ s.pending }} pending</span>{% endif %}
+      {% if s.done %}<span class="chip chip-done">{{ s.done }} done</span>{% endif %}
+      {% if s.done_late %}<span class="chip chip-missed">{{ s.done_late }} finished late</span>{% endif %}
+    </div>
+  </div>
+
+  <div class="child-groups">
+    {% for g in dashboard.groups %}
+    <section class="child-group" aria-labelledby="child-{{ g.child.id }}">
+      <header class="child-group-head">
+        <h2 id="child-{{ g.child.id }}">{{ g.name }}</h2>
+        <p class="muted small">
+          {% if g.total %}{{ g.done }}/{{ g.total }} done{% if g.overdue %} · <span class="text-late">{{ g.overdue }} overdue</span>{% endif %} · {% endif %}+{{ g.points_today }} pts
+        </p>
+      </header>
+      {% if g.total %}
+      <div class="progress progress-sm" aria-hidden="true">
+        <div class="progress-fill{% if g.done == g.total %} is-complete{% endif %}" style="width: {{ g.percent }}%"></div>
+      </div>
+      <ul class="row-list">
+        {% for row in g.rows %}
+        <li class="chore-card chore-row is-{{ row.status_kind }}">
+          <div class="chore-card-header">
+            <div class="chore-card-meta">
+              <p class="chore-title">{{ row.chore.title }}</p>
+              <p class="muted small">
+                {% if row.completion %}
+                Done {{ format_clock(row.completion.completed_at) }} · due {{ format_due_time(row.chore.due_time) }} · +{{ row.completion.points_awarded }} pts
+                {% else %}
+                Due {{ format_due_time(row.chore.due_time) }} · {{ row.chore.base_points }} pts
+                {% endif %}
+              </p>
             </div>
-          </details>
+            <div class="chore-card-status-wrapper">
+              <span class="chip chip-{{ row.status_kind }}">{{ row.status_label }}</span>
+              {% if row.completion %}
+              <details class="action-menu">
+                <summary class="action-menu-trigger" aria-label="Actions for {{ row.chore.title }}">&#8942;</summary>
+                <div class="action-menu-dropdown">
+                  <form method="post" action="/completions/{{ row.completion.id }}/undo">
+                    <input type="hidden" name="next" value="/today">
+                    <button type="submit" class="btn btn-sm btn-danger-ghost action-menu-item">Undo completion</button>
+                  </form>
+                </div>
+              </details>
+              {% endif %}
+            </div>
+          </div>
+          {% if row.completion and row.completion.notes %}
+          <p class="chore-note muted small"><strong>Note:</strong> {{ row.completion.notes }}</p>
           {% endif %}
-        </div>
-      </div>
-      {% if row.completion and row.completion.notes %}
-      <p class="chore-note muted small"><strong>Note:</strong> {{ row.completion.notes }}</p>
+          {% if row.completion and row.completion.photo_object_key %}
+          <div class="chore-card-photo">
+            <a href="/photos/{{ row.completion.id }}" class="photo-thumb-link">
+              <img class="photo-thumb xs" src="/photos/{{ row.completion.id }}" alt="Proof for {{ row.chore.title }}">
+            </a>
+            <a class="photo-link" href="/photos/{{ row.completion.id }}">View photo</a>
+          </div>
+          {% elif row.completion and row.completion.had_photo %}
+          <p class="muted small">Photo no longer available</p>
+          {% endif %}
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="muted small">No chores today.</p>
       {% endif %}
-      {% if row.completion and row.completion.photo_object_key %}
-      <div class="chore-card-photo">
-        <a href="/photos/{{ row.completion.id }}" class="photo-thumb-link">
-          <img class="photo-thumb sm" src="/photos/{{ row.completion.id }}" alt="Proof for {{ row.chore.title }}">
-        </a>
-        <a class="photo-link" href="/photos/{{ row.completion.id }}">View photo</a>
-      </div>
-      {% elif row.completion and row.completion.had_photo %}
-      <p class="muted small">Photo no longer available</p>
-      {% endif %}
-    </li>
+    </section>
     {% endfor %}
-  </ul>
+  </div>
   {% endif %}
 </section>
 {% endblock %}

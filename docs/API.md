@@ -150,7 +150,8 @@ All require **`role=parent`** (and authentication), except photo fetch (any auth
 
 | Method | Path | Description |
 |--------|------|-------------|
-| `GET` | `/api/v1/today` | Today’s status board (same domain rules as `/today`) |
+| `GET` | `/api/v1/today` | Today’s status board (same domain rules as `/today`): `board`, plus `summary` (total / done / pending / overdue / done_late / points_today) and `children[]` per-child groups. Optional `child_id` (404 if not your child) |
+| `GET` | `/api/v1/history/days` | History grouped by local day for a date window (`start_date`, `end_date`; default last 14 days, max 92, never past today) with filters `child_id`, `chore_id`, `timing`. Each day has `scheduled`, `done`, `missed_count`, `open_count` (today only), `points`, `completions[]`, `missed[]`. `older_*` / `newer_*` give adjacent windows. See **Missed** rule in `AGENTS.md` |
 | `GET` | `/api/v1/history` | Paginated completion history with filters (`child_id`, `chore_id`, `start_date`, `end_date`, `timing`, `page`, `limit`) and summary stats |
 | `POST` | `/api/v1/completions/{id}/undo` | Revert completion points in ledger, delete photo, and allow chore to be completed again today |
 
@@ -291,6 +292,7 @@ OpenAPI includes a **BearerAuth** security scheme. Request bodies for login, cho
 | `GET` | `/api/v1/achievements` | child |
 | `GET` | `/api/v1/today` | parent |
 | `GET` | `/api/v1/history` | parent |
+| `GET` | `/api/v1/history/days` | parent |
 | `GET`/`POST` | `/api/v1/chores` | parent |
 | `GET`/`PATCH`/`DELETE` | `/api/v1/chores/{id}` | parent |
 | `POST` | `/api/v1/chores/{id}/activate` | parent |

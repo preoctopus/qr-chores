@@ -160,3 +160,43 @@ def test_role_guards(client: TestClient) -> None:
         == 403
     )
     assert client.get("/api/v1/me").status_code == 401
+
+
+def test_today_summary_and_history_days(client: TestClient) -> None:
+    token = _login(client, PARENT_EMAIL, PARENT_PASSWORD)
+    h = {"Authorization": f"Bearer {token}"}
+    today = client.get("/api/v1/today", headers=h).json()
+    assert today["summary"]["total"] == 2
+    assert today["summary"]["done"] == 1
+    assert today["summary"]["pending"] == 1
+    assert today["summary"]["points_today"] == 12
+    assert today["children"][0]["child_id"] == 2
+    assert today["children"][0]["done"] == 1
+    assert len(today["children"][0]["items"]) == 2
+
+    days = client.get("/api/v1/history/days", headers=h).json()
+    assert len(days["days"]) == 14
+    first = days["days"][0]
+    assert first["local_date"] == today["local_date"]
+    assert (first["done"], first["open_count"], first["missed_count"]) == (1, 1, 0)
+    assert first["completions"][0]["chore_title"] == "Unload dishwasher"
+    assert all(d["done"] == 0 for d in days["days"][1:])
+
+    filtered = client.get(
+        "/api/v1/history/days",
+        headers=h,
+        params={
+            "timing": "late",
+            "start_date": "2000-01-01",
+            "end_date": "2999-01-01",
+            "child_id": 2,
+            "chore_id": 1,
+        },
+    ).json()
+    assert len(filtered["days"]) == 92
+    assert sum(d["done"] + d["open_count"] for d in filtered["days"]) == 0
+
+    open_filtered = client.get(
+        "/api/v1/history/days", headers=h, params={"child_id": 2, "chore_id": 2}
+    ).json()
+    assert open_filtered["days"][0]["open_count"] == 1

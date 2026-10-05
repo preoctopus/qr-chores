@@ -173,11 +173,36 @@ class AchievementsResponse(BaseModel):
     achievements: list[AchievementProgress]
 
 
+class TodaySummary(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    total: int
+    done: int
+    pending: int
+    overdue: int
+    done_late: int
+    points_today: int
+
+
+class ChildDayGroup(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    child_id: int
+    child_name: str
+    done: int
+    total: int
+    overdue: int
+    points_today: int
+    items: list[BoardItem] = Field(default_factory=list)
+
+
 class TodayResponse(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
     local_date: date | str
     board: list[BoardItem]
+    summary: TodaySummary | None = None
+    children: list[ChildDayGroup] = Field(default_factory=list)
 
 
 class HistoryItem(BaseModel):
@@ -332,3 +357,37 @@ class UndoCompletionResponse(BaseModel):
     completion_id: int
     chore_id: int
     points_reverted: int
+
+
+class MissedChore(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    chore_id: int
+    chore_title: str
+    user_id: int | None = None
+    due_time: time | str
+
+
+class HistoryDay(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    local_date: date | str
+    scheduled: int
+    done: int
+    missed_count: int
+    open_count: int = 0
+    points: int
+    completions: list[HistoryItem] = Field(default_factory=list)
+    missed: list[MissedChore] = Field(default_factory=list)
+
+
+class HistoryDaysResponse(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    start_date: date | str
+    end_date: date | str
+    days: list[HistoryDay]
+    older_start: date | str | None = None
+    older_end: date | str | None = None
+    newer_start: date | str | None = None
+    newer_end: date | str | None = None

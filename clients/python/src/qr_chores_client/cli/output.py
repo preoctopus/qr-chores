@@ -253,6 +253,48 @@ def print_history(items: list[Any], *, limit: int | None = None) -> None:
     console.print(table)
 
 
+def print_today_summary(resp: Any) -> None:
+    s = resp.summary
+    parts = [f"[bold]{s.done}/{s.total}[/] done", f"+{s.points_today} pts"]
+    if s.overdue:
+        parts.append(f"[yellow]{s.overdue} overdue[/]")
+    if s.pending:
+        parts.append(f"{s.pending} pending")
+    if s.done_late:
+        parts.append(f"{s.done_late} finished late")
+    console.print(f"[bold]Today · {resp.local_date}[/]  " + "  ·  ".join(parts))
+
+
+def print_history_days(resp: Any) -> None:
+    console.print(f"[bold]History · {resp.start_date} → {resp.end_date}[/]")
+    table = Table(show_header=True, header_style="bold", expand=True)
+    table.add_column("Day")
+    table.add_column("Done", justify="right")
+    table.add_column("Missed", justify="right")
+    table.add_column("Pts", justify="right")
+    table.add_column("Chores")
+    shown = 0
+    for day in resp.days:
+        if day.scheduled == 0:
+            continue
+        shown += 1
+        names = [f"[green]✓[/] {c.chore_title}" for c in day.completions]
+        names += [f"[red]✗[/] {m.chore_title}" for m in day.missed]
+        if day.open_count:
+            names.append(f"[dim]{day.open_count} open[/]")
+        missed = f"[red]{day.missed_count}[/]" if day.missed_count else "0"
+        table.add_row(
+            str(day.local_date),
+            f"{day.done}/{day.scheduled}",
+            missed,
+            str(day.points),
+            ", ".join(names),
+        )
+    if not shown:
+        table.add_row("—", "—", "—", "—", "[dim]Nothing scheduled in this window[/]")
+    console.print(table)
+
+
 def print_achievements(resp: Any) -> None:
     d = resp.model_dump(mode="json") if isinstance(resp, BaseModel) else dict(resp)
     console.print(

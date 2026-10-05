@@ -51,6 +51,7 @@ Guidance for AI agents and humans working in this repo. Product decisions from t
 - `early`: more than `early_window_minutes` before due (default 60).
 - `late`: after due + grace.
 - Late allowed **same calendar day**.
+- **Missed** (History / `GET /api/v1/history/days`): an **active** chore is missed on a past local day D when it is scheduled that weekday, `created_at` (local date) ≤ D, and there is no completion for D. Today’s open chores are not missed (`open_count`). Uses the chore’s *current* schedule (approximate if edited later); deactivated chores are excluded; hidden when filtering by timing. Logic lives in `services/dashboard.py`.
 
 ### Points & achievements
 
@@ -93,8 +94,8 @@ Login → today’s assigned chores (pending, done, or late) + points (total bal
 |-------|------|---------|
 | `/login` | All | Auth |
 | `/` | Role redirect | Parent dashboard or child home |
-| `/today` | Parent | Live status board (chores for this parent’s children) |
-| `/history` | Parent | Recent completions + photos |
+| `/today` | Parent | Live status board: summary + per-child groups (chores for this parent’s children) |
+| `/history` | Parent | Day-grouped completions + missed chores, 7-day strip, filters, stats |
 | `/children` | Parent | List / add / edit / activate / deactivate children |
 | `/children/new` | Parent | Create child account |
 | `/children/{id}/edit` | Parent | Edit child profile / password |

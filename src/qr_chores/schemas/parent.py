@@ -8,9 +8,30 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 from qr_chores.schemas.chores import BoardItemOut, ChoreSummaryOut, CompletionSummaryOut
 
 
+class TodaySummaryOut(BaseModel):
+    total: int
+    done: int
+    pending: int
+    overdue: int
+    done_late: int
+    points_today: int
+
+
+class ChildDayGroupOut(BaseModel):
+    child_id: int
+    child_name: str
+    done: int
+    total: int
+    overdue: int
+    points_today: int
+    items: list[BoardItemOut]
+
+
 class TodayResponse(BaseModel):
     local_date: date
     board: list[BoardItemOut]
+    summary: TodaySummaryOut | None = None
+    children: list[ChildDayGroupOut] = Field(default_factory=list)
 
 
 class HistoryItemOut(BaseModel):
@@ -43,6 +64,34 @@ class HistoryResponse(BaseModel):
     limit: int
     stats: HistoryStatsOut | None = None
     pagination: HistoryPaginationOut | None = None
+
+
+class MissedChoreOut(BaseModel):
+    chore_id: int
+    chore_title: str
+    user_id: int | None = None
+    due_time: time
+
+
+class HistoryDayOut(BaseModel):
+    local_date: date
+    scheduled: int
+    done: int
+    missed_count: int
+    open_count: int
+    points: int
+    completions: list[HistoryItemOut]
+    missed: list[MissedChoreOut]
+
+
+class HistoryDaysResponse(BaseModel):
+    start_date: date
+    end_date: date
+    days: list[HistoryDayOut]
+    older_start: date | None = None
+    older_end: date | None = None
+    newer_start: date | None = None
+    newer_end: date | None = None
 
 
 class ChoreListResponse(BaseModel):

@@ -586,6 +586,27 @@ def create_mcp_server() -> Any:
         )
 
     @mcp.tool
+    async def get_history_days(
+        child_id: int | None = None,
+        chore_id: int | None = None,
+        start_date: str | None = None,
+        end_date: str | None = None,
+        timing: str | None = None,
+        ctx: Any = None,
+    ) -> dict[str, Any]:
+        """Parent history grouped by day: done/scheduled, missed chores, open (today), and points. Default window is the last 14 days; timing filter hides missed chores."""
+        client = await _holder.get_client_for_request(ctx)
+        return _to_jsonable(
+            await client.get_history_days(
+                child_id=child_id,
+                chore_id=chore_id,
+                start_date=start_date,
+                end_date=end_date,
+                timing=timing,
+            )
+        )
+
+    @mcp.tool
     async def undo_chore_completion(completion_id: int, ctx: Any = None) -> dict[str, Any]:
         """Undo a chore completion for a parent's child (parent role required). Reverts banked points and deletes proof photo if present."""
         client = await _holder.get_client_for_request(ctx)

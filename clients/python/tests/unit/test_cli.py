@@ -756,3 +756,100 @@ def test_token_flag_overrides_file(config_dir: Path):
     assert route.calls
     auth = route.calls.last.request.headers.get("authorization")
     assert auth == "Bearer cli-token"
+
+
+@respx.mock
+def test_todays_chores_grouped_and_history_days(config_dir: Path):
+    _save_token(config_dir)
+    board_item = BOARD_ITEM.model_dump(mode="json")
+    respx.get(f"{BASE}/api/v1/today").mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "local_date": "2026-07-27",
+                "board": [board_item],
+                "summary": {
+                    "total": 3,
+                    "done": 1,
+                    "pending": 1,
+                    "overdue": 1,
+                    "done_late": 1,
+                    "points_today": 12,
+                },
+                "children": [
+                    {
+                        "child_id": 2,
+                        "child_name": "Ava",
+                        "done": 1,
+                        "total": 3,
+                        "overdue": 1,
+                        "points_today": 12,
+                        "items": [board_item],
+                    }
+                ],
+            },
+        )
+    )
+    day = {
+        "local_date": "2026-07-26",
+        "scheduled": 3,
+        "done": 1,
+        "missed_count": 1,
+        "open_count": 1,
+        "points": 12,
+        "completions": [
+            {
+                "completion": {
+                    "id": 1,
+                    "local_date": "2026-07-26",
+                    "completed_at": "2026-07-26T12:00:00Z",
+                    "timing": "on_time",
+                    "points_awarded": 12,
+                    "has_photo": False,
+                },
+                "chore_id": 1,
+                "chore_title": "Unload dishwasher",
+                "user_id": 2,
+            }
+        ],
+        "missed": [
+            {"chore_id": 2, "chore_title": "Make bed", "user_id": 2, "due_time": "09:00:00"}
+        ],
+    }
+    empty_day = {**day, "local_date": "2026-07-25", "scheduled": 0, "done": 0}
+    empty_day.update(missed_count=0, open_count=0, points=0, completions=[], missed=[])
+    days_route = respx.get(url__regex=rf"{BASE}/api/v1/history/days.*").mock(
+        side_effect=[
+            httpx.Response(
+                200,
+                json={
+                    "start_date": "2026-07-25",
+                    "end_date": "2026-07-26",
+                    "days": [day, empty_day],
+                },
+            ),
+            httpx.Response(
+                200,
+                json={"start_date": "2026-07-25", "end_date": "2026-07-25", "days": [empty_day]},
+            ),
+        ]
+    )
+
+    today = runner.invoke(app, ["--base-url", BASE, "todays-chores"])
+    assert today.exit_code == 0, today.output
+    assert "1/3 done" in today.output
+    assert "overdue" in today.output
+    assert "finished late" in today.output
+    assert "Ava" in today.output
+
+    days = runner.invoke(
+        app, ["--base-url", BASE, "history-days", "--child-id", "2", "--timing", "late"]
+    )
+    assert days.exit_code == 0, days.output
+    assert "Make bed" in days.output
+    assert "1/3" in days.output
+    assert days_route.calls[0].request.url.params["child_id"] == "2"
+
+    empty = runner.invoke(app, ["--base-url", BASE, "history-days"])
+    assert empty.exit_code == 0
+    assert "Nothing scheduled" in empty.output
