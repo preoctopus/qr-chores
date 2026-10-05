@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import secrets
+from datetime import date, timedelta
 from typing import Any
 
 from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, Query, UploadFile, status
@@ -23,6 +24,9 @@ from qr_chores_mock_api.fixtures import (
     now_iso,
     user_out,
 )
+
+# Fixture chores have no assignee field; they all belong to the seeded child.
+DEFAULT_CHILD_ID = 2
 
 app = FastAPI(title="QR Chores Mock API", version="0.1.0")
 STATE: dict[str, Any] = fresh_state()
@@ -410,7 +414,121 @@ def today(user: dict[str, Any] = Depends(require_parent)) -> dict[str, Any]:
         return (rank, item["chore"]["due_time"], item["chore"]["title"])
 
     board.sort(key=sort_key)
-    return {"local_date": STATE["local_date"], "board": board}
+
+    def _assignee(item: dict[str, Any]) -> int:
+        return STATE["chores"][item["chore"]["id"]].get("assignee_user_id", DEFAULT_CHILD_ID)
+
+    def _points(items: list[dict[str, Any]]) -> int:
+        return sum(i["completion"]["points_awarded"] for i in items if i["completion"])
+
+    children = []
+    for child in sorted(STATE["users"].values(), key=lambda u: u["id"]):
+        if child["role"] != "child" or not child.get("is_active", True):
+            continue
+        items = [i for i in board if _assignee(i) == child["id"]]
+        children.append(
+            {
+                "child_id": child["id"],
+                "child_name": user_out(child)["display_name"],
+                "done": sum(1 for i in items if i["done"]),
+                "total": len(items),
+                "overdue": sum(1 for i in items if i["is_late_pending"]),
+                "points_today": _points(items),
+                "items": items,
+            }
+        )
+    summary = {
+        "total": len(board),
+        "done": sum(1 for i in board if i["done"]),
+        "pending": sum(1 for i in board if not i["done"] and not i["is_late_pending"]),
+        "overdue": sum(1 for i in board if i["is_late_pending"]),
+        "done_late": sum(1 for i in board if i["done"] and i["timing"] == "late"),
+        "points_today": _points(board),
+    }
+    return {
+        "local_date": STATE["local_date"],
+        "board": board,
+        "summary": summary,
+        "children": children,
+    }
+
+
+@app.get("/api/v1/history/days")
+def history_days(
+    child_id: int | None = Query(default=None),
+    chore_id: int | None = Query(default=None),
+    start_date: str | None = Query(default=None),
+    end_date: str | None = Query(default=None),
+    timing: str | None = Query(default=None),
+    user: dict[str, Any] = Depends(require_parent),
+) -> dict[str, Any]:
+    """Deterministic day-grouped history.
+
+    Mock chores count as created today, so past days never have missed chores;
+    today's not-yet-done active chores are reported as ``open_count``.
+    """
+    del user
+    today = date.fromisoformat(STATE["local_date"])
+    end = min(date.fromisoformat(end_date), today) if end_date else today
+    start = date.fromisoformat(start_date) if start_date else end - timedelta(days=13)
+    start = min(start, end)
+    if (end - start).days + 1 > 92:
+        start = end - timedelta(days=91)
+    span = (end - start).days + 1
+
+    days = []
+    for offset in range(span):
+        day = (end - timedelta(days=offset)).isoformat()
+        completions = [
+            c
+            for c in sorted(STATE["completions"].values(), key=lambda x: x["id"], reverse=True)
+            if c["local_date"] == day
+            and (child_id is None or c["user_id"] == child_id)
+            and (chore_id is None or c["chore_id"] == chore_id)
+            and (timing is None or c["timing"] == timing)
+        ]
+        open_count = 0
+        if day == today.isoformat() and timing is None:
+            done_ids = {c["chore_id"] for c in completions}
+            open_count = sum(
+                1
+                for ch in STATE["chores"].values()
+                if ch["is_active"]
+                and ch["id"] not in done_ids
+                and (chore_id is None or ch["id"] == chore_id)
+                and (child_id is None or ch.get("assignee_user_id", DEFAULT_CHILD_ID) == child_id)
+            )
+        items = [
+            {
+                "completion": completion_summary(c),
+                "chore_id": c["chore_id"],
+                "chore_title": STATE["chores"].get(c["chore_id"], {}).get("title", "?"),
+                "user_id": c["user_id"],
+            }
+            for c in completions
+        ]
+        days.append(
+            {
+                "local_date": day,
+                "scheduled": len(items) + open_count,
+                "done": len(items),
+                "missed_count": 0,
+                "open_count": open_count,
+                "points": sum(c["points_awarded"] for c in completions),
+                "completions": items,
+                "missed": [],
+            }
+        )
+
+    return {
+        "start_date": start.isoformat(),
+        "end_date": end.isoformat(),
+        "days": days,
+        "older_start": None,
+        "older_end": None,
+        "newer_start": None,
+        "newer_end": None,
+    }
 
 
 @app.get("/api/v1/history")
@@ -513,7 +631,6 @@ def undo_completion_mock(
         "chore_id": chore_id,
         "points_reverted": points_reverted,
     }
-
 
 
 @app.get("/api/v1/children")
@@ -634,7 +751,9 @@ def list_chores(
 
 
 @app.post("/api/v1/chores", status_code=status.HTTP_201_CREATED)
-def create_chore(body: ChoreCreate, user: dict[str, Any] = Depends(require_parent)) -> dict[str, Any]:
+def create_chore(
+    body: ChoreCreate, user: dict[str, Any] = Depends(require_parent)
+) -> dict[str, Any]:
     del user
     cid = STATE["next_chore_id"]
     STATE["next_chore_id"] = cid + 1
@@ -837,9 +956,7 @@ def toggle_achievement(
 
 
 @app.get("/api/v1/photos/{completion_id}")
-def get_photo(
-    completion_id: int, user: dict[str, Any] = Depends(require_auth)
-) -> Response:
+def get_photo(completion_id: int, user: dict[str, Any] = Depends(require_auth)) -> Response:
     del user
     completion = STATE["completions"].get(completion_id)
     if not completion or not completion.get("has_photo"):

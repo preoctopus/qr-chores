@@ -51,6 +51,7 @@ Guidance for AI agents and humans working in this repo. Product decisions from t
 - `early`: more than `early_window_minutes` before due (default 60).
 - `late`: after due + grace.
 - Late allowed **same calendar day**.
+- **Missed** (History / `GET /api/v1/history/days`): an **active** chore is missed on a past local day D when it is scheduled that weekday, `created_at` (local date) ≤ D, and there is no completion for D. Today’s open chores are not missed (`open_count`). Uses the chore’s *current* schedule (approximate if edited later); deactivated chores are excluded; hidden when filtering by timing. Logic lives in `services/dashboard.py`.
 
 ### Points & achievements
 
@@ -85,7 +86,7 @@ Scan QR → `GET /c/{token}` → login if needed (preserve `next`) → must be t
 
 ### Child (home)
 
-Login → points (total balance + points change today) + achievements (awarded and not yet awarded). Scanning QR code is the only path to chore confirmation/completion (own chores only).
+Login → today’s assigned chores (pending, done, or late) + points (total balance + points change today) + achievements. Opening a chore or scanning its QR both go to `/c/{token}`; only the assignee can complete it.
 
 ## Routes
 
@@ -93,8 +94,8 @@ Login → points (total balance + points change today) + achievements (awarded a
 |-------|------|---------|
 | `/login` | All | Auth |
 | `/` | Role redirect | Parent dashboard or child home |
-| `/today` | Parent | Live status board (chores for this parent’s children) |
-| `/history` | Parent | Recent completions + photos |
+| `/today` | Parent | Live status board: summary + per-child groups (chores for this parent’s children) |
+| `/history` | Parent | Day-grouped completions + missed chores, 7-day strip, filters, stats |
 | `/children` | Parent | List / add / edit / activate / deactivate children |
 | `/children/new` | Parent | Create child account |
 | `/children/{id}/edit` | Parent | Edit child profile / password |
@@ -124,7 +125,7 @@ Login → points (total balance + points change today) + achievements (awarded a
 
 ## Data model (conceptual)
 
-- **User** — email (username), first_name, last_name, display_name, password_hash, role (`parent`|`child`), **parent_id** (children → parent who manages them)
+- **User** — email (username), first_name, last_name, display_name, password_hash, role (`parent`|`child`), **parent_id** (primary managing parent). Extra parents are **child_parent_links** rows (`child_id`, `parent_id`); those parents see and manage the child too. Do not clear `parent_id` when adding one.
 - **Chore** — title, description, **qr_token** (unique, stable), due_time, schedule_days, photo_policy, base_points, **early_bonus_enabled**, is_active, **assignee_user_id** (child who owns the chore)
 - **ChoreCompletion** — chore_id, user_id, local_date, completed_at, timing, photo_object_key, **had_photo** (stays true after reaping), points_awarded (base + timing bonus only; not achievement rewards); **UNIQUE (chore_id, local_date)**
 - **PointLedger** — user_id, delta, reason, ref_type, ref_id (sum = balance; “points today” is ledger deltas for the local day)

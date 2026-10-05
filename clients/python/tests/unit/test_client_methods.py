@@ -309,6 +309,100 @@ async def test_get_history(client: QrChoresClient):
 
 
 @respx.mock
+async def test_get_today_with_summary_and_children(client: QrChoresClient):
+    client.access_token = "t"
+    respx.get(f"{BASE}/api/v1/today").mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "local_date": "2026-07-26",
+                "board": [BOARD_ITEM],
+                "summary": {
+                    "total": 1,
+                    "done": 1,
+                    "pending": 0,
+                    "overdue": 0,
+                    "done_late": 0,
+                    "points_today": 12,
+                },
+                "children": [
+                    {
+                        "child_id": 2,
+                        "child_name": "Child",
+                        "done": 1,
+                        "total": 1,
+                        "overdue": 0,
+                        "points_today": 12,
+                        "items": [BOARD_ITEM],
+                    }
+                ],
+            },
+        )
+    )
+    today = await client.get_today()
+    assert today.summary is not None and today.summary.points_today == 12
+    assert today.children[0].child_name == "Child"
+    assert today.children[0].items[0].chore.title == "Unload dishwasher"
+
+
+@respx.mock
+async def test_get_history_days(client: QrChoresClient):
+    client.access_token = "t"
+    route = respx.get(f"{BASE}/api/v1/history/days").mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "start_date": "2026-07-20",
+                "end_date": "2026-07-26",
+                "days": [
+                    {
+                        "local_date": "2026-07-26",
+                        "scheduled": 2,
+                        "done": 1,
+                        "missed_count": 1,
+                        "open_count": 0,
+                        "points": 12,
+                        "completions": [
+                            {
+                                "completion": COMPLETION,
+                                "chore_id": 1,
+                                "chore_title": "Unload dishwasher",
+                                "user_id": 2,
+                            }
+                        ],
+                        "missed": [
+                            {
+                                "chore_id": 2,
+                                "chore_title": "Make bed",
+                                "user_id": 2,
+                                "due_time": "09:00:00",
+                            }
+                        ],
+                    }
+                ],
+                "older_start": "2026-07-13",
+                "older_end": "2026-07-19",
+            },
+        )
+    )
+    res = await client.get_history_days(
+        child_id=2, chore_id=1, start_date="2026-07-20", end_date="2026-07-26", timing="late"
+    )
+    assert res.days[0].missed[0].chore_title == "Make bed"
+    assert res.days[0].completions[0].chore_id == 1
+    assert str(res.older_start) == "2026-07-13"
+    params = route.calls[0].request.url.params
+    assert params["child_id"] == "2"
+    assert params["chore_id"] == "1"
+    assert params["start_date"] == "2026-07-20"
+    assert params["end_date"] == "2026-07-26"
+    assert params["timing"] == "late"
+
+    await client.get_history_days()
+    assert dict(route.calls.last.request.url.params) == {}
+
+
+@respx.mock
 async def test_list_children(client: QrChoresClient):
     client.access_token = "t"
     child_user = {

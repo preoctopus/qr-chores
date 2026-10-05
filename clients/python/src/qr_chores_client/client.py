@@ -32,6 +32,7 @@ from qr_chores_client.models import (
     ChoreListResponse,
     ChoreUpdate,
     CompleteResponse,
+    HistoryDaysResponse,
     HistoryResponse,
     HomeResponse,
     QrInfo,
@@ -290,6 +291,33 @@ class QrChoresClient:
             "GET",
             f"{API_PREFIX}/history",
             HistoryResponse,
+            params=params,
+        )
+
+    async def get_history_days(
+        self,
+        *,
+        child_id: int | None = None,
+        chore_id: int | None = None,
+        start_date: str | None = None,
+        end_date: str | None = None,
+        timing: str | None = None,
+    ) -> HistoryDaysResponse:
+        params: dict[str, Any] = {}
+        if child_id is not None:
+            params["child_id"] = child_id
+        if chore_id is not None:
+            params["chore_id"] = chore_id
+        if start_date:
+            params["start_date"] = start_date
+        if end_date:
+            params["end_date"] = end_date
+        if timing:
+            params["timing"] = timing
+        return await self._request_model(
+            "GET",
+            f"{API_PREFIX}/history/days",
+            HistoryDaysResponse,
             params=params,
         )
 

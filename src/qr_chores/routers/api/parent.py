@@ -13,26 +13,34 @@ from qr_chores.models.user import User, UserRole
 from qr_chores.routers.api.serializers import board_item, chore_summary, completion_summary
 from qr_chores.schemas.chores import ChoreSummaryOut
 from qr_chores.schemas.parent import (
+    ChildDayGroupOut,
     ChoreCreate,
     ChoreDeleteResponse,
     ChoreListResponse,
     ChoreUpdate,
+    HistoryDayOut,
+    HistoryDaysResponse,
     HistoryItemOut,
     HistoryPaginationOut,
     HistoryResponse,
     HistoryStatsOut,
+    MissedChoreOut,
     QrInfoOut,
     TodayResponse,
+    TodaySummaryOut,
     UndoCompletionResponse,
 )
 from qr_chores.services.chores import (
     delete_chore,
     list_all_chores,
-    today_board,
 )
 from qr_chores.services.completion import get_parent_history
+from qr_chores.services.dashboard import (
+    ChildNotManagedError,
+    build_today_dashboard,
+    get_history_days,
+)
 from qr_chores.services.qr import chore_url, generate_qr_png, new_qr_token
-from qr_chores.services.timeutil import local_today
 
 router = APIRouter(tags=["api-parent"])
 
@@ -44,15 +52,96 @@ async def api_today(
     settings: Settings = Depends(get_settings),
     child_id: int | None = Query(None, description="Filter board to one of your children"),
 ) -> TodayResponse:
-    board = await today_board(
+    try:
+        dash = await build_today_dashboard(db, settings, parent_id=user.id, child_id=child_id)
+    except ChildNotManagedError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Child not found"
+        ) from exc
+    s = dash.summary
+    return TodayResponse(
+        local_date=dash.local_date,
+        board=[board_item(row) for row in dash.board],
+        summary=TodaySummaryOut(
+            total=s.total,
+            done=s.done,
+            pending=s.pending,
+            overdue=s.overdue,
+            done_late=s.done_late,
+            points_today=s.points_today,
+        ),
+        children=[
+            ChildDayGroupOut(
+                child_id=g.child.id,
+                child_name=g.name,
+                done=g.done,
+                total=g.total,
+                overdue=g.overdue,
+                points_today=g.points_today,
+                items=[board_item(row) for row in g.rows],
+            )
+            for g in dash.groups
+        ],
+    )
+
+
+@router.get("/history/days", response_model=HistoryDaysResponse)
+async def api_history_days(
+    user: User = Depends(require_role(UserRole.parent)),
+    db: AsyncSession = Depends(get_db),
+    settings: Settings = Depends(get_settings),
+    child_id: int | None = Query(None, description="Filter to child ID"),
+    chore_id: int | None = Query(None, description="Filter to chore ID"),
+    start_date: date | None = Query(None, description="Window start (default: 13 days before end)"),
+    end_date: date | None = Query(None, description="Window end (default and max: today)"),
+    timing: str | None = Query(None, description="Timing status; hides missed chores when set"),
+) -> HistoryDaysResponse:
+    res = await get_history_days(
         db,
         settings,
         parent_id=user.id,
-        assignee_user_id=child_id,
+        child_id=child_id,
+        chore_id=chore_id,
+        start_date=start_date,
+        end_date=end_date,
+        timing=timing,
     )
-    return TodayResponse(
-        local_date=local_today(settings),
-        board=[board_item(row) for row in board],
+    return HistoryDaysResponse(
+        start_date=res.start_date,
+        end_date=res.end_date,
+        older_start=res.older_start,
+        older_end=res.older_end,
+        newer_start=res.newer_start,
+        newer_end=res.newer_end,
+        days=[
+            HistoryDayOut(
+                local_date=d.local_date,
+                scheduled=d.scheduled,
+                done=d.done,
+                missed_count=len(d.missed),
+                open_count=d.open_count,
+                points=d.points,
+                completions=[
+                    HistoryItemOut(
+                        completion=completion_summary(c),
+                        chore_id=c.chore_id,
+                        chore_title=c.chore.title if c.chore is not None else "",
+                        user_id=c.user_id,
+                    )
+                    for c in d.completions
+                ],
+                missed=[
+                    MissedChoreOut(
+                        chore_id=ch.id,
+                        chore_title=ch.title,
+                        user_id=ch.assignee_user_id,
+                        due_time=ch.due_time,
+                    )
+                    for ch in d.missed
+                ],
+            )
+            for d in res.days
+        ],
     )
 
 

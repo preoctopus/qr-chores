@@ -138,7 +138,7 @@ All extend `QrChoresException`.
 
 ### API surface (camelCase)
 
-`login`, `logout`, `getMe`, `getHome`, `getConfirm`, `completeChore`, `getAchievements`, `getToday`, `getHistory`, `listChildren`, `createChild`, `getChild`, `updateChild`, `activateChild`, `deactivateChild`, `listChores`, `createChore`, `getChore`, `updateChore`, `deleteChore`, `activateChore`, `deactivateChore`, `getQrInfo`, `getQrPng`, `getRewards`, `updateBonuses`, `createAchievement`, `updateAchievement`, `toggleAchievement`, `getPhoto`
+`login`, `logout`, `getMe`, `getHome`, `getConfirm`, `completeChore`, `getAchievements`, `getToday`, `getHistory`, `getHistoryDays`, `listChildren`, `createChild`, `getChild`, `updateChild`, `activateChild`, `deactivateChild`, `listChores`, `createChore`, `getChore`, `updateChore`, `deleteChore`, `activateChore`, `deactivateChore`, `getQrInfo`, `getQrPng`, `getRewards`, `updateBonuses`, `createAchievement`, `updateAchievement`, `toggleAchievement`, `getPhoto`
 
 Wire JSON is **snake_case**; models use `@SerialName`.
 

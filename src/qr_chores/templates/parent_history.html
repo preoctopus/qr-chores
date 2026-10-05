@@ -4,7 +4,7 @@
 <section class="stack">
   <div class="page-header">
     <h1>Completion history</h1>
-    <p class="muted">Track child completions, photos, timing, and point awards</p>
+    <p class="muted">Day by day: what got done, what was missed, timing, photos, and points.</p>
   </div>
 
   {% if stats %}
@@ -89,79 +89,116 @@
     </form>
   </div>
 
-  {% if not completions %}
+  {% set strip = history.days[:7] | reverse | list %}
+  <nav class="day-strip" aria-label="Recent days">
+    {% for d in strip %}
+    {% if d.is_empty %}{% set level = "none" %}{% elif d.done == d.scheduled %}{% set level = "all" %}{% elif d.done == 0 and d.open_count == 0 %}{% set level = "zero" %}{% else %}{% set level = "some" %}{% endif %}
+    <a class="day-tile is-{{ level }}" href="#day-{{ d.local_date.isoformat() }}" title="{{ day_label(d.local_date) }}: {{ d.done }} of {{ d.scheduled }} done">
+      <span class="day-tile-wd">{{ d.local_date.strftime("%a")[:2] }}</span>
+      <span class="day-tile-num">{{ d.local_date.day }}</span>
+      <span class="day-tile-ratio">{% if d.is_empty %}–{% else %}{{ d.done }}/{{ d.scheduled }}{% endif %}</span>
+    </a>
+    {% endfor %}
+  </nav>
+
+  {% set visible_days = history.days | rejectattr("is_empty") | list %}
+  {% if not visible_days %}
   {% set empty_title = "No matching completions" %}
   {% set empty_message = "Try clearing or adjusting your filters to view completion records." if (filters.child_id or filters.chore_id or filters.start_date or filters.end_date or filters.timing) else "When chores get marked done, they’ll show up here with photos and timing." %}
   {% set empty_primary_href = "/today" %}
   {% set empty_primary_label = "Today’s board" %}
   {% include "empty_state.html" %}
   {% else %}
-  <ul class="chore-list">
-    {% for c in completions %}
-    <li class="chore-card">
-      <div class="chore-card-header">
-        <div>
-          <p class="chore-title">
-            {{ c.chore.title if c.chore else "Chore" }}
-            {% if c.user %}
-            <span class="child-badge">{{ c.user.display_name or c.user.first_name }}</span>
-            {% endif %}
-          </p>
-          <p class="muted small">
-            {{ c.local_date }} · {{ c.timing.value.replace('_', ' ') }} ·
-            +{{ c.points_awarded }} pts
-          </p>
-        </div>
-        <div class="chore-card-status-wrapper">
-          <span class="chip chip-{{ c.timing.value }}">{{ c.timing.value.replace('_', ' ') }}</span>
-          <details class="action-menu">
-            <summary class="action-menu-trigger" aria-label="Actions for {{ c.chore.title if c.chore else 'completion' }}">&#8942;</summary>
-            <div class="action-menu-dropdown">
-              <form method="post" action="/completions/{{ c.id }}/undo">
-                <input type="hidden" name="next" value="/history">
-                <button type="submit" class="btn btn-sm btn-danger-ghost action-menu-item">Undo completion</button>
-              </form>
+  {% set back_to = request.url.path ~ ("?" ~ request.url.query if request.url.query else "") %}
+  <div class="day-groups">
+    {% for d in visible_days %}
+    <details class="day-group" id="day-{{ d.local_date.isoformat() }}" open>
+      <summary class="day-group-head">
+        <span class="day-group-title">{{ day_label(d.local_date) }}</span>
+        <span class="day-group-meta">
+          <span>{{ d.done }}/{{ d.scheduled }} done</span>
+          {% if d.missed %}<span class="text-late">· {{ d.missed | length }} missed</span>{% endif %}
+          {% if d.open_count %}<span>· {{ d.open_count }} open</span>{% endif %}
+          <span>· +{{ d.points }} pts</span>
+        </span>
+      </summary>
+      <ul class="row-list">
+        {% for c in d.completions %}
+        <li class="chore-card chore-row is-done">
+          <div class="chore-card-header">
+            <div class="chore-card-meta">
+              <p class="chore-title">
+                {{ c.chore.title if c.chore else "Chore" }}
+                {% if c.user %}
+                <span class="child-badge">{{ c.user.display_name or c.user.first_name }}</span>
+                {% endif %}
+              </p>
+              <p class="muted small">
+                Done {{ format_clock(c.completed_at) }}{% if c.chore %} · due {{ format_due_time(c.chore.due_time) }}{% endif %} · +{{ c.points_awarded }} pts
+              </p>
             </div>
-          </details>
-        </div>
-      </div>
-      {% if c.notes %}
-      <p class="chore-note muted small"><strong>Note:</strong> {{ c.notes }}</p>
-      {% endif %}
-      {% if c.photo_object_key %}
-      <div class="chore-card-photo">
-        <a href="/photos/{{ c.id }}" class="photo-thumb-link">
-          <img class="photo-thumb sm" src="/photos/{{ c.id }}" alt="Proof photo">
-        </a>
-        <a class="photo-link" href="/photos/{{ c.id }}">View photo</a>
-      </div>
-      {% elif c.had_photo %}
-      <p class="muted small">Photo no longer available</p>
-      {% endif %}
-    </li>
+            <div class="chore-card-status-wrapper">
+              <span class="chip chip-{{ c.timing.value }}">{{ c.timing.value.replace('_', ' ') }}</span>
+              <details class="action-menu">
+                <summary class="action-menu-trigger" aria-label="Actions for {{ c.chore.title if c.chore else 'completion' }}">&#8942;</summary>
+                <div class="action-menu-dropdown">
+                  <form method="post" action="/completions/{{ c.id }}/undo">
+                    <input type="hidden" name="next" value="{{ back_to }}">
+                    <button type="submit" class="btn btn-sm btn-danger-ghost action-menu-item">Undo completion</button>
+                  </form>
+                </div>
+              </details>
+            </div>
+          </div>
+          {% if c.notes %}
+          <p class="chore-note muted small"><strong>Note:</strong> {{ c.notes }}</p>
+          {% endif %}
+          {% if c.photo_object_key %}
+          <div class="chore-card-photo">
+            <a href="/photos/{{ c.id }}" class="photo-thumb-link">
+              <img class="photo-thumb xs" src="/photos/{{ c.id }}" alt="Proof photo">
+            </a>
+            <a class="photo-link" href="/photos/{{ c.id }}">View photo</a>
+          </div>
+          {% elif c.had_photo %}
+          <p class="muted small">Photo no longer available</p>
+          {% endif %}
+        </li>
+        {% endfor %}
+        {% for ch in d.missed %}
+        <li class="chore-card chore-row is-missed">
+          <div class="chore-card-header">
+            <div class="chore-card-meta">
+              <p class="chore-title">
+                {{ ch.title }}
+                {% if ch.assignee %}
+                <span class="child-badge">{{ ch.assignee.display_name or ch.assignee.first_name }}</span>
+                {% endif %}
+              </p>
+              <p class="muted small">Was due {{ format_due_time(ch.due_time) }} · {{ ch.base_points }} pts</p>
+            </div>
+            <span class="chip chip-missed">Missed</span>
+          </div>
+        </li>
+        {% endfor %}
+      </ul>
+    </details>
     {% endfor %}
-  </ul>
+  </div>
+  {% endif %}
 
-  {% if pagination and pagination.total_pages > 1 %}
   <div class="pagination-bar">
-    {% set query_base = "&child_id=" ~ (filters.child_id or "") ~ "&chore_id=" ~ (filters.chore_id or "") ~ "&start_date=" ~ filters.start_date ~ "&end_date=" ~ filters.end_date ~ "&timing=" ~ filters.timing %}
-    {% if pagination.has_prev %}
-    <a href="/history?page={{ pagination.page - 1 }}{{ query_base }}" class="btn btn-sm btn-ghost">← Previous</a>
+    {% if history.older_start %}
+    <a href="/history?start_date={{ history.older_start.isoformat() }}&end_date={{ history.older_end.isoformat() }}{% if filter_query %}&{{ filter_query }}{% endif %}" class="btn btn-sm btn-ghost">← Older</a>
     {% else %}
     <span></span>
     {% endif %}
-
-    <span class="pagination-info">
-      Page {{ pagination.page }} of {{ pagination.total_pages }} ({{ pagination.total_count }} total)
-    </span>
-
-    {% if pagination.has_next %}
-    <a href="/history?page={{ pagination.page + 1 }}{{ query_base }}" class="btn btn-sm btn-ghost">Next →</a>
+    <span class="pagination-info">{{ day_label(history.start_date) }} – {{ day_label(history.end_date) }}</span>
+    {% if history.newer_start %}
+    <a href="/history?start_date={{ history.newer_start.isoformat() }}&end_date={{ history.newer_end.isoformat() }}{% if filter_query %}&{{ filter_query }}{% endif %}" class="btn btn-sm btn-ghost">Newer →</a>
     {% else %}
     <span></span>
     {% endif %}
   </div>
-  {% endif %}
-  {% endif %}
 </section>
 {% endblock %}

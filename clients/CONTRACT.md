@@ -24,6 +24,12 @@ Login issues opaque bearer tokens: `parent-token` / `child-token` (stable for te
 - **Achievement 1**: Early bird, `complete_early_count`, threshold 5, points_reward 25, active
 - **Bonuses**: early 5, on_time 2, late 0
 
+### Today summary + day-grouped history (mock rules)
+
+- `GET /api/v1/today` also returns `summary` (`total`, `done`, `pending`, `overdue`, `done_late`, `points_today`) and `children[]` (`child_id`, `child_name`, `done`, `total`, `overdue`, `points_today`, `items[]` board items). Fixture: summary `total=2, done=1, pending=1, points_today=12`; one child group for child 2. Clients treat both as optional (`summary` nullable, `children` default empty).
+- `GET /api/v1/history/days` (`child_id`, `chore_id`, `start_date`, `end_date`, `timing`) returns `start_date`, `end_date`, `days[]` newest-first (one per date in the window; default 14 days ending today, max 92) and nullable `older_*` / `newer_*` window bounds. Each day: `local_date`, `scheduled`, `done`, `missed_count`, `open_count`, `points`, `completions[]` (history items), `missed[]` (`chore_id`, `chore_title`, `user_id`, `due_time`).
+- Mock: chores count as created today, so **past days never have missed chores**; today has `done=1`, `open_count=1`. A `timing` filter zeroes `open_count`.
+
 Tiny valid PNG bytes served for `GET .../qr.png` and `GET .../photos/{id}`.
 
 ## Endpoint → client methods
@@ -41,6 +47,7 @@ Tiny valid PNG bytes served for `GET .../qr.png` and `GET .../photos/{id}`.
 | GET | `/api/v1/achievements` | `get_achievements` | `getAchievements` |
 | GET | `/api/v1/today` | `get_today` | `getToday` |
 | GET | `/api/v1/history` | `get_history` | `getHistory` |
+| GET | `/api/v1/history/days` | `get_history_days` | `getHistoryDays` |
 | POST | `/api/v1/completions/{id}/undo` | `undo_completion` | `undoCompletion` |
 | GET | `/api/v1/children` | `list_children` | `listChildren` |
 | POST | `/api/v1/children` | `create_child` | `createChild` |

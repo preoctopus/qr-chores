@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from qr_chores.auth.passwords import hash_password
-from qr_chores.models.user import User, UserRole, format_display_name
+from qr_chores.models.user import ChildParentLink, User, UserRole, format_display_name
 
 
 class UserServiceError(Exception):
@@ -80,6 +80,12 @@ async def create_user(
     return user
 
 
+def child_managed_by(parent_id: int):
+    """Children whose primary parent is ``parent_id``, plus extra parent links."""
+    linked_ids = select(ChildParentLink.child_id).where(ChildParentLink.parent_id == parent_id)
+    return or_(User.parent_id == parent_id, User.id.in_(linked_ids))
+
+
 async def list_children_for_parent(
     db: AsyncSession,
     parent_id: int,
@@ -88,7 +94,7 @@ async def list_children_for_parent(
 ) -> list[User]:
     q = (
         select(User)
-        .where(User.role == UserRole.child, User.parent_id == parent_id)
+        .where(User.role == UserRole.child, child_managed_by(parent_id))
         .order_by(User.first_name, User.last_name, User.id)
     )
     if not include_inactive:
@@ -106,7 +112,7 @@ async def get_child_for_parent(
         select(User).where(
             User.id == child_id,
             User.role == UserRole.child,
-            User.parent_id == parent_id,
+            child_managed_by(parent_id),
         )
     )
     return result.scalar_one_or_none()

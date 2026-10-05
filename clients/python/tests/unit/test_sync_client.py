@@ -66,6 +66,11 @@ def test_sync_parent_methods():
     respx.get(f"{BASE}/api/v1/history").mock(
         return_value=httpx.Response(200, json={"items": [], "limit": 50})
     )
+    respx.get(f"{BASE}/api/v1/history/days").mock(
+        return_value=httpx.Response(
+            200, json={"start_date": "2026-07-13", "end_date": "2026-07-26", "days": []}
+        )
+    )
     child_user = {
         "id": 2,
         "email": "child@example.com",
@@ -194,6 +199,7 @@ def test_sync_parent_methods():
     try:
         assert client.get_today().board == []
         assert client.get_history().items == []
+        assert client.get_history_days(child_id=2).days == []
         assert client.list_children().children[0].id == 2
         assert client.get_child(2).role == "child"
         assert (

@@ -23,6 +23,7 @@ import com.qrchores.client.models.ChoreListResponse
 import com.qrchores.client.models.ChoreUpdate
 import com.qrchores.client.models.CompleteResponse
 import com.qrchores.client.models.DomainDetailEnvelope
+import com.qrchores.client.models.HistoryDaysResponse
 import com.qrchores.client.models.HistoryResponse
 import com.qrchores.client.models.HomeResponse
 import com.qrchores.client.models.LoginRequest
@@ -213,6 +214,21 @@ class QrChoresClient(
         get("/api/v1/history") {
             parameter("limit", limit)
             parameter("page", page)
+            if (childId != null) parameter("child_id", childId)
+            if (choreId != null) parameter("chore_id", choreId)
+            if (startDate != null) parameter("start_date", startDate)
+            if (endDate != null) parameter("end_date", endDate)
+            if (timing != null) parameter("timing", timing)
+        }
+
+    suspend fun getHistoryDays(
+        childId: Int? = null,
+        choreId: Int? = null,
+        startDate: String? = null,
+        endDate: String? = null,
+        timing: String? = null,
+    ): HistoryDaysResponse =
+        get("/api/v1/history/days") {
             if (childId != null) parameter("child_id", childId)
             if (choreId != null) parameter("chore_id", choreId)
             if (startDate != null) parameter("start_date", startDate)

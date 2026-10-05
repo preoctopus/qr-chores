@@ -29,6 +29,7 @@ from qr_chores_client.models import (
     ChoreListResponse,
     ChoreUpdate,
     CompleteResponse,
+    HistoryDaysResponse,
     HistoryResponse,
     HomeResponse,
     QrInfo,
@@ -171,6 +172,25 @@ class SyncQrChoresClient:
                 timing=timing,
                 page=page,
                 limit=limit,
+            )
+        )
+
+    def get_history_days(
+        self,
+        *,
+        child_id: int | None = None,
+        chore_id: int | None = None,
+        start_date: str | None = None,
+        end_date: str | None = None,
+        timing: str | None = None,
+    ) -> HistoryDaysResponse:
+        return self._run(
+            self._async.get_history_days(
+                child_id=child_id,
+                chore_id=chore_id,
+                start_date=start_date,
+                end_date=end_date,
+                timing=timing,
             )
         )
 

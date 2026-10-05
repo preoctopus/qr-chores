@@ -33,6 +33,7 @@ def test_list_tool_names_includes_contract_methods():
         "get_achievements",
         "get_today",
         "get_history",
+        "get_history_days",
         "list_children",
         "create_child",
         "get_child",
@@ -156,6 +157,9 @@ async def test_mcp_tools_parent_and_child_against_mock():
 
         history = await (await _tool_fn("get_history"))(limit=10)
         assert history["limit"] == 10
+
+        days = await (await _tool_fn("get_history_days"))()
+        assert days["days"][0]["done"] == 1
 
         chores = await (await _tool_fn("list_chores"))(include_inactive=True)
         assert len(chores["chores"]) >= 3

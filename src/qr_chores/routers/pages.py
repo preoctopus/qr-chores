@@ -1,6 +1,7 @@
 """Role home pages and JSON helpers."""
 
 from dataclasses import dataclass
+from urllib.parse import urlencode
 
 from fastapi import APIRouter, Depends, Form, Request, status
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -14,8 +15,9 @@ from qr_chores.models.rewards import Achievement, UserAchievement
 from qr_chores.models.user import User, UserRole
 from qr_chores.services.achievements import ICON_CHOICES, criteria_threshold, progress_for
 from qr_chores.services.chores import today_board
+from qr_chores.services.dashboard import build_today_dashboard, get_history_days
 from qr_chores.services.points import points_balance, points_earned_today
-from qr_chores.services.timeutil import format_due_time
+from qr_chores.services.timeutil import day_label, format_clock, format_due_time, local_today
 from qr_chores.templating import templates
 
 router = APIRouter(tags=["pages"])
@@ -55,15 +57,17 @@ async def parent_today(
     db: AsyncSession = Depends(get_db),
     settings: Settings = Depends(get_settings),
 ) -> HTMLResponse:
-    board = await today_board(db, settings, parent_id=user.id)
+    dashboard = await build_today_dashboard(db, settings, parent_id=user.id)
     return templates.TemplateResponse(
         request,
         "parent_today.html",
         {
             "user": user,
             "title": "Today",
-            "board": board,
+            "dashboard": dashboard,
+            "board": dashboard.board,
             "format_due_time": format_due_time,
+            "format_clock": lambda dt: format_clock(dt, settings),
         },
     )
 
@@ -77,6 +81,7 @@ async def child_home(
 ) -> HTMLResponse:
     points_today = await points_earned_today(db, user.id, settings)
     balance = await points_balance(db, user.id)
+    board = await today_board(db, settings, assignee_user_id=user.id)
 
     result = await db.execute(
         select(Achievement).where(Achievement.is_active.is_(True)).order_by(Achievement.title)
@@ -112,6 +117,7 @@ async def child_home(
             "title": "Home",
             "points_today": points_today,
             "balance": balance,
+            "board": board,
             "awarded_rows": awarded_rows,
             "not_awarded_rows": not_awarded_rows,
             "icon_emoji": ICON_EMOJI,
@@ -131,8 +137,6 @@ async def parent_history(
     start_date: str | None = None,
     end_date: str | None = None,
     timing: str | None = None,
-    page: int = 1,
-    limit: int = 50,
 ) -> HTMLResponse:
     from datetime import date
 
@@ -140,24 +144,22 @@ async def parent_history(
     from qr_chores.services.completion import get_parent_history
     from qr_chores.services.users import list_children_for_parent
 
-    parsed_start: date | None = None
-    if start_date:
+    def _parse(value: str | None) -> date | None:
+        if not value:
+            return None
         try:
-            parsed_start = date.fromisoformat(start_date)
+            return date.fromisoformat(value)
         except ValueError:
-            parsed_start = None
+            return None
 
-    parsed_end: date | None = None
-    if end_date:
-        try:
-            parsed_end = date.fromisoformat(end_date)
-        except ValueError:
-            parsed_end = None
+    parsed_start = _parse(start_date)
+    parsed_end = _parse(end_date)
 
     children = await list_children_for_parent(db, parent_id=user.id)
     chores = await list_all_chores(db, parent_id=user.id)
 
-    history_res = await get_parent_history(
+    # Stats cover the user's filters (all time when no dates are given).
+    stats_res = await get_parent_history(
         db,
         settings,
         parent_id=user.id,
@@ -166,8 +168,17 @@ async def parent_history(
         start_date=parsed_start,
         end_date=parsed_end,
         timing=timing,
-        page=page,
-        limit=limit,
+        limit=1,
+    )
+    history = await get_history_days(
+        db,
+        settings,
+        parent_id=user.id,
+        child_id=child_id,
+        chore_id=chore_id,
+        start_date=parsed_start,
+        end_date=parsed_end,
+        timing=timing,
     )
 
     filters = {
@@ -177,6 +188,10 @@ async def parent_history(
         "end_date": end_date or "",
         "timing": timing or "",
     }
+    filter_query = urlencode(
+        {k: v for k, v in filters.items() if k not in ("start_date", "end_date") and v}
+    )
+    today = local_today(settings)
 
     return templates.TemplateResponse(
         request,
@@ -184,13 +199,16 @@ async def parent_history(
         {
             "user": user,
             "title": "History",
-            "completions": history_res.completions,
-            "stats": history_res.stats,
-            "pagination": history_res.pagination,
+            "history": history,
+            "stats": stats_res.stats,
             "children": children,
             "chores": chores,
             "filters": filters,
+            "filter_query": filter_query,
+            "today": today,
+            "day_label": lambda d: day_label(d, today),
             "format_due_time": format_due_time,
+            "format_clock": lambda dt: format_clock(dt, settings),
         },
     )
 

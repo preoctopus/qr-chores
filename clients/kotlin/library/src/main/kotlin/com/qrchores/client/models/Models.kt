@@ -166,9 +166,32 @@ data class AchievementsResponse(
 // --- Parent board / history ---
 
 @Serializable
+data class TodaySummary(
+    val total: Int,
+    val done: Int,
+    val pending: Int,
+    val overdue: Int,
+    @SerialName("done_late") val doneLate: Int,
+    @SerialName("points_today") val pointsToday: Int,
+)
+
+@Serializable
+data class ChildDayGroup(
+    @SerialName("child_id") val childId: Int,
+    @SerialName("child_name") val childName: String,
+    val done: Int,
+    val total: Int,
+    val overdue: Int,
+    @SerialName("points_today") val pointsToday: Int,
+    val items: List<BoardItem> = emptyList(),
+)
+
+@Serializable
 data class TodayResponse(
     @SerialName("local_date") val localDate: String,
     val board: List<BoardItem> = emptyList(),
+    val summary: TodaySummary? = null,
+    val children: List<ChildDayGroup> = emptyList(),
 )
 
 @Serializable
@@ -205,6 +228,37 @@ data class HistoryResponse(
     val limit: Int,
     val stats: HistoryStats? = null,
     val pagination: HistoryPagination? = null,
+)
+
+@Serializable
+data class MissedChore(
+    @SerialName("chore_id") val choreId: Int,
+    @SerialName("chore_title") val choreTitle: String,
+    @SerialName("user_id") val userId: Int? = null,
+    @SerialName("due_time") val dueTime: String,
+)
+
+@Serializable
+data class HistoryDay(
+    @SerialName("local_date") val localDate: String,
+    val scheduled: Int,
+    val done: Int,
+    @SerialName("missed_count") val missedCount: Int,
+    @SerialName("open_count") val openCount: Int = 0,
+    val points: Int,
+    val completions: List<HistoryItem> = emptyList(),
+    val missed: List<MissedChore> = emptyList(),
+)
+
+@Serializable
+data class HistoryDaysResponse(
+    @SerialName("start_date") val startDate: String,
+    @SerialName("end_date") val endDate: String,
+    val days: List<HistoryDay> = emptyList(),
+    @SerialName("older_start") val olderStart: String? = null,
+    @SerialName("older_end") val olderEnd: String? = null,
+    @SerialName("newer_start") val newerStart: String? = null,
+    @SerialName("newer_end") val newerEnd: String? = null,
 )
 
 

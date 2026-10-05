@@ -131,6 +131,14 @@ class QrChoresClientIntegrationTest {
             val history = client.getHistory(limit = 10)
             assertTrue(history.items.isNotEmpty())
             assertEquals(10, history.limit)
+
+            assertEquals(1, today.summary!!.done)
+            assertEquals(2, today.children.single().childId)
+
+            val days = client.getHistoryDays()
+            assertEquals(14, days.days.size)
+            assertEquals(1, days.days.first().done)
+            assertEquals(1, days.days.first().openCount)
         }
 
     @Test

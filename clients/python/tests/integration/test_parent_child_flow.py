@@ -62,6 +62,11 @@ async def test_parent_flow(parent_client: QrChoresClient):
     assert history.limit == 20
     assert any(i.chore_id == 1 for i in history.items)
 
+    assert today.summary is not None and today.summary.done == 1
+    assert today.children[0].child_id == 2
+    days = await parent_client.get_history_days()
+    assert days.days[0].done == 1 and days.days[0].open_count == 1
+
     children = await parent_client.list_children()
     assert any(c.role == "child" for c in children.children)
     created_child = await parent_client.create_child(

@@ -1050,6 +1050,113 @@ class QrChoresClientUnitTest {
         }
 
     @Test
+    fun getTodayWithSummaryAndChildren() =
+        runTest {
+            val client =
+                clientFor {
+                    okJson(
+                        """
+                        {
+                          "local_date": "2026-07-26",
+                          "board": [],
+                          "summary": {
+                            "total": 2, "done": 1, "pending": 0, "overdue": 1,
+                            "done_late": 0, "points_today": 12
+                          },
+                          "children": [
+                            {
+                              "child_id": 2, "child_name": "Ava", "done": 1, "total": 2,
+                              "overdue": 1, "points_today": 12, "items": []
+                            }
+                          ]
+                        }
+                        """.trimIndent(),
+                    )
+                }
+            client.accessToken = "parent-token"
+            val today = client.getToday()
+            assertEquals(1, today.summary!!.overdue)
+            assertEquals(12, today.summary!!.pointsToday)
+            assertEquals("Ava", today.children.single().childName)
+            client.close()
+        }
+
+    @Test
+    fun getHistoryDays() =
+        runTest {
+            val client =
+                clientFor { request ->
+                    assertTrue(request.url.encodedPath.endsWith("/api/v1/history/days"))
+                    assertEquals("2", request.url.parameters["child_id"])
+                    assertEquals("1", request.url.parameters["chore_id"])
+                    assertEquals("2026-07-20", request.url.parameters["start_date"])
+                    assertEquals("2026-07-26", request.url.parameters["end_date"])
+                    assertEquals("late", request.url.parameters["timing"])
+                    okJson(
+                        """
+                        {
+                          "start_date": "2026-07-20",
+                          "end_date": "2026-07-26",
+                          "days": [
+                            {
+                              "local_date": "2026-07-26",
+                              "scheduled": 2, "done": 1, "missed_count": 1, "open_count": 0,
+                              "points": 12,
+                              "completions": [
+                                {
+                                  "completion": {
+                                    "id": 1, "local_date": "2026-07-26",
+                                    "completed_at": "2026-07-26T12:00:00Z", "timing": "late",
+                                    "points_awarded": 12, "has_photo": false
+                                  },
+                                  "chore_id": 1, "chore_title": "Unload dishwasher", "user_id": 2
+                                }
+                              ],
+                              "missed": [
+                                {
+                                  "chore_id": 2, "chore_title": "Make bed",
+                                  "user_id": 2, "due_time": "09:00:00"
+                                }
+                              ]
+                            }
+                          ],
+                          "older_start": "2026-07-13",
+                          "older_end": "2026-07-19"
+                        }
+                        """.trimIndent(),
+                    )
+                }
+            client.accessToken = "parent-token"
+            val res =
+                client.getHistoryDays(
+                    childId = 2,
+                    choreId = 1,
+                    startDate = "2026-07-20",
+                    endDate = "2026-07-26",
+                    timing = "late",
+                )
+            val day = res.days.single()
+            assertEquals(1, day.missedCount)
+            assertEquals("Make bed", day.missed.single().choreTitle)
+            assertEquals("Unload dishwasher", day.completions.single().choreTitle)
+            assertEquals("2026-07-13", res.olderStart)
+            client.close()
+        }
+
+    @Test
+    fun getHistoryDaysNoParams() =
+        runTest {
+            val client =
+                clientFor { request ->
+                    assertTrue(request.url.parameters.isEmpty())
+                    okJson("""{"start_date":"2026-07-13","end_date":"2026-07-26","days":[]}""")
+                }
+            client.accessToken = "parent-token"
+            assertTrue(client.getHistoryDays().days.isEmpty())
+            client.close()
+        }
+
+    @Test
     fun getHistoryDefaultLimit() =
         runTest {
             val client =

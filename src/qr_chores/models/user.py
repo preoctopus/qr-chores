@@ -4,7 +4,7 @@ from datetime import datetime
 from enum import StrEnum
 from typing import TYPE_CHECKING, Optional
 
-from sqlalchemy import Boolean, DateTime, Enum, ForeignKey, String, func
+from sqlalchemy import Boolean, CheckConstraint, DateTime, Enum, ForeignKey, Index, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from qr_chores.db import Base
@@ -38,7 +38,7 @@ class User(Base):
         Enum(UserRole, name="user_role", native_enum=False),
         nullable=False,
     )
-    # Children point at the parent who registered them.
+    # Primary managing parent. Additional parents are rows in child_parent_links.
     parent_id: Mapped[int | None] = mapped_column(
         ForeignKey("users.id", ondelete="SET NULL"),
         nullable=True,
@@ -67,3 +67,26 @@ class User(Base):
 
     def sync_display_name(self) -> None:
         self.display_name = format_display_name(self.first_name, self.last_name)
+
+
+class ChildParentLink(Base):
+    """A parent besides ``users.parent_id`` who can see and manage the child.
+
+    The primary ``parent_id`` stays in place. This table is the general
+    second-parent (or further parent) link, not a special case for one family.
+    """
+
+    __tablename__ = "child_parent_links"
+    __table_args__ = (
+        CheckConstraint("child_id != parent_id", name="ck_child_parent_links_distinct"),
+        Index("ix_child_parent_links_parent_id", "parent_id"),
+    )
+
+    child_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    parent_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        primary_key=True,
+    )

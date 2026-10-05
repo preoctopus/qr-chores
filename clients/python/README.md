@@ -39,6 +39,7 @@ uv run qrc todays-chores
 uv run qrc children list
 uv run qrc chores list
 uv run qrc history --limit 20
+uv run qrc history-days --child-id 2   # per-day done / missed
 
 # Child
 uv run qrc auth login -e daughter@example.com -p child-pass
@@ -67,6 +68,7 @@ Credentials are stored under the platform config dir (`qrc config-path`). Overri
 | `todays-chores` / `today` | `GET /today` (parent) |
 | `home` | `GET /home` (child) |
 | `history` | `GET /history` |
+| `history-days` | `GET /history/days` |
 | `children list\|get\|create\|update\|activate\|deactivate` | `/children/*` |
 | `chores list\|get\|create\|update\|delete\|activate\|deactivate\|qr\|qr-png` | `/chores/*` |
 | `confirm` / `complete` | `/c/{token}` |
@@ -255,6 +257,7 @@ Binary responses (`get_qr_png`, `get_photo`) are returned as JSON:
 | `get_achievements` | `GET /achievements` |
 | `get_today` | `GET /today` |
 | `get_history` | `GET /history` |
+| `get_history_days` | `GET /history/days` |
 | `list_chores` | `GET /chores` |
 | `create_chore` | `POST /chores` |
 | `get_chore` | `GET /chores/{id}` |

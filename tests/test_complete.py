@@ -131,9 +131,9 @@ async def test_child_home_shows_points_and_achievements(
     assert home.status_code == 200
     assert "Total points" in home.text
     assert "Awarded Achievements" in home.text
-    # QR-only completion: chores are not listed on child home
-    assert "Wipe counters" not in home.text
-    assert chore.qr_token not in home.text
+    assert "Wipe counters" in home.text
+    assert f"/c/{chore.qr_token}" in home.text
+    assert "Pending" in home.text
 
 
 @pytest.mark.asyncio

@@ -44,7 +44,7 @@ On iOS, “Add to Home Screen” only appears in Safari (not Chrome). After inst
 
 ### Today
 
-The **Today** board shows chores scheduled for this calendar day (for your children):
+The **Today** board shows chores scheduled for this calendar day (for your children). At the top is a summary — how many are done out of today’s total, a progress bar, and counts of overdue and pending chores. Below that, each child gets their own section with their progress and points earned today. Overdue chores are listed first, then pending, then done; done chores show the time they were finished.
 
 | Status | Meaning |
 |--------|---------|
@@ -116,7 +116,11 @@ Awards are calculated **on the server** when a child completes a chore. The app 
 
 ### History & Undoing Completions
 
-**History** lists recent completions with timing, points, and proof photos (when provided). Open a photo from the list while logged in.
+**History** is grouped by day (newest first, two weeks at a time — use **Older** / **Newer** to move). Each day shows how many chores were done out of how many were scheduled, how many were **missed**, and the points earned. A strip of the last seven days at the top is colored green (all done), amber (some done), or red (none done); tap a day to jump to it.
+
+A chore counts as **missed** when it was scheduled that weekday, already existed, and wasn’t completed by the end of the day. Today’s unfinished chores aren’t missed yet — they show as “open”. Missed is based on each chore’s *current* schedule, and deactivated chores aren’t counted. Filtering by timing (early / on time / late) shows completions only.
+
+Open a photo from the list while logged in.
 
 If a chore was completed by mistake (e.g., scanning the wrong sticker), parents can open the 3-dot (⋮) action menu next to any completed item on **Today** or **History** and select **Undo completion**. This safely deducts the banked points in the points ledger, deletes the proof photo, and frees the chore so it can be completed again today.
 

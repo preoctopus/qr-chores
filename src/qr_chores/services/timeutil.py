@@ -126,6 +126,29 @@ def format_due_time(due: time) -> str:
     return f"{hour}:{due.minute:02d} {ampm}"
 
 
+def format_clock(moment: datetime, settings: Settings) -> str:
+    """Wall-clock label (e.g. ``7:42 AM``) for an instant in APP_TIMEZONE.
+
+    Naive values are already local wall time (SQLite drops the offset of the
+    ``local_now()`` value written on completion), matching :func:`classify_timing`.
+    """
+    if moment.tzinfo is None:
+        return format_due_time(moment.time())
+    return format_due_time(moment.astimezone(app_tz(settings)).time())
+
+
+def day_label(day: date, today: date) -> str:
+    """``Today`` / ``Yesterday`` / ``Mon, Oct 3`` (year added when not this year)."""
+    if day == today:
+        return "Today"
+    if day == today - timedelta(days=1):
+        return "Yesterday"
+    label = f"{day:%a}, {day:%b} {day.day}"
+    if day.year != today.year:
+        label += f", {day.year}"
+    return label
+
+
 def _shift_time(due: time, *, minutes: int) -> time:
     """Shift a wall-clock time by minutes (can cross midnight; returns time only)."""
     base = datetime.combine(date(2000, 1, 1), due)

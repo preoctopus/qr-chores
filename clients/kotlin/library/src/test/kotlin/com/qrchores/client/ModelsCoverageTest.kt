@@ -7,6 +7,7 @@ import com.qrchores.client.models.AchievementUpdate
 import com.qrchores.client.models.AchievementsResponse
 import com.qrchores.client.models.BoardItem
 import com.qrchores.client.models.ChildCreate
+import com.qrchores.client.models.ChildDayGroup
 import com.qrchores.client.models.ChildListResponse
 import com.qrchores.client.models.ChildUpdate
 import com.qrchores.client.models.Chore
@@ -19,16 +20,20 @@ import com.qrchores.client.models.CompleteResponse
 import com.qrchores.client.models.Completion
 import com.qrchores.client.models.DomainDetailBody
 import com.qrchores.client.models.DomainDetailEnvelope
+import com.qrchores.client.models.HistoryDay
+import com.qrchores.client.models.HistoryDaysResponse
 import com.qrchores.client.models.HistoryItem
 import com.qrchores.client.models.HistoryResponse
 import com.qrchores.client.models.HomeResponse
 import com.qrchores.client.models.LoginRequest
+import com.qrchores.client.models.MissedChore
 import com.qrchores.client.models.PointsBreakdown
 import com.qrchores.client.models.QrInfo
 import com.qrchores.client.models.RewardsResponse
 import com.qrchores.client.models.StringDetail
 import com.qrchores.client.models.TimingBonuses
 import com.qrchores.client.models.TodayResponse
+import com.qrchores.client.models.TodaySummary
 import com.qrchores.client.models.TokenResponse
 import com.qrchores.client.models.UndoCompletionResponse
 import com.qrchores.client.models.Unlock
@@ -157,6 +162,18 @@ class ModelsCoverageTest {
         assertEquals(1, histItem.copy().choreId)
         val hist = HistoryResponse(listOf(histItem), 50)
         assertEquals(50, hist.copy().limit)
+
+        val summary = TodaySummary(2, 1, 0, 1, 0, 12)
+        val group = ChildDayGroup(2, "Ava", 1, 2, 1, 12, listOf(board))
+        val todayFull = TodayResponse("2026-07-26", listOf(board), summary, listOf(group))
+        assertEquals(1, todayFull.copy().summary!!.overdue)
+        assertEquals("Ava", todayFull.children.first().copy().childName)
+
+        val missed = MissedChore(2, "Make bed", 2, "09:00:00")
+        val day = HistoryDay("2026-07-26", 2, 1, 1, 0, 12, listOf(histItem), listOf(missed))
+        val days = HistoryDaysResponse("2026-07-20", "2026-07-26", listOf(day))
+        assertEquals("Make bed", days.copy().days.first().missed.first().copy().choreTitle)
+        assertEquals(null, days.olderStart)
     }
 
     @Test
