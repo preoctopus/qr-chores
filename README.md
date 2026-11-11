@@ -20,11 +20,11 @@ Built as a **Python** app with **uv**, **FastAPI**, and **Docker**, meant to run
 
 ## Design decisions
 
-- **Stable QR tokens.** Creating a chore mints one `qr_token` (`secrets.token_urlsafe(16)` in `services/qr.py`) and stores it on the chore. Edits leave that token in place. The QR PNG (`/chores/{id}/qr.png`) and the sticker sheet (`/print/qrs`) encode the same token as `{host}/c/{token}`, so reprinting does not replace the code. The host comes from the request that generated the image, or from `BASE_URL` when there is no request — keep that public host stable so stickers already printed still resolve.
+- **Stable QR tokens.** A chore is created with one `qr_token` (`secrets.token_urlsafe(16)` in `services/qr.py`). `/chores/{id}/qr.png` and `/print/qrs` encode that same token as `{host}/c/{token}`. The host is the request that printed the image, or `BASE_URL` when there is no request.
 - **One child per chore.** Each chore has a single `assignee_user_id`. The parent form and the create API both require one child. `POST /c/{token}` completes the chore only when that child is logged in.
 - **Server-side points.** Completion accepts a photo and optional notes. `complete_chore` adds the chore’s base points and the timing bonus, then writes `PointLedger` rows. The balance is the sum of those deltas. Achievement rewards are ledger entries written in the same completion path.
-- **Photo proof.** Each chore’s `photo_policy` is `required`, `optional`, or `none`. Image bytes stay outside the database (local files in development, a GCS object in production). The completion row stores `photo_object_key`. Uploads are checked by magic bytes (JPEG, PNG, or WebP) and capped by `PHOTO_MAX_BYTES`. Proof is served only by an authenticated `GET /photos/{completion_id}`.
-- **SQLite locally, Postgres on Cloud Run.** The default `DATABASE_URL` is SQLite through `aiosqlite` (`sqlite+aiosqlite:///./data/qr_chores.db`). The Cloud Run deploy uses Cloud SQL Postgres through `asyncpg` (see [docs/DEPLOY.md](./docs/DEPLOY.md)).
+- **Photo proof.** Each chore’s `photo_policy` is `required`, `optional`, or `none`. Image bytes stay outside the database (local files in development, a GCS object in production); the completion row stores `photo_object_key`.
+- **SQLite locally, Postgres on Cloud Run.** The default database is SQLite through `aiosqlite`. Cloud Run uses Cloud SQL Postgres through `asyncpg` ([docs/DEPLOY.md](./docs/DEPLOY.md)).
 
 ---
 
@@ -57,18 +57,9 @@ Parent nav: **Today · History · Children · Chores · Rewards**.
 
 ## How it works
 
-### Children & assignment
+### Children
 
 - Parents add and manage kids under **Children** (name, username, password; activate/deactivate).
-- Every chore is **assigned to one child**. Only that child can complete its QR while logged in.
-- Siblings cannot finish each other’s chores.
-
-### Stable QR codes
-
-- Each chore has **one QR code** reused every day (print stickers once).
-- URL shape: `{host}/c/{token}` (`BASE_URL`, or the host of the request that printed the code).
-- Completing still requires the **assigned child** to be **logged in**.
-- **Keep `BASE_URL` stable** before printing stickers.
 
 ### Completing a chore
 
