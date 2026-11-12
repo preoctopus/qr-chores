@@ -1,5 +1,7 @@
 # Marketing site
 
+Concept landing page only: the pricing, trial, and signup shown in `index.html` and `guide.html` are not implemented in the app.
+
 Static landing pages (`index.html`, `guide.html`) served by nginx in production (see `docs/DEPLOY.md`).
 
 ## Assets

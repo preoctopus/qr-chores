@@ -14,6 +14,34 @@ Built as a **Python** app with **uv**, **FastAPI**, and **Docker**, meant to run
 
 **Status:** v1 complete — features, polish, lint, coverage, and integration tests are on `main` with green CI.
 
+`marketing/` is a concept landing page; the pricing, trial, and signup shown there are not implemented.
+
+---
+
+## Design decisions
+
+- **Stable QR tokens.** A chore is created with one `qr_token` (`secrets.token_urlsafe(16)` in `services/qr.py`). `/chores/{id}/qr.png` and `/print/qrs` encode that same token as `{host}/c/{token}`. The host is the request that printed the image, or `BASE_URL` when there is no request.
+- **One child per chore.** Each chore has a single `assignee_user_id`. The parent form and the create API both require one child. `POST /c/{token}` completes the chore only when that child is logged in.
+- **Server-side points.** Completion accepts a photo and optional notes. `complete_chore` adds the chore’s base points and the timing bonus, then writes `PointLedger` rows. The balance is the sum of those deltas. Achievement rewards are ledger entries written in the same completion path.
+- **Photo proof.** Each chore’s `photo_policy` is `required`, `optional`, or `none`. Image bytes stay outside the database (local files in development, a GCS object in production); the completion row stores `photo_object_key`.
+- **SQLite locally, Postgres on Cloud Run.** The default database is SQLite through `aiosqlite`. Cloud Run uses Cloud SQL Postgres through `asyncpg` ([docs/DEPLOY.md](./docs/DEPLOY.md)).
+
+---
+
+## Screenshots
+
+<!-- TODO: screenshot of the parent Today board (`/today`, “Today’s board”) -->
+
+*[Placeholder: parent Today board (`/today`)]*
+
+<!-- TODO: screenshot of the printed QR stickers (`/print/qrs`) -->
+
+*[Placeholder: printed QR stickers (`/print/qrs`)]*
+
+<!-- TODO: screenshot of the child completion screen (`/c/{token}` — confirm, then celebration) -->
+
+*[Placeholder: child completion screen (`/c/{token}`)]*
+
 ---
 
 ## Who it’s for
@@ -29,18 +57,9 @@ Parent nav: **Today · History · Children · Chores · Rewards**.
 
 ## How it works
 
-### Children & assignment
+### Children
 
 - Parents add and manage kids under **Children** (name, username, password; activate/deactivate).
-- Every chore is **assigned to one child**. Only that child can complete its QR while logged in.
-- Siblings cannot finish each other’s chores.
-
-### Stable QR codes
-
-- Each chore has **one QR code** reused every day (print stickers once).
-- URL shape: `{BASE_URL}/c/{token}`.
-- Completing still requires the **assigned child** to be **logged in**.
-- **Keep `BASE_URL` stable** before printing stickers.
 
 ### Completing a chore
 
@@ -308,4 +327,4 @@ qr-chores/
 
 ## License
 
-Private family project unless otherwise noted.
+[MIT](./LICENSE). Copyright (c) 2026 Andrew Tarzwell.
